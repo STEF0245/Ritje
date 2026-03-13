@@ -8,5 +8,10 @@
 	"keywords": [],
 	"author": "STEF0245",
 	"license": "Apache-2.0",
-	"description": ""
+	"description": "",
+	"dependencies": {
+		"dotenv": "^17.3.1",
+		"ejs": "^5.0.1",
+		"express": "^5.2.1"
+	}
 }
