@@ -14,6 +14,7 @@ import { errorHandler, notFoundHandler } from './misc/error.middleware.js'
 import { optionalAuth } from './auth/auth.middleware.js'
 import pageRoutes from './page/page.routes.js'
 import authRoutes from './auth/auth.routes.js'
+import rideRoutes from './ride/ride.routes.js'
 
 // =====================
 // Initializing the app
@@ -73,6 +74,7 @@ app.use((req, res, next) => {
 // =====================
 app.use('/', pageRoutes)
 app.use('/auth', authRoutes)
+app.use('/ride', rideRoutes)
 
 app.use(notFoundHandler)
 app.use(errorHandler)
