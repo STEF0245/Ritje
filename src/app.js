@@ -11,6 +11,7 @@ import morgan from 'morgan'
 // =====================
 import { config } from './config/env.config.js'
 import { errorHandler, notFoundHandler } from './misc/error.middleware.js'
+import { optionalAuth } from './auth/auth.middleware.js'
 import pageRoutes from './page/page.routes.js'
 import authRoutes from './auth/auth.routes.js'
 
@@ -61,7 +62,11 @@ if (!config.isProduction) {
 // =====================
 // Global Middleware
 // =====================
-// app.use(optionalAuth) // Add user to all requests if authenticated
+app.use(optionalAuth) // Add user to all requests if authenticated
+app.use((req, res, next) => {
+	res.locals.user = req.user || null // Make user available in all views
+	next()
+})
 
 // =====================
 // Routes setup
