@@ -10,6 +10,7 @@ import path from 'path'
 // =====================
 import { config } from './config/env.config.js'
 import { loggingMiddleware } from './misc/logging.middleware.js'
+import { errorHandler, notFoundHandler } from './misc/error.middleware.js'
 import pageRoutes from './routes/page.routes.js'
 import authRoutes from './routes/auth.routes.js'
 
@@ -63,3 +64,6 @@ app.use(optionalAuth) // Add user to all requests if authenticated
 // =====================
 app.use('/', pageRoutes)
 app.use('/auth', authRoutes)
+
+app.use(notFoundHandler)
+app.use(errorHandler)
