@@ -9,6 +9,17 @@
 			>
 				RITJE<span class="text-indigo-500">.</span>
 			</a>
+
+			<div class="hidden md:flex items-center space-x-8 text-sm font-medium">
+				<%- include('header_link', { url: '/about', text: 'Over Ons' }) %>
+				<% if (user) { %>
+					<%- include('header_link', { url: '/dashboard', text: 'Dashboard', main: true }) %>
+					<%- include('header_link', { url: '/logout', text: 'Uitloggen' }) %>
+				<% } else { %>
+					<%- include('header_link', { url: '/login', text: 'Inloggen', main: true }) %>
+					<%- include('header_link', { url: '/register', text: 'Registreren' }) %>
+				<% } %>
+			</div>
 		</div>
 	</nav>
 </header>

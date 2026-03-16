@@ -3,7 +3,7 @@
     <%- include('partials/head', { title }) %>
 
 	<body class="min-h-screen flex flex-col">
-		<%- include('partials/header') %>
+		<%- include('partials/header', { user }) %>
         <%- error.status || 500 %>
         <%- error.message || 'Er is iets misgegaan' %>
         <%- include('partials/footer') %>
