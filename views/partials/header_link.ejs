@@ -1,3 +1,9 @@
-<%-
-
-<a href="<%= url %>" class="hover:text-indigo-400 transition"><%= text %></a>
+<% if (locals?.main) { %>
+    <a href="<%= url %>" class="rit-gradient text-white px-6 py-2.5 rounded-full text-sm font-bold shadow-lg shadow-indigo-500/20 hover:scale-105 transition transform">
+        <%= text %>
+    </a>
+<% } else { %>
+    <a href="<%= url %>" class="hover:text-indigo-400 transition">
+        <%= text %>
+    </a>
+<% } %>
