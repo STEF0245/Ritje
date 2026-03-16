@@ -1,5 +1,5 @@
 <header>
-	<nav class="sticky top-0 z-50 border-b border-slate-800 rit-glass">
+	<nav class="sticky top-0 z-50 border-b border-slate-800 ride-glass">
 		<div
 			class="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center"
 		>
@@ -13,10 +13,10 @@
 			<div class="hidden md:flex items-center space-x-8 text-sm font-medium">
 				<%- include('header_link', { url: '/about', text: 'Over Ons' }) %>
 				<%- include('header_link', { url: '/dashboard', text: 'Dashboard' }) %>
-				<%- include('header_link', { url: '/rit/aanbieden', text: 'Rit Aanbieden' }) %>
+				<%- include('header_link', { url: '/ride/offer', text: 'Rit Aanbieden' }) %>
 			</div>
 
-			<%- include('profile_menu', { user: user }) %>
+			<%- include('profile_menu', { user }) %>
 		</div>
 	</nav>
 </header>
