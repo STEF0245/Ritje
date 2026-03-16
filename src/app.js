@@ -4,20 +4,25 @@
 import express from 'express'
 import cookieParser from 'cookie-parser'
 import path from 'path'
+import morgan from 'morgan'
 
 // =====================
 // Importing modules
 // =====================
 import { config } from './config/env.config.js'
-import { loggingMiddleware } from './misc/logging.middleware.js'
 import { errorHandler, notFoundHandler } from './misc/error.middleware.js'
-import pageRoutes from './routes/page.routes.js'
-import authRoutes from './routes/auth.routes.js'
+import pageRoutes from './page/page.routes.js'
+import authRoutes from './auth/auth.routes.js'
 
 // =====================
 // Initializing the app
 // =====================
 const app = express()
+
+// =====================
+// Logging setup
+// =====================
+app.use(morgan(config.isProduction ? 'combined' : 'dev'))
 
 // =====================
 // Middleware setup
@@ -56,8 +61,7 @@ if (!config.isProduction) {
 // =====================
 // Global Middleware
 // =====================
-app.use(loggingMiddleware)
-app.use(optionalAuth) // Add user to all requests if authenticated
+// app.use(optionalAuth) // Add user to all requests if authenticated
 
 // =====================
 // Routes setup
@@ -67,3 +71,5 @@ app.use('/auth', authRoutes)
 
 app.use(notFoundHandler)
 app.use(errorHandler)
+
+export { app }

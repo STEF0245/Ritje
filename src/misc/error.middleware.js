@@ -1,3 +1,5 @@
+import { config } from '../config/env.config.js'
+
 export const errorHandler = (err, req, res, next) => {
 	err.statusCode = err.statusCode || 500
 	err.status = err.status || 'error'
@@ -25,7 +27,11 @@ export const errorHandler = (err, req, res, next) => {
 }
 
 export const notFoundHandler = (req, res) => {
-	res.status(404).render('404', {
-		title: 'Oei, deze weg loopt dood'
+	res.status(404).render('error', {
+		title: 'Oei, deze weg loopt dood',
+		error: {
+			status: 404,
+			message: 'De pagina die je zoekt bestaat niet.'
+		}
 	})
 }
