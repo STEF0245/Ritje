@@ -1,0 +1,57 @@
+<%
+	const displayName =
+		user?.user_metadata?.full_name ||
+		user?.user_metadata?.name ||
+		user?.email ||
+		'Account'
+	const initials = displayName
+		.split(' ')
+		.filter(Boolean)
+		.slice(0, 2)
+		.map((part) => part[0]?.toUpperCase())
+		.join('') || 'A'
+%>
+
+<div class="flex items-center gap-3 text-sm font-medium">
+	<% if (user) { %>
+		<a
+			href="/profile"
+			class="hidden sm:flex items-center gap-3 rounded-full border border-slate-700/80 bg-slate-900/80 px-3 py-2 text-slate-100 transition hover:border-indigo-400 hover:text-white"
+		>
+			<span class="flex h-9 w-9 items-center justify-center rounded-full ride-gradient text-xs font-black text-white">
+				<%= initials %>
+			</span>
+			<span class="max-w-40 truncate"><%= displayName %></span>
+		</a>
+
+		<a
+			href='/profile'
+			class="sm:hidden flex h-11 w-11 items-center justify-center rounded-full border border-slate-700/80 bg-slate-900/80 text-xs font-black text-white transition hover:border-indigo-400"
+			aria-label="Ga naar je profiel"
+			title="<%= displayName %>"
+		>
+			<%= initials %>
+		</a>
+
+		<a
+			href='/auth/logout'
+			class="rounded-full border border-slate-700/80 px-4 py-2.5 text-slate-200 transition hover:border-rose-400 hover:text-white"
+		>
+			Uitloggen
+		</a>
+	<% } else { %>
+		<a
+			href='/auth/login'
+			class="rounded-full border border-slate-700/80 px-4 py-2.5 text-slate-200 transition hover:border-indigo-400 hover:text-white"
+		>
+			Inloggen
+		</a>
+
+		<a
+			href='/auth/register'
+			class="ride-gradient rounded-full px-5 py-2.5 font-bold text-white shadow-lg shadow-indigo-500/20 transition hover:scale-105"
+		>
+			Registreren
+		</a>
+	<% } %>
+</div>
