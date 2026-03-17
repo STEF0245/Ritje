@@ -5,6 +5,26 @@
 	<body class="min-h-screen flex flex-col">
 		<%- include('partials/header', { user }) %>
 
+            <form action="/auth/register" method="post" class="w-md mx-auto mt-10 p-6 bg-slate-800 rounded shadow">
+                <h1 class="text-2xl font-bold mb-4">Registreren</h1>
+
+                <label for="firstname" class="block text-sm font-medium mb-1">Voornaam</label>
+                <input type="text" name="firstname" id="firstname" placeholder="Peter" class="block w-full mb-4 p-2 rounded bg-slate-700 border border-slate-600 placeholder:text-gray-400" required>
+
+                <label for="lastname" class="block text-sm font-medium mb-1">Achternaam</label>
+                <input type="text" name="lastname" id="lastname" placeholder="Selie" class="block w-full mb-4 p-2 rounded bg-slate-700 border border-slate-600 placeholder:text-gray-400" required>
+
+                <label for="email" class="block text-sm font-medium mb-1">E-mail</label>
+                <input type="email" name="email" id="email" placeholder="peter.selie@ritje.be" class="block w-full mb-4 p-2 rounded bg-slate-700 border border-slate-600 placeholder:text-gray-400" required>
+
+                <label for="password" class="block text-sm font-medium mb-1">Wachtwoord</label>
+                <input type="password" name="password" id="password" placeholder="••••••••" class="block w-full mb-4 p-2 rounded bg-slate-700 border border-slate-600 placeholder:text-gray-400" required>
+
+                <label for="address" class="block text-sm font-medium mb-1">Adres</label>
+                <input type="text" name="address" id="address" placeholder="Denis Voetsstraat 21" class="block w-full mb-4 p-2 rounded bg-slate-700 border border-slate-600 placeholder:text-gray-400" required>
+
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Registreren</button>
+            </form>
 
         <%- include('partials/footer') %>
     </body>
