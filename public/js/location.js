@@ -88,32 +88,6 @@ function getCurrentAccurateLocation(options = {}) {
 	})
 }
 
-function getLocationCoordinates(address) {
-	const encodedAddress = encodeURIComponent(address)
-	return fetch(
-		`https://nominatim.openstreetmap.org/search?format=json&q=${encodedAddress}`
-	)
-		.then((response) => {
-			if (!response.ok) {
-				throw new Error('Geocoding failed')
-			}
-			return response.json()
-		})
-		.then((data) => {
-			if (data.length === 0) {
-				throw new Error('No results found for the given address')
-			}
-			return {
-				latitude: parseFloat(data[0].lat),
-				longitude: parseFloat(data[0].lon)
-			}
-		})
-		.catch((error) => {
-			console.error('Error fetching location coordinates:', error)
-			throw error
-		})
-}
-
 function updateCombinedAddress() {
 	const street = document.getElementById('street').value.trim()
 	const houseNumber = document.getElementById('house_number').value.trim()
@@ -125,16 +99,6 @@ function updateCombinedAddress() {
 	const lineTwo = [postalCode, city].filter(Boolean).join(' ')
 
 	addressField.value = [lineOne, lineTwo, country].filter(Boolean).join(', ')
-	getLocationCoordinates(addressField.value)
-		.then((coords) => {
-			latitudeField.value = coords.latitude
-			longitudeField.value = coords.longitude
-		})
-		.catch((error) => {
-			console.error('Error updating coordinates:', error)
-			latitudeField.value = ''
-			longitudeField.value = ''
-		})
 }
 
 fieldIds.forEach((id) => {
@@ -161,7 +125,11 @@ locationButton.addEventListener('click', async () => {
 		longitudeField.value = coords.longitude
 
 		const response = await fetch(
-			`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${coords.latitude}&lon=${coords.longitude}`
+			`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${coords.latitude}&lon=${coords.longitude}`,
+			{
+				headers: {
+					'User-Agent': 'Ritje. (https://localhost:3000)',
+			}
 		)
 
 		if (!response.ok) {
