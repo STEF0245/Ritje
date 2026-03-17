@@ -1,30 +1,180 @@
 <!DOCTYPE html>
 <html lang="nl" class="bg-slate-900 text-slate-200">
     <%- include('partials/head', { title }) %>
-    
+
 	<body class="min-h-screen flex flex-col">
 		<%- include('partials/header', { user }) %>
+        <main class="flex-1 px-6 py-12">
+            <section class="max-w-2xl mx-auto">
+                <div class="text-center mb-8">
+                    <p class="text-xs uppercase tracking-[0.2em] text-indigo-400 font-semibold">Ritje Account</p>
+                    <h1 class="text-3xl md:text-4xl font-black tracking-tight text-white mt-2">
+                        Registreren bij RITJE<span class="text-indigo-500">.</span>
+                    </h1>
+                    <p class="text-slate-400 mt-3">Maak je profiel aan en vind of deel ritten met je netwerk.</p>
+                </div>
 
-            <form action="/auth/register" method="post" class="w-md mx-auto mt-10 p-6 bg-slate-800 rounded shadow">
-                <h1 class="text-2xl font-bold mb-4">Registreren</h1>
+                <form
+                    action="/auth/register"
+                    method="post"
+                    class="ride-glass border border-slate-800 rounded-2xl p-6 md:p-8 shadow-xl"
+                >
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="firstname" class="block text-sm font-semibold mb-2 text-slate-300">Voornaam</label>
+                            <input
+                                type="text"
+                                name="firstname"
+                                id="firstname"
+                                autocomplete="given-name"
+                                placeholder="Peter"
+                                class="block w-full p-3 rounded-xl bg-slate-900/75 border border-slate-700 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                required
+                            />
+                        </div>
 
-                <label for="firstname" class="block text-sm font-medium mb-1">Voornaam</label>
-                <input type="text" name="firstname" id="firstname" placeholder="Peter" class="block w-full mb-4 p-2 rounded bg-slate-700 border border-slate-600 placeholder:text-gray-400" required>
+                        <div>
+                            <label for="lastname" class="block text-sm font-semibold mb-2 text-slate-300">Achternaam</label>
+                            <input
+                                type="text"
+                                name="lastname"
+                                id="lastname"
+                                autocomplete="family-name"
+                                placeholder="Selie"
+                                class="block w-full p-3 rounded-xl bg-slate-900/75 border border-slate-700 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                required
+                            />
+                        </div>
+                    </div>
 
-                <label for="lastname" class="block text-sm font-medium mb-1">Achternaam</label>
-                <input type="text" name="lastname" id="lastname" placeholder="Selie" class="block w-full mb-4 p-2 rounded bg-slate-700 border border-slate-600 placeholder:text-gray-400" required>
+                    <div class="mt-4">
+                        <label for="email" class="block text-sm font-semibold mb-2 text-slate-300">E-mail</label>
+                        <input
+                            type="email"
+                            name="email"
+                            id="email"
+                            autocomplete="email"
+                            placeholder="peter.selie@ritje.be"
+                            class="block w-full p-3 rounded-xl bg-slate-900/75 border border-slate-700 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            required
+                        />
+                    </div>
 
-                <label for="email" class="block text-sm font-medium mb-1">E-mail</label>
-                <input type="email" name="email" id="email" placeholder="peter.selie@ritje.be" class="block w-full mb-4 p-2 rounded bg-slate-700 border border-slate-600 placeholder:text-gray-400" required>
+                    <div class="mt-4">
+                        <label for="password" class="block text-sm font-semibold mb-2 text-slate-300">Wachtwoord</label>
+                        <input
+                            type="password"
+                            name="password"
+                            id="password"
+                            autocomplete="new-password"
+                            placeholder="••••••••"
+                            class="block w-full p-3 rounded-xl bg-slate-900/75 border border-slate-700 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            required
+                        />
+                    </div>
 
-                <label for="password" class="block text-sm font-medium mb-1">Wachtwoord</label>
-                <input type="password" name="password" id="password" placeholder="••••••••" class="block w-full mb-4 p-2 rounded bg-slate-700 border border-slate-600 placeholder:text-gray-400" required>
+                    <div class="mt-6 border-t border-slate-800 pt-6">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                            <h2 class="text-base font-bold text-white">Adresgegevens</h2>
+                            <button
+                                type="button"
+                                id="autofill-location"
+                                class="px-4 py-2 text-sm font-semibold rounded-xl bg-slate-800 border border-slate-700 text-slate-200 hover:border-indigo-500 hover:text-indigo-300 cursor-pointer disabled:cursor-not-allowed disabled:border-slate-700 disabled:text-slate-500 transition"
+                            >
+                                Gebruik mijn locatie
+                            </button>
+                        </div>
 
-                <label for="address" class="block text-sm font-medium mb-1">Adres</label>
-                <input type="text" name="address" id="address" placeholder="Denis Voetsstraat 21" class="block w-full mb-4 p-2 rounded bg-slate-700 border border-slate-600 placeholder:text-gray-400" required>
+                        <p id="location-status" class="text-xs text-slate-400 mb-4">Vul je adres handmatig in of gebruik je huidige locatie.</p>
 
-                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Registreren</button>
-            </form>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="md:col-span-2">
+                                <label for="street" class="block text-sm font-semibold mb-2 text-slate-300">Straat</label>
+                                <input
+                                    type="text"
+                                    name="street"
+                                    id="street"
+                                    placeholder="Denis Voetsstraat"
+                                    autocomplete="address-line1"
+                                    class="block w-full p-3 rounded-xl bg-slate-900/75 border border-slate-700 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    required
+                                />
+                            </div>
+
+                            <div>
+                                <label for="house_number" class="block text-sm font-semibold mb-2 text-slate-300">Nummer</label>
+                                <input
+                                    type="text"
+                                    name="house_number"
+                                    id="house_number"
+                                    placeholder="21"
+                                    autocomplete="address-line2"
+                                    class="block w-full p-3 rounded-xl bg-slate-900/75 border border-slate-700 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                            <div>
+                                <label for="postal_code" class="block text-sm font-semibold mb-2 text-slate-300">Postcode</label>
+                                <input
+                                    type="text"
+                                    name="postal_code"
+                                    id="postal_code"
+                                    placeholder="2260"
+                                    autocomplete="postal-code"
+                                    class="block w-full p-3 rounded-xl bg-slate-900/75 border border-slate-700 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    required
+                                />
+                            </div>
+
+                            <div>
+                                <label for="city" class="block text-sm font-semibold mb-2 text-slate-300">Dorp/Stad</label>
+                                <input
+                                    type="text"
+                                    name="city"
+                                    id="city"
+                                    placeholder="Westerlo"
+                                    autocomplete="address-level2"
+                                    class="block w-full p-3 rounded-xl bg-slate-900/75 border border-slate-700 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    required
+                                />
+                            </div>
+
+                            <div>
+                                <label for="country" class="block text-sm font-semibold mb-2 text-slate-300">Land</label>
+                                <input
+                                    type="text"
+                                    name="country"
+                                    id="country"
+                                    placeholder="Belgie"
+                                    autocomplete="country-name"
+                                    class="block w-full p-3 rounded-xl bg-slate-900/75 border border-slate-700 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <input type="hidden" name="address" id="address" />
+                        <input type="hidden" name="latitude" id="latitude" />
+                        <input type="hidden" name="longitude" id="longitude" />
+                    </div>
+
+                    <div class="mt-6 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+                        <a href="/auth/login" class="text-sm text-slate-400 hover:text-indigo-300">Heb je al een account? Log in</a>
+                        <button
+                            type="submit"
+                            class="ride-gradient hover:brightness-110 text-white font-bold py-3 px-5 rounded-xl transition"
+                        >
+                            Registreren
+                        </button>
+                    </div>
+                </form>
+            </section>
+        </main>
+
+        <script src="/js/location.js"></script>
 
         <%- include('partials/footer') %>
     </body>
