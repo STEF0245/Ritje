@@ -79,8 +79,8 @@ export const requireAuth = async (req, res, next) => {
 			clearAuthCookies(res)
 			return redirectToLoginWithReason(
 				res,
-				'Je sessie is verlopen. Log opnieuw in om verder te gaan.',
-				'warning'
+				'Je moet ingelogd zijn om deze pagina te bekijken.',
+				'error'
 			)
 		}
 
