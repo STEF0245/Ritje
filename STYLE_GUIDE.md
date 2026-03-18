@@ -2,19 +2,23 @@
 
 ## Theme Identity
 
-- Mood: modern dark interface with clean flat surfaces.
-- Primary background: deep slate solid background.
-- Accent color: teal (`--ride-accent`), with soft teal for labels (`--ride-accent-soft`).
+- Mood: minimal almost-black interface with clean flat surfaces.
+- Primary background: near-black solid background.
+- Accent color: blue (`--ride-accent`).
 - Typography style: bold, high-contrast headings with muted supporting text.
 
 ## Design Tokens
 
 These tokens are defined in [public/css/tailwind.css](public/css/tailwind.css):
 
-- `--ride-bg-900`, `--ride-bg-800`, `--ride-bg-700`
-- `--ride-border`
-- `--ride-text`, `--ride-muted`
-- `--ride-accent`, `--ride-accent-soft`
+- Base palette (5 colors only):
+- `--ride-c1`: near-black
+- `--ride-c2`: dark mid tone
+- `--ride-c3`: medium mid tone
+- `--ride-c4`: near-white
+- `--ride-c5`: blue accent
+
+Semantic aliases are mapped from the 5 base colors for maintainability.
 
 ## Reusable Theme Classes
 
@@ -50,6 +54,7 @@ Color mapping:
 - Keep page content inside a centered section (`max-w-*` + `mx-auto`).
 - Wrap cards/forms in `theme-panel` for visual consistency.
 - Keep effects minimal: no page accents and no heavy visual effects.
+- Do not use pure white (`#ffffff`) or pure black (`#000000`). Use near variants from the palette.
 - Do not add page-specific inline `<style>` unless unavoidable.
 
 ## Content Rules

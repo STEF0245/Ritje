@@ -2,14 +2,21 @@
 
 :root {
 	color-scheme: dark;
-	--ride-bg-900: #020617;
-	--ride-bg-800: #0f172a;
-	--ride-bg-700: #1e293b;
-	--ride-border: #334155;
-	--ride-text: #e2e8f0;
-	--ride-muted: #94a3b8;
-	--ride-accent: #0ea5a8;
-	--ride-accent-soft: #5eead4;
+	/* 5-color palette: near-black, two middle tones, near-white, blue accent */
+	--ride-c1: #0b0f14;
+	--ride-c2: #1c2430;
+	--ride-c3: #3a4658;
+	--ride-c4: #e6edf7;
+	--ride-c5: #3b82f6;
+
+	/* semantic aliases */
+	--ride-bg-900: var(--ride-c1);
+	--ride-bg-800: var(--ride-c2);
+	--ride-border: var(--ride-c3);
+	--ride-text: var(--ride-c4);
+	--ride-muted: color-mix(in srgb, var(--ride-c4) 62%, var(--ride-c3));
+	--ride-accent: var(--ride-c5);
+	--ride-accent-soft: color-mix(in srgb, var(--ride-c5) 72%, var(--ride-c4));
 }
 
 /* Used by the navbar in views/partials/header.ejs */
@@ -37,7 +44,7 @@
 	text-transform: uppercase;
 	letter-spacing: 0.2em;
 	font-weight: 700;
-	color: var(--ride-accent-soft);
+	color: var(--ride-accent);
 }
 
 .theme-heading {
@@ -45,7 +52,7 @@
 	line-height: 1.15;
 	font-weight: 900;
 	letter-spacing: -0.02em;
-	color: #ffffff;
+	color: var(--ride-text);
 }
 
 .theme-subtext {
@@ -64,13 +71,13 @@
 	width: 100%;
 	padding: 0.75rem;
 	border-radius: 0.75rem;
-	border: 1px solid #475569;
+	border: 1px solid var(--ride-border);
 	background: rgba(15, 23, 42, 0.75);
-	color: #f1f5f9;
+	color: var(--ride-text);
 }
 
 .theme-input::placeholder {
-	color: #64748b;
+	color: color-mix(in srgb, var(--ride-c3) 70%, var(--ride-c4));
 }
 
 .theme-input:focus {
@@ -87,4 +94,17 @@
 
 .theme-link:hover {
 	color: var(--ride-accent-soft);
+}
+
+.theme-accent-text {
+	color: var(--ride-accent);
+}
+
+/* Keep existing utility class usage near-white/near-black without pure values */
+.text-white {
+	color: var(--ride-text) !important;
+}
+
+.hover\:text-white:hover {
+	color: var(--ride-text) !important;
 }
