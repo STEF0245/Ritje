@@ -105,3 +105,27 @@ export const loginWithPassword = async (payload) => {
 		password: payload.password
 	})
 }
+
+export const refreshSession = async (refreshToken) => {
+	return supabase.auth.refreshSession({
+		refresh_token: refreshToken
+	})
+}
+
+export const getUserFromAccessToken = async (accessToken) => {
+	const {
+		data: { user },
+		error
+	} = await supabase.auth.getUser(accessToken)
+	if (error) {
+		throw error
+	}
+	return user
+}
+
+export const logOut = async (accessToken, scope = 'local') => {
+	return supabase.auth.signOut({
+		accessToken,
+		scope
+	})
+}

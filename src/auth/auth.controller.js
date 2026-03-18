@@ -5,9 +5,11 @@ import {
 	hasRequiredRegisterFields,
 	loginWithPassword,
 	registerWithPassword,
+	logOut,
 	setAuthCookies,
 	setAuthError
 } from './auth.service.js'
+import { ACCESS_TOKEN_COOKIE } from './auth.constants.js'
 
 export const getLoginPage = (req, res) => {
 	const { authErrorReason, authErrorType } = consumeAuthReason(req, res)
@@ -107,7 +109,12 @@ export const loginController = async (req, res) => {
 	}
 }
 
-export const logoutController = (req, res) => {
+export const logoutController = async (req, res) => {
+	try {
+		await logOut(req.cookies[ACCESS_TOKEN_COOKIE])
+	} catch (error) {
+		console.error('Logout error:', error)
+	}
 	clearAuthCookies(res)
 	return res.redirect('/auth/login')
 }
