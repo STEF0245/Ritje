@@ -1,7 +1,4 @@
-import {
-	parseCoordinate,
-	reverseGeocode
-} from './location.service.js'
+import { parseCoordinate, reverseGeocode } from './location.service.js'
 
 export const reverseGeocodeController = async (req, res) => {
 	try {

@@ -55,7 +55,9 @@ const isProviderAvailable = (provider) => {
 }
 
 export const getProvider = () => {
-	const preferredProvider = (process.env.GEOCODING_PROVIDER || '').toLowerCase()
+	const preferredProvider = (
+		process.env.GEOCODING_PROVIDER || ''
+	).toLowerCase()
 
 	if (KNOWN_PROVIDERS.includes(preferredProvider)) {
 		return preferredProvider
