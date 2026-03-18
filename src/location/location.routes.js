@@ -1,4 +1,5 @@
 import express from 'express'
+import rateLimit from 'express-rate-limit'
 
 const router = express.Router()
 
@@ -8,6 +9,17 @@ const NOMINATIM_USER_AGENT =
 	process.env.GEOCODER_USER_AGENT ||
 	'Ritje/1.0 (reverse geocoding endpoint; contact: admin@example.com)'
 
+const RATE_LIMIT_CONFIG = {
+	nominatim: {
+		windowMs: Number(process.env.NOMINATIM_RATE_LIMIT_WINDOW_MS || 1000),
+		max: Number(process.env.NOMINATIM_RATE_LIMIT_MAX || 1)
+	},
+	locationiq: {
+		windowMs: Number(process.env.LOCATIONIQ_RATE_LIMIT_WINDOW_MS || 1000),
+		max: Number(process.env.LOCATIONIQ_RATE_LIMIT_MAX || 5)
+	}
+}
+
 const getProvider = () => {
 	if (process.env.LOCATIONIQ_API_KEY) {
 		return 'locationiq'
@@ -15,6 +27,28 @@ const getProvider = () => {
 
 	return 'nominatim'
 }
+
+const buildProviderLimiter = (providerName, config) =>
+	rateLimit({
+		windowMs: config.windowMs,
+		max: config.max,
+		standardHeaders: true,
+		legacyHeaders: false,
+		skip: () => getProvider() !== providerName,
+		message: {
+			error: `Too many reverse-geocode requests for ${providerName}`,
+			provider: providerName
+		}
+	})
+
+const nominatimLimiter = buildProviderLimiter(
+	'nominatim',
+	RATE_LIMIT_CONFIG.nominatim
+)
+const locationIqLimiter = buildProviderLimiter(
+	'locationiq',
+	RATE_LIMIT_CONFIG.locationiq
+)
 
 const parseCoordinate = (value, label, min, max) => {
 	const parsed = Number(value)
@@ -111,39 +145,45 @@ const reverseWithLocationIQ = async (lat, lon) => {
 	}
 }
 
-router.post('/reverse-geocode', async (req, res) => {
-	try {
-		const lat = parseCoordinate(req.body?.lat, 'lat', -90, 90)
-		const lon = parseCoordinate(req.body?.lon, 'lon', -180, 180)
-		const provider = getProvider()
-		const result =
-			provider === 'locationiq'
-				? await reverseWithLocationIQ(lat, lon)
-				: await reverseWithNominatim(lat, lon)
+router.post(
+	'/reverse-geocode',
+	nominatimLimiter,
+	locationIqLimiter,
+	async (req, res) => {
+		try {
+			const lat = parseCoordinate(req.body?.lat, 'lat', -90, 90)
+			const lon = parseCoordinate(req.body?.lon, 'lon', -180, 180)
+			const provider = getProvider()
 
-		if (!result) {
-			return res.status(404).json({
-				error: 'No address found for provided coordinates'
+			const result =
+				provider === 'locationiq'
+					? await reverseWithLocationIQ(lat, lon)
+					: await reverseWithNominatim(lat, lon)
+
+			if (!result) {
+				return res.status(404).json({
+					error: 'No address found for provided coordinates'
+				})
+			}
+
+			return res.status(200).json({
+				lat,
+				lon,
+				provider,
+				displayName: result.displayName,
+				address: result.address,
+				raw: result.raw
+			})
+		} catch (error) {
+			const isValidationError =
+				typeof error?.message === 'string' &&
+				error.message.includes('must be')
+
+			return res.status(isValidationError ? 400 : 502).json({
+				error: error?.message || 'Reverse geocoding failed'
 			})
 		}
-
-		return res.status(200).json({
-			lat,
-			lon,
-			provider,
-			displayName: result.displayName,
-			address: result.address,
-			raw: result.raw
-		})
-	} catch (error) {
-		const isValidationError =
-			typeof error?.message === 'string' &&
-			error.message.includes('must be')
-
-		return res.status(isValidationError ? 400 : 502).json({
-			error: error?.message || 'Reverse geocoding failed'
-		})
 	}
-})
+)
 
 export default router
