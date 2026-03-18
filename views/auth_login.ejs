@@ -14,6 +14,16 @@
                     <p class="text-slate-400 mt-3">Log in en ga meteen verder met je volgende rit.</p>
                 </div>
 
+                <% if (authErrorReason) { %>
+                    <div
+                        role="alert"
+                        class="mb-6 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100"
+                    >
+                        <p class="font-semibold">Aanmelden vereist</p>
+                        <p class="mt-1 text-amber-200"><%= authErrorReason %></p>
+                    </div>
+                <% } %>
+
                 <form
                     action="/auth/login"
                     method="post"
