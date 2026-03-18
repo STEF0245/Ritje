@@ -14,6 +14,16 @@
                     <p class="text-slate-400 mt-3">Maak je profiel aan en vind of deel ritten met je netwerk.</p>
                 </div>
 
+                <% if (authErrorReason) { %>
+                    <div
+                        role="alert"
+                        class="mb-6 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100"
+                    >
+                        <p class="font-semibold">Registratiebericht</p>
+                        <p class="mt-1 text-amber-200"><%= authErrorReason %></p>
+                    </div>
+                <% } %>
+
                 <form
                     action="/auth/register"
                     method="post"

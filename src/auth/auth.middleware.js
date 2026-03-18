@@ -1,3 +1,5 @@
+import { supabase } from '../config/supabase.client.js'
+
 const AUTH_ERROR_COOKIE = 'auth-error-reason'
 
 const redirectToLoginWithReason = (res, reason) => {
