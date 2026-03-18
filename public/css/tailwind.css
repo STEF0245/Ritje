@@ -44,7 +44,7 @@
 	text-transform: uppercase;
 	letter-spacing: 0.2em;
 	font-weight: 700;
-	color: var(--ride-accent);
+	color: var(--ride-muted);
 }
 
 .theme-heading {
@@ -63,14 +63,14 @@
 .theme-panel {
 	border: 1px solid color-mix(in srgb, var(--ride-border) 70%, transparent);
 	background: color-mix(in srgb, var(--ride-bg-800) 90%, transparent);
-	border-radius: 1rem;
+	border-radius: 0.625rem;
 	box-shadow: 0 10px 24px rgba(2, 6, 23, 0.22);
 }
 
 .theme-input {
 	width: 100%;
 	padding: 0.75rem;
-	border-radius: 0.75rem;
+	border-radius: 0.5rem;
 	border: 1px solid var(--ride-border);
 	background: rgba(15, 23, 42, 0.75);
 	color: var(--ride-text);
@@ -98,6 +98,69 @@
 
 .theme-accent-text {
 	color: var(--ride-accent);
+}
+
+.theme-pill {
+	border-radius: 0.625rem;
+}
+
+.theme-btn-primary {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	background: var(--ride-accent);
+	color: var(--ride-c4);
+	border: 1px solid color-mix(in srgb, var(--ride-accent) 70%, var(--ride-c4));
+	border-radius: 0.5rem;
+	font-weight: 700;
+	transition:
+		filter 0.2s ease,
+		transform 0.2s ease;
+}
+
+.theme-btn-primary:hover {
+	filter: brightness(1.06);
+}
+
+.theme-btn-secondary {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	background: transparent;
+	color: var(--ride-text);
+	border: 1px solid color-mix(in srgb, var(--ride-border) 85%, transparent);
+	border-radius: 0.5rem;
+	font-weight: 600;
+	transition:
+		border-color 0.2s ease,
+		color 0.2s ease;
+}
+
+.theme-btn-secondary:hover {
+	border-color: var(--ride-accent);
+	color: var(--ride-text);
+}
+
+.theme-avatar {
+	border-radius: 0.5rem;
+	background: color-mix(in srgb, var(--ride-bg-700) 88%, transparent);
+	border: 1px solid color-mix(in srgb, var(--ride-border) 85%, transparent);
+	color: var(--ride-text);
+}
+
+.theme-footer-shell {
+	border-top: 1px solid
+		color-mix(in srgb, var(--ride-border) 75%, transparent);
+	background: color-mix(in srgb, var(--ride-bg-900) 90%, transparent);
+}
+
+.theme-footer-link {
+	color: var(--ride-muted);
+	transition: color 0.2s ease;
+}
+
+.theme-footer-link:hover {
+	color: var(--ride-accent-soft);
 }
 
 /* Keep existing utility class usage near-white/near-black without pure values */

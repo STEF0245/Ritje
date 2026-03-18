@@ -4,8 +4,9 @@
 
 - Mood: minimal almost-black interface with clean flat surfaces.
 - Primary background: near-black solid background.
-- Accent color: blue (`--ride-accent`).
+- Accent color: blue (`--ride-accent`) used only for high-priority actions.
 - Typography style: bold, high-contrast headings with muted supporting text.
+- Shape language: low radius (less rounded corners).
 
 ## Design Tokens
 
@@ -32,8 +33,20 @@ Use these classes before adding custom styling:
 - `theme-panel`: glass-like content card with border and shadow.
 - `theme-input`: standard form field style.
 - `theme-link`: subtle link with consistent hover behavior.
-- `ride-accent`: accent button/avatar fill (legacy class name, now flat color).
+- `theme-btn-primary`: high-emphasis action button (blue).
+- `theme-btn-secondary`: neutral action button (non-blue).
+- `theme-pill`: compact low-radius shape for chips/buttons.
+- `theme-avatar`: neutral avatar chip.
+- `theme-footer-shell`, `theme-footer-link`: footer layout and link styling.
+- `ride-accent`: legacy class; prefer `theme-btn-primary` for new work.
 - `ride-glass`: translucent glass background for header/footer.
+
+## Theme-First Workflow
+
+- Always prefer shared theme classes over inline utility duplication.
+- If a style is used in 2+ places, move it into [public/css/tailwind.css](public/css/tailwind.css).
+- Update component classes once, then reuse everywhere to avoid repeated edits.
+- Keep blue accents limited to `theme-btn-primary` and critical status highlights.
 
 ## Alerts
 
@@ -55,6 +68,7 @@ Color mapping:
 - Wrap cards/forms in `theme-panel` for visual consistency.
 - Keep effects minimal: no page accents and no heavy visual effects.
 - Do not use pure white (`#ffffff`) or pure black (`#000000`). Use near variants from the palette.
+- Keep corners subtle: avoid highly rounded pills unless functionally required.
 - Do not add page-specific inline `<style>` unless unavoidable.
 
 ## Content Rules

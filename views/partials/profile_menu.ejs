@@ -16,9 +16,9 @@
 	<% if (user) { %>
 		<a
 			href="/profile"
-			class="hidden md:flex items-center gap-3 rounded-full border border-slate-700/80 bg-slate-900/80 px-3 py-2 text-slate-100 transition hover:border-blue-400 hover:text-white"
+			class="hidden md:flex items-center gap-3 theme-pill border border-slate-700/80 bg-slate-900/80 px-3 py-2 text-slate-100 transition hover:border-blue-400"
 		>
-			<span class="flex h-9 w-9 items-center justify-center rounded-full ride-accent text-xs font-black text-white">
+			<span class="theme-avatar flex h-9 w-9 items-center justify-center text-xs font-black">
 				<%= initials %>
 			</span>
 			<span class="max-w-40 truncate"><%= displayName %></span>
@@ -26,7 +26,7 @@
 
 		<a
 			href='/profile'
-			class="md:hidden flex h-11 w-11 items-center justify-center rounded-full border border-slate-700/80 bg-slate-900/80 text-xs font-black text-white transition hover:border-blue-400"
+			class="md:hidden theme-pill flex h-11 w-11 items-center justify-center border border-slate-700/80 bg-slate-900/80 text-xs font-black text-slate-100 transition hover:border-blue-400"
 			aria-label="Ga naar je profiel"
 			title="<%= displayName %>"
 		>
@@ -35,21 +35,21 @@
 
 		<a
 			href='/auth/logout'
-			class="rounded-full border border-slate-700/80 px-4 py-2.5 text-slate-200 transition hover:border-rose-400 hover:text-white"
+			class="theme-btn-secondary px-4 py-2.5 hover:border-rose-400"
 		>
 			Uitloggen
 		</a>
 	<% } else { %>
 		<a
 			href='/auth/login'
-			class="rounded-full border border-slate-700/80 px-4 py-2.5 text-slate-200 transition hover:border-blue-400 hover:text-white"
+			class="theme-btn-secondary px-4 py-2.5"
 		>
 			Inloggen
 		</a>
 
 		<a
 			href='/auth/register'
-			class="ride-accent rounded-full px-5 py-2.5 font-bold text-white transition hover:brightness-110"
+			class="theme-btn-primary px-5 py-2.5"
 		>
 			Registreren
 		</a>
