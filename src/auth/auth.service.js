@@ -75,6 +75,8 @@ export const hasRequiredRegisterFields = (payload) => {
 const mapRegisterMetadata = (payload) => ({
 	first_name: payload.firstname,
 	last_name: payload.lastname,
+	full_name: `${payload.firstname || ''} ${payload.lastname || ''}`.trim(),
+	display_name: `${payload.firstname || ''} ${payload.lastname || ''}`.trim(),
 	address: payload.address,
 	street: payload.street,
 	house_number: payload.house_number,
@@ -93,6 +95,11 @@ export const registerWithPassword = async (payload) => {
 			data: mapRegisterMetadata(payload)
 		}
 	})
+}
+
+export const isLikelyExistingUserSignup = (signupData) => {
+	const identities = signupData?.user?.identities
+	return Array.isArray(identities) && identities.length === 0
 }
 
 export const hasRequiredLoginFields = (payload) => {

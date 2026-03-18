@@ -3,6 +3,7 @@ import {
 	consumeAuthReason,
 	hasRequiredLoginFields,
 	hasRequiredRegisterFields,
+	isLikelyExistingUserSignup,
 	loginWithPassword,
 	registerWithPassword,
 	logOut,
@@ -52,6 +53,15 @@ export const registerController = async (req, res) => {
 		if (data?.session) {
 			setAuthCookies(res, data.session)
 			return res.redirect('/')
+		}
+
+		if (isLikelyExistingUserSignup(data)) {
+			setAuthError(
+				res,
+				'Er bestaat al een account met dit e-mailadres. Log in of herstel je wachtwoord.',
+				'warning'
+			)
+			return res.redirect('/auth/login')
 		}
 
 		setAuthError(
