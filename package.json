@@ -17,9 +17,6 @@
 		"dotenv": "^17.3.1",
 		"ejs": "^5.0.1",
 		"express": "^5.2.1",
-		"happy-dom": "^20.8.4",
-		"leaflet": "^1.9.4",
-		"leaflet-control-geocoder": "^3.3.1",
 		"morgan": "^1.10.1",
 		"nodemon": "^3.1.14",
 		"path": "^0.12.7"

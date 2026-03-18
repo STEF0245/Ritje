@@ -1,60 +1,19 @@
 import express from 'express'
-import { Window } from 'happy-dom'
 
 const router = express.Router()
 
+const NOMINATIM_ENDPOINT = 'https://nominatim.openstreetmap.org/reverse'
+const LOCATIONIQ_ENDPOINT = 'https://us1.locationiq.com/v1/reverse'
 const NOMINATIM_USER_AGENT =
 	process.env.GEOCODER_USER_AGENT ||
 	'Ritje/1.0 (reverse geocoding endpoint; contact: admin@example.com)'
 
-let geocoderPromise
-
-const defineGlobal = (name, value) => {
-	Object.defineProperty(globalThis, name, {
-		value,
-		writable: true,
-		configurable: true
-	})
-}
-
-const getNominatimGeocoder = async () => {
-	if (!geocoderPromise) {
-		geocoderPromise = (async () => {
-			const window = new Window()
-
-			defineGlobal('window', window)
-			defineGlobal('document', window.document)
-			if (!globalThis.navigator) {
-				defineGlobal('navigator', window.navigator)
-			}
-			if (!globalThis.screen) {
-				defineGlobal('screen', window.screen)
-			}
-			defineGlobal('HTMLElement', window.HTMLElement)
-			defineGlobal('SVGElement', window.SVGElement)
-			defineGlobal('XMLHttpRequest', window.XMLHttpRequest)
-
-			const nativeFetch = globalThis.fetch.bind(globalThis)
-			globalThis.fetch = (input, init = {}) => {
-				const headers = new Headers(init.headers || {})
-				if (!headers.has('User-Agent')) {
-					headers.set('User-Agent', NOMINATIM_USER_AGENT)
-				}
-				if (!headers.has('Accept')) {
-					headers.set('Accept', 'application/json')
-				}
-
-				return nativeFetch(input, { ...init, headers })
-			}
-
-			const geocoderModule = await import('leaflet-control-geocoder')
-			return geocoderModule.geocoders.nominatim({
-				serviceUrl: 'https://nominatim.openstreetmap.org/'
-			})
-		})()
+const getProvider = () => {
+	if (process.env.LOCATIONIQ_API_KEY) {
+		return 'locationiq'
 	}
 
-	return geocoderPromise
+	return 'nominatim'
 }
 
 const parseCoordinate = (value, label, min, max) => {
@@ -71,17 +30,98 @@ const parseCoordinate = (value, label, min, max) => {
 	return parsed
 }
 
+const mapAddress = (address = {}) => ({
+	street: address.road || null,
+	houseNumber: address.house_number || null,
+	postalCode: address.postcode || null,
+	city: address.city || address.town || address.village || null,
+	country: address.country || null
+})
+
+const reverseWithNominatim = async (lat, lon) => {
+	const geocoderURL = new URL(NOMINATIM_ENDPOINT)
+	geocoderURL.searchParams.set('format', 'jsonv2')
+	geocoderURL.searchParams.set('lat', String(lat))
+	geocoderURL.searchParams.set('lon', String(lon))
+	geocoderURL.searchParams.set('addressdetails', '1')
+
+	const response = await fetch(geocoderURL, {
+		headers: {
+			'User-Agent': NOMINATIM_USER_AGENT,
+			Accept: 'application/json'
+		}
+	})
+
+	if (!response.ok) {
+		if (response.status === 403) {
+			throw new Error(
+				'Nominatim blocked this server request (403). Set LOCATIONIQ_API_KEY to use LocationIQ instead.'
+			)
+		}
+
+		throw new Error(`Nominatim failed with status ${response.status}`)
+	}
+
+	const data = await response.json()
+
+	if (!data?.display_name) {
+		return null
+	}
+
+	return {
+		displayName: data.display_name,
+		address: mapAddress(data.address),
+		raw: data
+	}
+}
+
+const reverseWithLocationIQ = async (lat, lon) => {
+	const apiKey = process.env.LOCATIONIQ_API_KEY
+
+	if (!apiKey) {
+		throw new Error('Missing LOCATIONIQ_API_KEY for LocationIQ provider')
+	}
+
+	const geocoderURL = new URL(LOCATIONIQ_ENDPOINT)
+	geocoderURL.searchParams.set('key', apiKey)
+	geocoderURL.searchParams.set('lat', String(lat))
+	geocoderURL.searchParams.set('lon', String(lon))
+	geocoderURL.searchParams.set('format', 'json')
+
+	const response = await fetch(geocoderURL, {
+		headers: {
+			Accept: 'application/json'
+		}
+	})
+
+	if (!response.ok) {
+		throw new Error(`LocationIQ failed with status ${response.status}`)
+	}
+
+	const data = await response.json()
+
+	if (!data?.display_name) {
+		return null
+	}
+
+	return {
+		displayName: data.display_name,
+		address: mapAddress(data.address),
+		raw: data
+	}
+}
+
 router.post('/reverse-geocode', async (req, res) => {
 	try {
 		const lat = parseCoordinate(req.body?.lat, 'lat', -90, 90)
 		const lon = parseCoordinate(req.body?.lon, 'lon', -180, 180)
-		const geocoder = await getNominatimGeocoder()
-		const matches = await geocoder.reverse({ lat, lng: lon }, 4096)
-		const match = matches?.[0]
-		const properties = match?.properties || {}
-		const address = properties.address || {}
+		const provider = getProvider()
+		const result =
+			provider === 'locationiq'
+				? await reverseWithLocationIQ(lat, lon)
+				: await reverseWithNominatim(lat, lon)
 
-		if (!match) {
+		if (!result) {
 			return res.status(404).json({
 				error: 'No address found for provided coordinates'
 			})
@@ -90,15 +130,10 @@ router.post('/reverse-geocode', async (req, res) => {
 		return res.status(200).json({
 			lat,
 			lon,
-			displayName: match.name || null,
-			address: {
-				street: address.road || null,
-				houseNumber: address.house_number || null,
-				postalCode: address.postcode || null,
-				city: address.city || address.town || address.village || null,
-				country: address.country || null
-			},
-			raw: properties
+			provider,
+			displayName: result.displayName,
+			address: result.address,
+			raw: result.raw
 		})
 	} catch (error) {
 		const isValidationError =
@@ -106,9 +141,7 @@ router.post('/reverse-geocode', async (req, res) => {
 			error.message.includes('must be')
 
 		return res.status(isValidationError ? 400 : 502).json({
-			error:
-				error?.message ||
-				'Reverse geocoding failed via leaflet-control-geocoder'
+			error: error?.message || 'Reverse geocoding failed'
 		})
 	}
 })
