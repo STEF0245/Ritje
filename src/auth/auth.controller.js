@@ -10,20 +10,22 @@ import {
 } from './auth.service.js'
 
 export const getLoginPage = (req, res) => {
-	const authErrorReason = consumeAuthReason(req, res)
+	const { authErrorReason, authErrorType } = consumeAuthReason(req, res)
 
 	res.render('auth_login', {
 		title: 'Inloggen',
-		authErrorReason
+		authErrorReason,
+		authErrorType
 	})
 }
 
 export const getRegisterPage = (req, res) => {
-	const authErrorReason = consumeAuthReason(req, res)
+	const { authErrorReason, authErrorType } = consumeAuthReason(req, res)
 
 	res.render('auth_register', {
 		title: 'Registreren',
-		authErrorReason
+		authErrorReason,
+		authErrorType
 	})
 }
 
@@ -32,7 +34,8 @@ export const registerController = async (req, res) => {
 		if (!hasRequiredRegisterFields(req.body)) {
 			setAuthError(
 				res,
-				'Vul alle verplichte velden in om te registreren.'
+				'Vul alle verplichte velden in om te registreren.',
+				'error'
 			)
 			return res.redirect('/auth/register')
 		}
@@ -40,7 +43,7 @@ export const registerController = async (req, res) => {
 		const { data, error } = await registerWithPassword(req.body)
 
 		if (error) {
-			setAuthError(res, error.message)
+			setAuthError(res, error.message, 'error')
 			return res.redirect('/auth/register')
 		}
 
@@ -51,14 +54,16 @@ export const registerController = async (req, res) => {
 
 		setAuthError(
 			res,
-			'Controleer je e-mail om je account te bevestigen en log daarna in.'
+			'Controleer je e-mail om je account te bevestigen en log daarna in.',
+			'info'
 		)
 		return res.redirect('/auth/login')
 	} catch (error) {
 		console.error('Register route error:', error)
 		setAuthError(
 			res,
-			'Registreren is momenteel niet beschikbaar. Probeer opnieuw.'
+			'Registreren is momenteel niet beschikbaar. Probeer opnieuw.',
+			'error'
 		)
 		return res.redirect('/auth/register')
 	}
@@ -67,7 +72,11 @@ export const registerController = async (req, res) => {
 export const loginController = async (req, res) => {
 	try {
 		if (!hasRequiredLoginFields(req.body)) {
-			setAuthError(res, 'Vul je e-mail en wachtwoord in om in te loggen.')
+			setAuthError(
+				res,
+				'Vul je e-mail en wachtwoord in om in te loggen.',
+				'error'
+			)
 			return res.redirect('/auth/login')
 		}
 
@@ -78,7 +87,8 @@ export const loginController = async (req, res) => {
 			setAuthError(
 				res,
 				error?.message ||
-					'Inloggen is mislukt. Controleer je gegevens en probeer opnieuw.'
+					'Inloggen is mislukt. Controleer je gegevens en probeer opnieuw.',
+				'error'
 			)
 			return res.redirect('/auth/login')
 		}
@@ -90,8 +100,14 @@ export const loginController = async (req, res) => {
 		clearAuthCookies(res)
 		setAuthError(
 			res,
-			'Inloggen is momenteel niet beschikbaar. Probeer opnieuw.'
+			'Inloggen is momenteel niet beschikbaar. Probeer opnieuw.',
+			'error'
 		)
 		return res.redirect('/auth/login')
 	}
+}
+
+export const logoutController = (req, res) => {
+	clearAuthCookies(res)
+	return res.redirect('/auth/login')
 }

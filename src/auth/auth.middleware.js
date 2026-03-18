@@ -2,8 +2,8 @@ import { supabase } from '../config/supabase.client.js'
 import { ACCESS_TOKEN_COOKIE } from './auth.constants.js'
 import { clearAuthCookies, setAuthError } from './auth.service.js'
 
-const redirectToLoginWithReason = (res, reason) => {
-	setAuthError(res, reason, 15 * 1000)
+const redirectToLoginWithReason = (res, reason, type) => {
+	setAuthError(res, reason, type, 15 * 1000)
 	return res.redirect('/auth/login')
 }
 
@@ -33,7 +33,8 @@ export const requireAuth = async (req, res, next) => {
 		if (!accessToken) {
 			return redirectToLoginWithReason(
 				res,
-				'Je moet ingelogd zijn om deze pagina te bekijken.'
+				'Je moet ingelogd zijn om deze pagina te bekijken.',
+				'warning'
 			)
 		}
 
@@ -45,7 +46,8 @@ export const requireAuth = async (req, res, next) => {
 			clearAuthCookies(res)
 			return redirectToLoginWithReason(
 				res,
-				'Je sessie is verlopen. Log opnieuw in om verder te gaan.'
+				'Je sessie is verlopen. Log opnieuw in om verder te gaan.',
+				'warning'
 			)
 		}
 
@@ -55,7 +57,8 @@ export const requireAuth = async (req, res, next) => {
 		console.error('Authentication middleware error:', error)
 		return redirectToLoginWithReason(
 			res,
-			'Er is een fout opgetreden bij authenticatie. Probeer het opnieuw.'
+			'Er is een fout opgetreden bij authenticatie. Probeer het opnieuw.',
+			'error'
 		)
 	}
 }

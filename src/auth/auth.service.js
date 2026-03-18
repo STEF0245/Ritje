@@ -3,6 +3,7 @@ import { supabase } from '../config/supabase.client.js'
 import {
 	ACCESS_TOKEN_COOKIE,
 	AUTH_ERROR_COOKIE,
+	AUTH_ERROR_TYPE_COOKIE,
 	REFRESH_TOKEN_COOKIE
 } from './auth.constants.js'
 
@@ -12,8 +13,17 @@ const baseCookieOptions = {
 	secure: config.isProduction
 }
 
-export const setAuthError = (res, message, maxAgeMs = 20 * 1000) => {
+export const setAuthError = (
+	res,
+	message,
+	type = 'info',
+	maxAgeMs = 20 * 1000
+) => {
 	res.cookie(AUTH_ERROR_COOKIE, message, {
+		...baseCookieOptions,
+		maxAge: maxAgeMs
+	})
+	res.cookie(AUTH_ERROR_TYPE_COOKIE, type, {
 		...baseCookieOptions,
 		maxAge: maxAgeMs
 	})
@@ -24,7 +34,13 @@ export const consumeAuthReason = (req, res) => {
 	if (authErrorReason) {
 		res.clearCookie(AUTH_ERROR_COOKIE)
 	}
-	return authErrorReason
+
+	const authErrorType = req.cookies[AUTH_ERROR_TYPE_COOKIE] || null
+	if (authErrorType) {
+		res.clearCookie(AUTH_ERROR_TYPE_COOKIE)
+	}
+
+	return { authErrorReason, authErrorType }
 }
 
 export const setAuthCookies = (res, session) => {

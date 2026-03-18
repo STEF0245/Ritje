@@ -1,0 +1,27 @@
+<% const type = authErrorType || 'info' const variantClasses =
+{error: {
+			container:
+				'border-red-500/40 bg-red-500/10 text-red-100', message: 'text-red-200'
+		},
+	warning: {
+		container: 'border-amber-500/40 bg-amber-500/10 text-amber-100',
+		message: 'text-amber-300'
+	}
+	,
+		info: {
+		container: 'border-sky-500/40 bg-sky-500/10 text-sky-100', message:
+		'text-sky-200'
+	}
+}
+const selectedVariant = variantClasses[type] || variantClasses.info %>
+
+<div
+	role="alert"
+	class="mb-6 rounded-xl border px-4 py-3 text-sm <%= selectedVariant.container %>"
+>
+	<p class="font-semibold">
+		<%- authErrorType === 'error' ? 'Fout' : authErrorType === 'warning' ?
+		'Waarschuwing' : 'Informatie' %>
+	</p>
+	<p class="mt-1 <%= selectedVariant.message %>"><%= authErrorReason %></p>
+</div>
