@@ -20,6 +20,20 @@ const RATE_LIMIT_CONFIG = {
 	}
 }
 
+const PROVIDER_ATTRIBUTION = {
+	nominatim: {
+		name: 'Nominatim',
+		url: 'https://nominatim.org/',
+		requiredCredit:
+			'Geocoding by Nominatim (OpenStreetMap contributors). See ODbL: https://www.openstreetmap.org/copyright'
+	},
+	locationiq: {
+		name: 'LocationIQ',
+		url: 'https://locationiq.com/',
+		requiredCredit: 'Geocoding by LocationIQ (OpenStreetMap contributors).'
+	}
+}
+
 const getProvider = () => {
 	if (process.env.LOCATIONIQ_API_KEY) {
 		return 'locationiq'
@@ -159,17 +173,24 @@ router.post(
 				provider === 'locationiq'
 					? await reverseWithLocationIQ(lat, lon)
 					: await reverseWithNominatim(lat, lon)
+			const attribution = PROVIDER_ATTRIBUTION[provider]
 
 			if (!result) {
 				return res.status(404).json({
-					error: 'No address found for provided coordinates'
+					error: 'No address found for provided coordinates',
+					provider,
+					attribution
 				})
 			}
+
+			res.setHeader('X-Geocoding-Provider', provider)
+			res.setHeader('X-Geocoding-Provider-Name', attribution.name)
 
 			return res.status(200).json({
 				lat,
 				lon,
 				provider,
+				attribution,
 				displayName: result.displayName,
 				address: result.address,
 				raw: result.raw

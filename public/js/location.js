@@ -1,6 +1,9 @@
 const fieldIds = ['street', 'house_number', 'postal_code', 'city', 'country']
 const locationStatus = document.getElementById('location-status')
 const locationButton = document.getElementById('autofill-location')
+const providerAttributionField = document.getElementById(
+	'location-provider-attribution'
+)
 const addressField = document.getElementById('address')
 const latitudeField = document.getElementById('latitude')
 const longitudeField = document.getElementById('longitude')
@@ -141,6 +144,10 @@ locationButton.addEventListener('click', async () => {
 
 		const data = await response.json()
 		const address = data.address || {}
+		const providerName =
+			data.attribution?.name || data.provider || 'geocoder'
+		const providerURL = data.attribution?.url || ''
+		const requiredCredit = data.attribution?.requiredCredit || ''
 
 		document.getElementById('street').value = address.street || ''
 		document.getElementById('house_number').value =
@@ -150,7 +157,17 @@ locationButton.addEventListener('click', async () => {
 		document.getElementById('country').value = address.country || ''
 
 		updateCombinedAddress()
-		locationStatus.textContent = `Adres ingevuld op basis van je locatie (nauwkeurigheid: ${Math.round(coords.accuracy)}m). Controleer even of alles klopt.`
+
+		if (providerAttributionField) {
+			const providerText = requiredCredit
+				? requiredCredit
+				: providerURL
+					? `Geocoding by ${providerName}: ${providerURL}`
+					: `Geocoding by ${providerName}`
+			providerAttributionField.textContent = providerText
+		}
+
+		locationStatus.innerText = `Adres ingevuld op basis van je locatie (nauwkeurigheid: ${Math.round(coords.accuracy)}m).\r\n Controleer even of alles klopt.`
 	} catch (error) {
 		updateCombinedAddress()
 		locationStatus.textContent =

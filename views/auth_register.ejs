@@ -74,8 +74,11 @@
                     </div>
 
                     <div class="mt-6 border-t border-slate-800 pt-6">
-                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-                            <h2 class="text-base font-bold text-white">Adresgegevens</h2>
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-0">
+                            <div class="flex flex-col">
+                                <h2 class="text-base font-bold text-white">Adresgegevens</h2>
+                                <p id="location-status" class="text-xs text-slate-400 mb-1">Vul je adres handmatig in of gebruik je huidige locatie.</p>
+                            </div>
                             <button
                                 type="button"
                                 id="autofill-location"
@@ -85,7 +88,7 @@
                             </button>
                         </div>
 
-                        <p id="location-status" class="text-xs text-slate-400 mb-4">Vul je adres handmatig in of gebruik je huidige locatie.</p>
+                        <p id="location-provider-attribution" class="text-[0.6rem] text-slate-500 mb-4">Geocoding by Nominatim / OpenStreetMap contributors or LocationIQ / OpenStreetMap contributors.</p>
 
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div class="md:col-span-2">
