@@ -1,17 +1,17 @@
 <!DOCTYPE html>
-<html lang="nl" class="bg-slate-900 text-slate-200">
+<html lang="nl" class="text-slate-200">
     <%- include('partials/head', { title }) %>
 
-	<body class="min-h-screen flex flex-col">
+	<body class="theme-body min-h-screen flex flex-col">
 		<%- include('partials/header', { user }) %>
-        <main class="flex-1 px-6 py-12">
+        <main class="theme-main flex-1">
             <section class="max-w-xl mx-auto">
                 <div class="text-center mb-8">
-                    <p class="text-xs uppercase tracking-[0.2em] text-indigo-400 font-semibold">Ritje Account</p>
-                    <h1 class="text-3xl md:text-4xl font-black tracking-tight text-white mt-2">
-                        Welkom terug bij RITJE<span class="text-indigo-500">.</span>
+                    <p class="theme-kicker">Ritje Account</p>
+                    <h1 class="theme-heading">
+                        Welkom terug bij RITJE<span class="text-teal-400">.</span>
                     </h1>
-                    <p class="text-slate-400 mt-3">Log in en ga meteen verder met je volgende rit.</p>
+                    <p class="theme-subtext">Log in en ga meteen verder met je volgende rit.</p>
                 </div>
 
                 <% if (authErrorReason) { %>
@@ -21,7 +21,7 @@
                 <form
                     action="/auth/login"
                     method="post"
-                    class="ride-glass border border-slate-800 rounded-2xl p-6 md:p-8 shadow-xl"
+                    class="theme-panel p-6 md:p-8"
                 >
                     <div>
                         <label for="email" class="block text-sm font-semibold mb-2 text-slate-300">E-mail</label>
@@ -31,7 +31,7 @@
                             id="email"
                             placeholder="peter.selie@ritje.be"
                             autocomplete="email"
-                            class="block w-full p-3 rounded-xl bg-slate-900/75 border border-slate-700 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            class="theme-input"
                             required
                         />
                     </div>
@@ -44,16 +44,16 @@
                             id="password"
                             placeholder="••••••••"
                             autocomplete="current-password"
-                            class="block w-full p-3 rounded-xl bg-slate-900/75 border border-slate-700 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            class="theme-input"
                             required
                         />
                     </div>
 
                     <div class="mt-6 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-                        <a href="/auth/register" class="text-sm text-slate-400 hover:text-indigo-300">Nog geen account? Registreer hier</a>
+                        <a href="/auth/register" class="text-sm theme-link">Nog geen account? Registreer hier</a>
                         <button
                             type="submit"
-                            class="ride-gradient hover:brightness-110 text-white font-bold py-3 px-5 rounded-xl cursor-pointer transition"
+                            class="ride-accent hover:brightness-110 text-white font-bold py-3 px-5 rounded-xl cursor-pointer transition"
                         >
                             Inloggen
                         </button>

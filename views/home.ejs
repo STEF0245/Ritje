@@ -1,10 +1,26 @@
 <!DOCTYPE html>
-<html lang="nl" class="bg-slate-900 text-slate-200">
+<html lang="nl" class="text-slate-200">
     <%- include('partials/head', { title }) %>
     
-	<body class="min-h-screen flex flex-col">
+    <body class="theme-body min-h-screen flex flex-col">
 		<%- include('partials/header', { user }) %>
-
+        <main class="theme-main flex-1">
+            <section class="max-w-5xl mx-auto text-center">
+                <p class="theme-kicker">Samen Slimmer Rijden</p>
+                <h1 class="theme-heading">Vind of deel je volgende rit met RITJE.</h1>
+                <p class="theme-subtext max-w-2xl mx-auto">
+                    Gebruik je account om ritten aan te bieden, trajecten te bekijken en veilig te carpoolen.
+                </p>
+                <div class="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+                    <a href="/ride/offer" class="ride-accent text-white font-bold py-3 px-6 rounded-xl transition hover:brightness-110">
+                        Rit aanbieden
+                    </a>
+                    <a href="/profile" class="theme-link border border-slate-700 rounded-xl py-3 px-6 hover:border-teal-400">
+                        Naar profiel
+                    </a>
+                </div>
+            </section>
+        </main>
 
         <%- include('partials/footer') %>
     </body>

@@ -1,17 +1,17 @@
 <!DOCTYPE html>
-<html lang="nl" class="bg-slate-900 text-slate-200">
+<html lang="nl" class="text-slate-200">
     <%- include('partials/head', { title }) %>
 
-	<body class="min-h-screen flex flex-col">
+	<body class="theme-body min-h-screen flex flex-col">
 		<%- include('partials/header', { user }) %>
-        <main class="flex-1 px-6 py-12">
+        <main class="theme-main flex-1">
             <section class="max-w-2xl mx-auto">
                 <div class="text-center mb-8">
-                    <p class="text-xs uppercase tracking-[0.2em] text-indigo-400 font-semibold">Ritje Account</p>
-                    <h1 class="text-3xl md:text-4xl font-black tracking-tight text-white mt-2">
-                        Registreren bij RITJE<span class="text-indigo-500">.</span>
+                    <p class="theme-kicker">Ritje Account</p>
+                    <h1 class="theme-heading">
+                        Registreren bij RITJE<span class="text-teal-400">.</span>
                     </h1>
-                    <p class="text-slate-400 mt-3">Maak je profiel aan en vind of deel ritten met je netwerk.</p>
+                    <p class="theme-subtext">Maak je profiel aan en vind of deel ritten met je netwerk.</p>
                 </div>
 
                 <% if (authErrorReason) { %>
@@ -21,7 +21,7 @@
                 <form
                     action="/auth/register"
                     method="post"
-                    class="ride-glass border border-slate-800 rounded-2xl p-6 md:p-8 shadow-xl"
+                    class="theme-panel p-6 md:p-8"
                 >
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -32,7 +32,7 @@
                                 id="firstname"
                                 autocomplete="given-name"
                                 placeholder="Peter"
-                                class="block w-full p-3 rounded-xl bg-slate-900/75 border border-slate-700 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                class="theme-input"
                                 required
                             />
                         </div>
@@ -45,7 +45,7 @@
                                 id="lastname"
                                 autocomplete="family-name"
                                 placeholder="Selie"
-                                class="block w-full p-3 rounded-xl bg-slate-900/75 border border-slate-700 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                class="theme-input"
                                 required
                             />
                         </div>
@@ -59,7 +59,7 @@
                             id="email"
                             autocomplete="email"
                             placeholder="peter.selie@ritje.be"
-                            class="block w-full p-3 rounded-xl bg-slate-900/75 border border-slate-700 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            class="theme-input"
                             required
                         />
                     </div>
@@ -72,7 +72,7 @@
                             id="password"
                             autocomplete="new-password"
                             placeholder="••••••••"
-                            class="block w-full p-3 rounded-xl bg-slate-900/75 border border-slate-700 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            class="theme-input"
                             required
                         />
                     </div>
@@ -86,7 +86,7 @@
                             <button
                                 type="button"
                                 id="autofill-location"
-                                class="px-4 py-2 text-sm font-semibold rounded-xl bg-slate-800 border border-slate-700 text-slate-200 hover:border-indigo-500 hover:text-indigo-300 cursor-pointer disabled:cursor-not-allowed disabled:border-slate-700 disabled:text-slate-500 transition"
+                                class="px-4 py-2 text-sm font-semibold rounded-xl bg-slate-800 border border-slate-700 text-slate-200 hover:border-teal-400 hover:text-teal-300 cursor-pointer disabled:cursor-not-allowed disabled:border-slate-700 disabled:text-slate-500 transition"
                             >
                                 Gebruik mijn locatie
                             </button>
@@ -103,7 +103,7 @@
                                     id="street"
                                     placeholder="Denis Voetsstraat"
                                     autocomplete="address-line1"
-                                    class="block w-full p-3 rounded-xl bg-slate-900/75 border border-slate-700 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    class="theme-input"
                                     required
                                 />
                             </div>
@@ -116,7 +116,7 @@
                                     id="house_number"
                                     placeholder="21"
                                     autocomplete="address-line2"
-                                    class="block w-full p-3 rounded-xl bg-slate-900/75 border border-slate-700 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    class="theme-input"
                                     required
                                 />
                             </div>
@@ -131,7 +131,7 @@
                                     id="postal_code"
                                     placeholder="2260"
                                     autocomplete="postal-code"
-                                    class="block w-full p-3 rounded-xl bg-slate-900/75 border border-slate-700 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    class="theme-input"
                                     required
                                 />
                             </div>
@@ -144,7 +144,7 @@
                                     id="city"
                                     placeholder="Westerlo"
                                     autocomplete="address-level2"
-                                    class="block w-full p-3 rounded-xl bg-slate-900/75 border border-slate-700 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    class="theme-input"
                                     required
                                 />
                             </div>
@@ -157,7 +157,7 @@
                                     id="country"
                                     placeholder="Belgie"
                                     autocomplete="country-name"
-                                    class="block w-full p-3 rounded-xl bg-slate-900/75 border border-slate-700 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    class="theme-input"
                                     required
                                 />
                             </div>
@@ -169,10 +169,10 @@
                     </div>
 
                     <div class="mt-6 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-                        <a href="/auth/login" class="text-sm text-slate-400 hover:text-indigo-300">Heb je al een account? Log in</a>
+                        <a href="/auth/login" class="text-sm theme-link">Heb je al een account? Log in</a>
                         <button
                             type="submit"
-                            class="ride-gradient hover:brightness-110 text-white font-bold py-3 px-5 rounded-xl cursor-pointer transition"
+                            class="ride-accent hover:brightness-110 text-white font-bold py-3 px-5 rounded-xl cursor-pointer transition"
                         >
                             Registreren
                         </button>

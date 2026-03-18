@@ -1,11 +1,23 @@
 <!DOCTYPE html>
-<html lang="nl" class="bg-slate-900 text-slate-200">
+<html lang="nl" class="text-slate-200">
     <%- include('partials/head', { title }) %>
 
-	<body class="min-h-screen flex flex-col">
+    <body class="theme-body min-h-screen flex flex-col">
 		<%- include('partials/header', { user }) %>
-        <%- error.status || 500 %>
-        <%- error.message || 'Er is iets misgegaan' %>
+        <main class="theme-main flex-1">
+            <section class="max-w-3xl mx-auto">
+                <div class="theme-panel p-8 md:p-10">
+                    <p class="theme-kicker">Foutmelding</p>
+                    <h1 class="theme-heading">Er ging iets mis</h1>
+                    <p class="mt-5 text-sm uppercase tracking-[0.14em] text-slate-400">Status</p>
+                    <p class="text-2xl font-black text-teal-300 mt-1"><%= error.status || 500 %></p>
+                    <p class="theme-subtext mt-5"><%= error.message || 'Er is iets misgegaan' %></p>
+                    <a href="/" class="inline-block mt-8 ride-accent rounded-xl px-5 py-3 font-bold text-white hover:brightness-110 transition">
+                        Terug naar home
+                    </a>
+                </div>
+            </section>
+        </main>
         <%- include('partials/footer') %>
     </body>
 </html>

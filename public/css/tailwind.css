@@ -2,15 +2,89 @@
 
 :root {
 	color-scheme: dark;
+	--ride-bg-900: #020617;
+	--ride-bg-800: #0f172a;
+	--ride-bg-700: #1e293b;
+	--ride-border: #334155;
+	--ride-text: #e2e8f0;
+	--ride-muted: #94a3b8;
+	--ride-accent: #0ea5a8;
+	--ride-accent-soft: #5eead4;
 }
 
 /* Used by the navbar in views/partials/header.ejs */
 .ride-glass {
-	background: rgba(2, 6, 23, 0.72);
+	background: color-mix(in srgb, var(--ride-bg-900) 72%, transparent);
 	backdrop-filter: blur(12px);
 	-webkit-backdrop-filter: blur(12px);
 }
 
-.ride-gradient {
-	background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+.ride-accent {
+	background: var(--ride-accent);
+}
+
+.theme-body {
+	background: var(--ride-bg-900);
+	color: var(--ride-text);
+}
+
+.theme-main {
+	padding: 3rem 1.5rem;
+}
+
+.theme-kicker {
+	font-size: 0.75rem;
+	text-transform: uppercase;
+	letter-spacing: 0.2em;
+	font-weight: 700;
+	color: var(--ride-accent-soft);
+}
+
+.theme-heading {
+	font-size: clamp(1.85rem, 3vw, 2.35rem);
+	line-height: 1.15;
+	font-weight: 900;
+	letter-spacing: -0.02em;
+	color: #ffffff;
+}
+
+.theme-subtext {
+	margin-top: 0.75rem;
+	color: var(--ride-muted);
+}
+
+.theme-panel {
+	border: 1px solid color-mix(in srgb, var(--ride-border) 70%, transparent);
+	background: color-mix(in srgb, var(--ride-bg-800) 90%, transparent);
+	border-radius: 1rem;
+	box-shadow: 0 10px 24px rgba(2, 6, 23, 0.22);
+}
+
+.theme-input {
+	width: 100%;
+	padding: 0.75rem;
+	border-radius: 0.75rem;
+	border: 1px solid #475569;
+	background: rgba(15, 23, 42, 0.75);
+	color: #f1f5f9;
+}
+
+.theme-input::placeholder {
+	color: #64748b;
+}
+
+.theme-input:focus {
+	outline: none;
+	border-color: var(--ride-accent);
+	box-shadow: 0 0 0 2px
+		color-mix(in srgb, var(--ride-accent) 35%, transparent);
+}
+
+.theme-link {
+	color: var(--ride-muted);
+	transition: color 0.2s ease;
+}
+
+.theme-link:hover {
+	color: var(--ride-accent-soft);
 }

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="nl" class="text-slate-200">
+	<%
+		const fullName =
+			user?.user_metadata?.full_name ||
+			user?.user_metadata?.display_name ||
+			[user?.user_metadata?.first_name, user?.user_metadata?.last_name]
+				.filter(Boolean)
+				.join(' ') ||
+			'user'
+		const initials =
+			fullName
+				.split(' ')
+				.filter(Boolean)
+				.slice(0, 2)
+				.map((part) => part[0]?.toUpperCase())
+				.join('') || 'U'
+		const joinedDate = user?.created_at
+			? new Date(user.created_at).toLocaleDateString('nl-BE', {
+				year: 'numeric',
+				month: 'long',
+				day: 'numeric'
+			  })
+			: 'Onbekend'
+	%>
+	<%- include('partials/head', { title }) %>
+
+	<body class="theme-body min-h-screen flex flex-col">
+		<%- include('partials/header', { user }) %>
+
+		<main class="theme-main flex-1">
+			<section class="max-w-5xl mx-auto">
+				<div class="mb-8 md:mb-10 text-center">
+					<p class="theme-kicker">Ritje Profiel</p>
+					<h1 class="theme-heading">
+						Welkom, <span class="text-teal-300"><%= fullName %></span>
+					</h1>
+					<p class="theme-subtext">Bekijk je accountgegevens en profielinformatie.</p>
+				</div>
+
+				<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+					<article class="theme-panel p-6 lg:col-span-1">
+						<div class="flex items-center gap-4">
+							<div class="h-16 w-16 rounded-full ride-accent flex items-center justify-center text-xl font-black text-white">
+								<%= initials %>
+							</div>
+							<div>
+								<p class="text-white text-lg font-bold leading-tight"><%= fullName %></p>
+								<p class="text-slate-400 text-sm"><%= user?.email || 'Geen e-mail gevonden' %></p>
+							</div>
+						</div>
+
+						<div class="mt-6 border-t border-slate-700/70 pt-5 space-y-3 text-sm">
+							<div class="flex items-center justify-between gap-4">
+								<span class="text-slate-400">Gebruiker ID</span>
+								<span class="text-slate-100 font-mono text-xs break-all text-right"><%= user?.id || '-' %></span>
+							</div>
+							<div class="flex items-center justify-between gap-4">
+								<span class="text-slate-400">Aangemaakt op</span>
+								<span class="text-slate-100"><%= joinedDate %></span>
+							</div>
+							<div class="flex items-center justify-between gap-4">
+								<span class="text-slate-400">E-mail bevestigd</span>
+								<span class="<%= user?.email_confirmed_at ? 'text-emerald-300' : 'text-amber-300' %>">
+									<%= user?.email_confirmed_at ? 'Ja' : 'Nee' %>
+								</span>
+							</div>
+						</div>
+					</article>
+
+					<article class="theme-panel p-6 lg:col-span-2">
+						<h2 class="text-xl font-extrabold text-white">Profielgegevens</h2>
+						<p class="text-slate-400 text-sm mt-1">Informatie uit je account metadata.</p>
+
+						<div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+							<div class="rounded-xl border border-slate-700/70 bg-slate-900/50 p-4">
+								<p class="text-xs uppercase tracking-[0.12em] text-slate-400">Voornaam</p>
+								<p class="text-white font-semibold mt-1"><%= user?.user_metadata?.first_name || '-' %></p>
+							</div>
+							<div class="rounded-xl border border-slate-700/70 bg-slate-900/50 p-4">
+								<p class="text-xs uppercase tracking-[0.12em] text-slate-400">Achternaam</p>
+								<p class="text-white font-semibold mt-1"><%= user?.user_metadata?.last_name || '-' %></p>
+							</div>
+							<div class="rounded-xl border border-slate-700/70 bg-slate-900/50 p-4 md:col-span-2">
+								<p class="text-xs uppercase tracking-[0.12em] text-slate-400">Volledige naam</p>
+								<p class="text-white font-semibold mt-1"><%= user?.user_metadata?.full_name || user?.user_metadata?.display_name || '-' %></p>
+							</div>
+							<div class="rounded-xl border border-slate-700/70 bg-slate-900/50 p-4 md:col-span-2">
+								<p class="text-xs uppercase tracking-[0.12em] text-slate-400">Adres</p>
+								<p class="text-white font-semibold mt-1"><%= user?.user_metadata?.address || '-' %></p>
+							</div>
+							<div class="rounded-xl border border-slate-700/70 bg-slate-900/50 p-4">
+								<p class="text-xs uppercase tracking-[0.12em] text-slate-400">Stad</p>
+								<p class="text-white font-semibold mt-1"><%= user?.user_metadata?.city || '-' %></p>
+							</div>
+							<div class="rounded-xl border border-slate-700/70 bg-slate-900/50 p-4">
+								<p class="text-xs uppercase tracking-[0.12em] text-slate-400">Land</p>
+								<p class="text-white font-semibold mt-1"><%= user?.user_metadata?.country || '-' %></p>
+							</div>
+						</div>
+					</article>
+				</div>
+			</section>
+		</main>
+
+		<%- include('partials/footer') %>
+	</body>
+</html>
