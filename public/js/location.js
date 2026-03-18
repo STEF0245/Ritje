@@ -124,14 +124,16 @@ locationButton.addEventListener('click', async () => {
 		latitudeField.value = coords.latitude
 		longitudeField.value = coords.longitude
 
-		const response = await fetch(
-			`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${coords.latitude}&lon=${coords.longitude}`,
-			{
-				headers: {
-					'User-Agent': 'Ritje. (https://localhost:3000)',
-				}
-			}
-		)
+		const response = await fetch('/api/location/reverse-geocode', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({
+				lat: coords.latitude,
+				lon: coords.longitude
+			})
+		})
 
 		if (!response.ok) {
 			throw new Error('Reverse geocoding mislukt')
@@ -140,12 +142,11 @@ locationButton.addEventListener('click', async () => {
 		const data = await response.json()
 		const address = data.address || {}
 
-		document.getElementById('street').value = address.road || ''
+		document.getElementById('street').value = address.street || ''
 		document.getElementById('house_number').value =
-			address.house_number || ''
-		document.getElementById('postal_code').value = address.postcode || ''
-		document.getElementById('city').value =
-			address.city || address.town || address.village || ''
+			address.houseNumber || ''
+		document.getElementById('postal_code').value = address.postalCode || ''
+		document.getElementById('city').value = address.city || ''
 		document.getElementById('country').value = address.country || ''
 
 		updateCombinedAddress()
