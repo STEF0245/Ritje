@@ -1,20 +1,15 @@
 import { supabase } from '../config/supabase.client.js'
-
-const AUTH_ERROR_COOKIE = 'auth-error-reason'
+import { ACCESS_TOKEN_COOKIE } from './auth.constants.js'
+import { clearAuthCookies, setAuthError } from './auth.service.js'
 
 const redirectToLoginWithReason = (res, reason) => {
-	res.cookie(AUTH_ERROR_COOKIE, reason, {
-		httpOnly: true,
-		sameSite: 'lax',
-		maxAge: 15 * 1000
-	})
-	res.setHeader('Error-Reason', reason)
+	setAuthError(res, reason, 15 * 1000)
 	return res.redirect('/auth/login')
 }
 
 export const optionalAuth = async (req, res, next) => {
 	try {
-		const accessToken = req.cookies['sb-access-token']
+		const accessToken = req.cookies[ACCESS_TOKEN_COOKIE]
 
 		if (accessToken) {
 			const {
@@ -34,7 +29,7 @@ export const optionalAuth = async (req, res, next) => {
 
 export const requireAuth = async (req, res, next) => {
 	try {
-		const accessToken = req.cookies['sb-access-token']
+		const accessToken = req.cookies[ACCESS_TOKEN_COOKIE]
 		if (!accessToken) {
 			return redirectToLoginWithReason(
 				res,
@@ -47,8 +42,7 @@ export const requireAuth = async (req, res, next) => {
 			error
 		} = await supabase.auth.getUser(accessToken)
 		if (error || !user) {
-			res.clearCookie('sb-access-token')
-			res.clearCookie('sb-refresh-token')
+			clearAuthCookies(res)
 			return redirectToLoginWithReason(
 				res,
 				'Je sessie is verlopen. Log opnieuw in om verder te gaan.'
