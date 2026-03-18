@@ -129,6 +129,7 @@ locationButton.addEventListener('click', async () => {
 			{
 				headers: {
 					'User-Agent': 'Ritje. (https://localhost:3000)',
+				}
 			}
 		)
 
