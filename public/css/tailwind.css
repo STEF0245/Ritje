@@ -100,6 +100,38 @@
 	color: var(--ride-accent);
 }
 
+.theme-text-muted {
+	color: var(--ride-muted);
+}
+
+.theme-text-primary {
+	color: var(--ride-text);
+}
+
+.theme-border {
+	border-color: color-mix(in srgb, var(--ride-border) 85%, transparent);
+}
+
+.theme-border-soft {
+	border-color: color-mix(in srgb, var(--ride-border) 70%, transparent);
+}
+
+.theme-surface {
+	background: color-mix(in srgb, var(--ride-bg-800) 80%, transparent);
+}
+
+.theme-surface-strong {
+	background: color-mix(in srgb, var(--ride-bg-800) 94%, transparent);
+}
+
+.theme-hover-accent-border {
+	transition: border-color 0.2s ease;
+}
+
+.theme-hover-accent-border:hover {
+	border-color: var(--ride-accent);
+}
+
 .theme-pill {
 	border-radius: 0.625rem;
 }
@@ -146,6 +178,10 @@
 	background: color-mix(in srgb, var(--ride-bg-700) 88%, transparent);
 	border: 1px solid color-mix(in srgb, var(--ride-border) 85%, transparent);
 	color: var(--ride-text);
+}
+
+.theme-brand-dot {
+	color: var(--ride-accent);
 }
 
 .theme-footer-shell {

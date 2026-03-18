@@ -16,7 +16,7 @@
 	<% if (user) { %>
 		<a
 			href="/profile"
-			class="hidden md:flex items-center gap-3 theme-pill border border-slate-700/80 bg-slate-900/80 px-3 py-2 text-slate-100 transition hover:border-blue-400"
+			class="hidden md:flex items-center gap-3 theme-pill border theme-border theme-surface px-3 py-2 theme-text-primary theme-hover-accent-border"
 		>
 			<span class="theme-avatar flex h-9 w-9 items-center justify-center text-xs font-black">
 				<%= initials %>
@@ -26,7 +26,7 @@
 
 		<a
 			href='/profile'
-			class="md:hidden theme-pill flex h-11 w-11 items-center justify-center border border-slate-700/80 bg-slate-900/80 text-xs font-black text-slate-100 transition hover:border-blue-400"
+			class="md:hidden theme-pill flex h-11 w-11 items-center justify-center border theme-border theme-surface text-xs font-black theme-text-primary theme-hover-accent-border"
 			aria-label="Ga naar je profiel"
 			title="<%= displayName %>"
 		>

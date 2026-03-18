@@ -38,6 +38,7 @@ Use these classes before adding custom styling:
 - `theme-pill`: compact low-radius shape for chips/buttons.
 - `theme-avatar`: neutral avatar chip.
 - `theme-footer-shell`, `theme-footer-link`: footer layout and link styling.
+- `theme-border`, `theme-surface`, `theme-hover-accent-border`: reusable border/surface/hover behavior.
 - `ride-accent`: legacy class; prefer `theme-btn-primary` for new work.
 - `ride-glass`: translucent glass background for header/footer.
 
@@ -47,6 +48,7 @@ Use these classes before adding custom styling:
 - If a style is used in 2+ places, move it into [public/css/tailwind.css](public/css/tailwind.css).
 - Update component classes once, then reuse everywhere to avoid repeated edits.
 - Keep blue accents limited to `theme-btn-primary` and critical status highlights.
+- Prefer semantic classes (`theme-*`) over hardcoded utility colors in templates.
 
 ## Alerts
 

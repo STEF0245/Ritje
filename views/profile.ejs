@@ -20,7 +20,7 @@
 				year: 'numeric',
 				month: 'long',
 				day: 'numeric'
-			  })
+			})
 			: 'Onbekend'
 	%>
 	<%- include('partials/head', { title }) %>
@@ -33,13 +33,13 @@
 				<div class="mb-8 md:mb-10 text-center">
 					<p class="theme-kicker">Ritje Profiel</p>
 					<h1 class="theme-heading">
-						Welkom, <span class="text-blue-300"><%= fullName %></span>
+						Welkom, <span class="theme-accent-text"><%= fullName %></span>
 					</h1>
 					<p class="theme-subtext">Bekijk je accountgegevens en profielinformatie.</p>
 				</div>
 
 				<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-					<article class="theme-panel p-6 lg:col-span-1">
+					<article class="theme-panel p-6 lg:col-span-1 h-full flex flex-col">
 						<div class="flex items-center gap-4">
 							<div class="theme-avatar h-16 w-16 flex items-center justify-center text-xl font-black">
 								<%= initials %>
@@ -50,7 +50,7 @@
 							</div>
 						</div>
 
-						<div class="mt-6 border-t border-slate-700/70 pt-5 space-y-3 text-sm">
+						<div class="mt-6 border-t border-slate-700/70 pt-5 space-y-3 flex flex-col text-sm flex-1">
 							<div class="flex items-center justify-between gap-4">
 								<span class="text-slate-400">Gebruiker ID</span>
 								<span class="text-slate-100 font-mono text-xs break-all text-right"><%= user?.id || '-' %></span>
@@ -65,6 +65,9 @@
 									<%= user?.email_confirmed_at ? 'Ja' : 'Nee' %>
 								</span>
 							</div>
+							<div class="mt-auto pt-3">
+                                <a href="/auth/logout" class="theme-pill border theme-border theme-surface w-full px-3 py-2 theme-text-primary theme-hover-accent-border text-center">Uitloggen</a>
+                            </div>
 						</div>
 					</article>
 
@@ -80,10 +83,6 @@
 							<div class="rounded-xl border border-slate-700/70 bg-slate-900/50 p-4">
 								<p class="text-xs uppercase tracking-[0.12em] text-slate-400">Achternaam</p>
 								<p class="text-white font-semibold mt-1"><%= user?.user_metadata?.last_name || '-' %></p>
-							</div>
-							<div class="rounded-xl border border-slate-700/70 bg-slate-900/50 p-4 md:col-span-2">
-								<p class="text-xs uppercase tracking-[0.12em] text-slate-400">Volledige naam</p>
-								<p class="text-white font-semibold mt-1"><%= user?.user_metadata?.full_name || user?.user_metadata?.display_name || '-' %></p>
 							</div>
 							<div class="rounded-xl border border-slate-700/70 bg-slate-900/50 p-4 md:col-span-2">
 								<p class="text-xs uppercase tracking-[0.12em] text-slate-400">Adres</p>
