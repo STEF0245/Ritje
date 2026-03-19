@@ -19,6 +19,28 @@
 	--ride-accent-soft: color-mix(in srgb, var(--ride-c5) 72%, var(--ride-c4));
 }
 
+/* Custom scrollbar styles */
+::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+
+::-webkit-scrollbar-track {
+	background: color-mix(in srgb, var(--ride-bg-800) 40%, transparent);
+	border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+	background: color-mix(in srgb, var(--ride-border) 50%, transparent);
+	border-radius: 10px;
+	border: 2px solid transparent;
+	background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background-color: var(--ride-border);
+}
+
 /* Used by the navbar in views/partials/header.ejs */
 .ride-glass {
 	background: color-mix(in srgb, var(--ride-bg-900) 72%, transparent);
