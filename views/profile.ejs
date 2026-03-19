@@ -53,12 +53,11 @@
 			metadata?.longitude !== ''
 		const mapsUrl = hasCoordinates
 			? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-				`${metadata.latitude},${metadata.longitude}`
+				`${metadata.street} ${metadata.house_number}, ${metadata.postal_code} ${metadata.city}, ${metadata.country}`
 			)}`
 			: null
 	%>
 	<%- include('partials/head', { title }) %>
-
 
 	<body class="theme-body min-h-screen flex flex-col">
 		<%- include('partials/header', { user }) %>
