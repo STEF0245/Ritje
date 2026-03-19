@@ -91,7 +91,43 @@ function getCurrentAccurateLocation(options = {}) {
 	})
 }
 
-function updateCombinedAddress() {
+function debounce(func, wait) {
+	let timeout
+	return function (...args) {
+		const later = () => {
+			timeout = null
+			func.apply(this, args)
+		}
+		clearTimeout(timeout)
+		timeout = setTimeout(later, wait)
+	}
+}
+
+async function updateCoordinatesFromAddress() {
+	if (!addressField.value) {
+		latitudeField.value = ''
+		longitudeField.value = ''
+		return
+	}
+
+	const response = await fetch('/api/location/forward-geocode', {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify({ address: addressField.value })
+	})
+
+	if (!response.ok) {
+		throw new Error('Forward geocoding mislukt')
+	}
+
+	const data = await response.json()
+	latitudeField.value = data.lat ?? ''
+	longitudeField.value = data.lon ?? ''
+}
+
+function updateCombinedAddress(usedGeolocation = false) {
 	const street = document.getElementById('street').value.trim()
 	const houseNumber = document.getElementById('house_number').value.trim()
 	const postalCode = document.getElementById('postal_code').value.trim()
@@ -102,10 +138,20 @@ function updateCombinedAddress() {
 	const lineTwo = [postalCode, city].filter(Boolean).join(' ')
 
 	addressField.value = [lineOne, lineTwo, country].filter(Boolean).join(', ')
+
+	if (usedGeolocation) return
+
+	updateCoordinatesFromAddress().catch(() => {
+		latitudeField.value = ''
+		longitudeField.value = ''
+	})
 }
 
 fieldIds.forEach((id) => {
-	document.getElementById(id).addEventListener('input', updateCombinedAddress)
+	document.getElementById(id).addEventListener(
+		'input',
+		debounce(() => updateCombinedAddress(false), 300)
+	)
 })
 
 locationButton.addEventListener('click', async () => {
@@ -156,7 +202,7 @@ locationButton.addEventListener('click', async () => {
 		document.getElementById('city').value = address.city || ''
 		document.getElementById('country').value = address.country || ''
 
-		updateCombinedAddress()
+		updateCombinedAddress(true)
 
 		if (providerAttributionField) {
 			const providerText = requiredCredit

@@ -111,7 +111,7 @@ const parseResultCoordinate = (value, label) => {
 		throw new Error(`Provider returned invalid ${label}`)
 	}
 
-	return parsed
+	return parsed.toPrecision(4)
 }
 
 // ========== Reverse geocoding ==========
