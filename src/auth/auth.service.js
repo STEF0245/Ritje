@@ -68,7 +68,15 @@ export const hasRequiredRegisterFields = (payload) => {
 		payload?.email &&
 		payload?.password &&
 		payload?.firstname &&
-		payload?.lastname
+		payload?.lastname &&
+		payload?.street &&
+		payload?.house_number &&
+		payload?.postal_code &&
+		payload?.city &&
+		payload?.country &&
+		payload?.address &&
+		payload?.latitude &&
+		payload?.longitude
 	)
 }
 
