@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="nl" class="text-slate-200">
 	<%
+		const metadata = user?.user_metadata || {}
+		const appMetadata = user?.app_metadata || {}
 		const fullName =
-			user?.user_metadata?.full_name ||
-			user?.user_metadata?.display_name ||
-			[user?.user_metadata?.first_name, user?.user_metadata?.last_name]
+			metadata?.full_name ||
+			metadata?.display_name ||
+			[metadata?.first_name, metadata?.last_name]
 				.filter(Boolean)
 				.join(' ') ||
 			'user'
@@ -16,14 +18,47 @@
 				.map((part) => part[0]?.toUpperCase())
 				.join('') || 'U'
 		const joinedDate = user?.created_at
-			? new Date(user.created_at).toLocaleDateString('nl-BE', {
+			? new Date(user.created_at).toLocaleString('nl-Be', {
 				year: 'numeric',
-				month: 'long',
-				day: 'numeric'
+				month: '2-digit',
+				day: '2-digit',
+				hour: '2-digit',
+				minute: '2-digit',
 			})
 			: 'Onbekend'
+		const lastSignInDate = user?.last_sign_in_at
+			? new Date(user.last_sign_in_at).toLocaleDateString('nl-BE', {
+				year: 'numeric',
+				month: '2-digit',
+				day: '2-digit',
+				hour: '2-digit',
+				minute: '2-digit',
+			})
+			: 'Onbekend'
+		const updatedDate = user?.updated_at
+			? new Date(user.updated_at).toLocaleDateString('nl-BE', {
+				year: 'numeric',
+				month: '2-digit',
+				day: '2-digit',
+				hour: '2-digit',
+				minute: '2-digit'
+			})
+			: 'Onbekend'
+		const hasCoordinates =
+			metadata?.latitude != undefined &&
+			metadata?.latitude != null &&
+			metadata?.latitude !== '' &&
+			metadata?.longitude != undefined &&
+			metadata?.longitude != null &&
+			metadata?.longitude !== ''
+		const mapsUrl = hasCoordinates
+			? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+				`${metadata.latitude},${metadata.longitude}`
+			)}`
+			: null
 	%>
 	<%- include('partials/head', { title }) %>
+
 
 	<body class="theme-body min-h-screen flex flex-col">
 		<%- include('partials/header', { user }) %>
@@ -47,6 +82,7 @@
 							<div>
 								<p class="text-white text-lg font-bold leading-tight"><%= fullName %></p>
 								<p class="text-slate-400 text-sm"><%= user?.email || 'Geen e-mail gevonden' %></p>
+								<%- user?.phone ? `<p class="text-slate-400 text-sm">${user.phone}</p>` : '' %>
 							</div>
 						</div>
 
@@ -60,41 +96,64 @@
 								<span class="text-slate-100"><%= joinedDate %></span>
 							</div>
 							<div class="flex items-center justify-between gap-4">
+								<span class="text-slate-400">Laatst ingelogd</span>
+								<span class="text-slate-100"><%= lastSignInDate %></span>
+							</div>
+							<div class="flex items-center justify-between gap-4">
+								<span class="text-slate-400">Laatst bijgewerkt</span>
+								<span class="text-slate-100"><%= updatedDate %></span>
+							</div>
+							<div class="flex items-center justify-between gap-4">
 								<span class="text-slate-400">E-mail bevestigd</span>
 								<span class="<%= user?.email_confirmed_at ? 'text-emerald-300' : 'text-amber-300' %>">
 									<%= user?.email_confirmed_at ? 'Ja' : 'Nee' %>
 								</span>
 							</div>
-							<div class="mt-auto pt-3">
+							<div class="mt-auto pt-3 flex flex-row gap-3">
+								<a href="/profile/edit" class="theme-pill border theme-border theme-surface w-full px-3 py-2 theme-text-primary theme-hover-accent-border text-center">Bewerken</a>
                                 <a href="/auth/logout" class="theme-pill border theme-border theme-surface w-full px-3 py-2 theme-text-primary theme-hover-accent-border text-center">Uitloggen</a>
-                            </div>
+							</div>
 						</div>
 					</article>
 
 					<article class="theme-panel p-6 lg:col-span-2">
 						<h2 class="text-xl font-extrabold text-white">Profielgegevens</h2>
-						<p class="text-slate-400 text-sm mt-1">Informatie uit je account metadata.</p>
+						<p class="text-slate-400 text-sm mt-1">Overzicht van je account en adresinformatie.</p>
 
 						<div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
 							<div class="rounded-xl border border-slate-700/70 bg-slate-900/50 p-4">
 								<p class="text-xs uppercase tracking-[0.12em] text-slate-400">Voornaam</p>
-								<p class="text-white font-semibold mt-1"><%= user?.user_metadata?.first_name || '-' %></p>
+								<p class="text-white font-semibold mt-1"><%= metadata?.first_name || '-' %></p>
 							</div>
 							<div class="rounded-xl border border-slate-700/70 bg-slate-900/50 p-4">
 								<p class="text-xs uppercase tracking-[0.12em] text-slate-400">Achternaam</p>
-								<p class="text-white font-semibold mt-1"><%= user?.user_metadata?.last_name || '-' %></p>
+								<p class="text-white font-semibold mt-1"><%= metadata?.last_name || '-' %></p>
 							</div>
 							<div class="rounded-xl border border-slate-700/70 bg-slate-900/50 p-4 md:col-span-2">
 								<p class="text-xs uppercase tracking-[0.12em] text-slate-400">Adres</p>
-								<p class="text-white font-semibold mt-1"><%= user?.user_metadata?.address || '-' %></p>
+								<p class="text-white font-semibold mt-1"><%= metadata?.address || '-' %></p>
 							</div>
 							<div class="rounded-xl border border-slate-700/70 bg-slate-900/50 p-4">
-								<p class="text-xs uppercase tracking-[0.12em] text-slate-400">Stad</p>
-								<p class="text-white font-semibold mt-1"><%= user?.user_metadata?.city || '-' %></p>
+								<p class="text-xs uppercase tracking-[0.12em] text-slate-400">Latitude</p>
+								<p class="text-white font-semibold mt-1"><%= hasCoordinates ? metadata?.latitude : '-' %></p>
 							</div>
 							<div class="rounded-xl border border-slate-700/70 bg-slate-900/50 p-4">
-								<p class="text-xs uppercase tracking-[0.12em] text-slate-400">Land</p>
-								<p class="text-white font-semibold mt-1"><%= user?.user_metadata?.country || '-' %></p>
+								<p class="text-xs uppercase tracking-[0.12em] text-slate-400">Longitude</p>
+								<p class="text-white font-semibold mt-1"><%= hasCoordinates ? metadata?.longitude : '-' %></p>
+							</div>
+							<% if (mapsUrl) { %>
+								<div class="rounded-xl border border-slate-700/70 bg-slate-900/50 p-4 md:col-span-2">
+									<p class="text-xs uppercase tracking-[0.12em] text-slate-400">Kaart</p>
+									<a
+										href="<%= mapsUrl %>"
+										target="_blank"
+										rel="noopener noreferrer"
+										class="theme-link inline-block mt-1"
+									>
+										Open locatie in Google Maps
+									</a>
+								</div>
+							<% } %>
 							</div>
 						</div>
 					</article>
