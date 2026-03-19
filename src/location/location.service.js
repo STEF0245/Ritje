@@ -1,6 +1,9 @@
 const NOMINATIM_ENDPOINT = 'https://nominatim.openstreetmap.org/reverse'
 const LOCATIONIQ_ENDPOINT = 'https://us1.locationiq.com/v1/reverse'
 const GEOAPIFY_ENDPOINT = 'https://api.geoapify.com/v1/geocode/reverse'
+const NOMINATIM_FORWARD_ENDPOINT = 'https://nominatim.openstreetmap.org/search'
+const LOCATIONIQ_FORWARD_ENDPOINT = 'https://us1.locationiq.com/v1/search'
+const GEOAPIFY_FORWARD_ENDPOINT = 'https://api.geoapify.com/v1/geocode/search'
 
 const NOMINATIM_USER_AGENT =
 	process.env.GEOCODER_USER_AGENT ||
@@ -101,6 +104,17 @@ const mapAddress = (address = {}) => ({
 	country: address.country || null
 })
 
+const parseResultCoordinate = (value, label) => {
+	const parsed = Number(value)
+
+	if (!Number.isFinite(parsed)) {
+		throw new Error(`Provider returned invalid ${label}`)
+	}
+
+	return parsed
+}
+
+// ========== Reverse geocoding ==========
 const reverseWithNominatim = async (lat, lon) => {
 	const geocoderURL = new URL(NOMINATIM_ENDPOINT)
 	geocoderURL.searchParams.set('format', 'jsonv2')
@@ -222,6 +236,144 @@ export const reverseGeocode = async (lat, lon) => {
 		result = await reverseWithLocationIQ(lat, lon)
 	} else {
 		result = await reverseWithNominatim(lat, lon)
+	}
+
+	return {
+		provider,
+		attribution,
+		result
+	}
+}
+
+// ========== Forward geocoding ==========
+const forwardWithNominatim = async (address) => {
+	const geocoderURL = new URL(NOMINATIM_FORWARD_ENDPOINT)
+	geocoderURL.searchParams.set('format', 'jsonv2')
+	geocoderURL.searchParams.set('q', address)
+	geocoderURL.searchParams.set('limit', '1')
+	geocoderURL.searchParams.set('addressdetails', '1')
+
+	const response = await fetch(geocoderURL, {
+		headers: {
+			'User-Agent': NOMINATIM_USER_AGENT,
+			Accept: 'application/json'
+		}
+	})
+
+	if (!response.ok) {
+		if (response.status === 403) {
+			throw new Error(
+				'Nominatim blocked this server request (403). Set GEOAPIFY_API_KEY or LOCATIONIQ_API_KEY, or use your own Nominatim instance.'
+			)
+		}
+
+		throw new Error(`Nominatim failed with status ${response.status}`)
+	}
+
+	const data = await response.json()
+	const firstMatch = Array.isArray(data) ? data[0] : null
+
+	if (!firstMatch) {
+		return null
+	}
+
+	return {
+		lat: parseResultCoordinate(firstMatch.lat, 'latitude'),
+		lon: parseResultCoordinate(firstMatch.lon, 'longitude'),
+		raw: firstMatch
+	}
+}
+
+const forwardWithLocationIQ = async (address) => {
+	const apiKey = process.env.LOCATIONIQ_API_KEY
+
+	if (!apiKey) {
+		throw new Error('Missing LOCATIONIQ_API_KEY for LocationIQ provider')
+	}
+
+	const geocoderURL = new URL(LOCATIONIQ_FORWARD_ENDPOINT)
+	geocoderURL.searchParams.set('key', apiKey)
+	geocoderURL.searchParams.set('q', address)
+	geocoderURL.searchParams.set('format', 'json')
+	geocoderURL.searchParams.set('limit', '1')
+
+	const response = await fetch(geocoderURL, {
+		headers: {
+			Accept: 'application/json'
+		}
+	})
+
+	if (!response.ok) {
+		throw new Error(`LocationIQ failed with status ${response.status}`)
+	}
+
+	const data = await response.json()
+	const firstMatch = Array.isArray(data) ? data[0] : null
+
+	if (!firstMatch) {
+		return null
+	}
+
+	return {
+		lat: parseResultCoordinate(firstMatch.lat, 'latitude'),
+		lon: parseResultCoordinate(firstMatch.lon, 'longitude'),
+		raw: firstMatch
+	}
+}
+
+const forwardWithGeoapify = async (address) => {
+	const apiKey = process.env.GEOAPIFY_API_KEY
+
+	if (!apiKey) {
+		throw new Error('Missing GEOAPIFY_API_KEY for Geoapify provider')
+	}
+
+	const geocoderURL = new URL(GEOAPIFY_FORWARD_ENDPOINT)
+	geocoderURL.searchParams.set('text', address)
+	geocoderURL.searchParams.set('limit', '1')
+	geocoderURL.searchParams.set('apiKey', apiKey)
+
+	const response = await fetch(geocoderURL, {
+		headers: {
+			Accept: 'application/json'
+		}
+	})
+
+	if (!response.ok) {
+		throw new Error(`Geoapify failed with status ${response.status}`)
+	}
+
+	const data = await response.json()
+	const firstFeature = data?.features?.[0]
+	const properties = firstFeature?.properties
+
+	if (!properties) {
+		return null
+	}
+
+	const latCandidate =
+		properties.lat ?? firstFeature?.geometry?.coordinates?.[1]
+	const lonCandidate =
+		properties.lon ?? firstFeature?.geometry?.coordinates?.[0]
+
+	return {
+		lat: parseResultCoordinate(latCandidate, 'latitude'),
+		lon: parseResultCoordinate(lonCandidate, 'longitude'),
+		raw: properties
+	}
+}
+
+export const forwardGeocode = async (address) => {
+	const provider = getProvider()
+	const attribution = PROVIDER_ATTRIBUTION[provider]
+
+	let result
+	if (provider === 'geoapify') {
+		result = await forwardWithGeoapify(address)
+	} else if (provider === 'locationiq') {
+		result = await forwardWithLocationIQ(address)
+	} else {
+		result = await forwardWithNominatim(address)
 	}
 
 	return {
