@@ -1,4 +1,5 @@
-const fieldIds = ['street', 'house_number', 'postal_code', 'city', 'country']
+const fieldIds = ['street', 'house_number', 'postal_code', 'city']
+const FIXED_COUNTRY = 'Belgium'
 const locationStatus = document.getElementById('location-status')
 const locationButton = document.getElementById('autofill-location')
 const providerAttributionField = document.getElementById(
@@ -132,12 +133,13 @@ function updateCombinedAddress(usedGeolocation = false) {
 	const houseNumber = document.getElementById('house_number').value.trim()
 	const postalCode = document.getElementById('postal_code').value.trim()
 	const city = document.getElementById('city').value.trim()
-	const country = document.getElementById('country').value.trim()
 
 	const lineOne = [street, houseNumber].filter(Boolean).join(' ')
 	const lineTwo = [postalCode, city].filter(Boolean).join(' ')
 
-	addressField.value = [lineOne, lineTwo, country].filter(Boolean).join(', ')
+	addressField.value = [lineOne, lineTwo, FIXED_COUNTRY]
+		.filter(Boolean)
+		.join(', ')
 
 	if (usedGeolocation) return
 
@@ -200,7 +202,6 @@ locationButton.addEventListener('click', async () => {
 			address.houseNumber || ''
 		document.getElementById('postal_code').value = address.postalCode || ''
 		document.getElementById('city').value = address.city || ''
-		document.getElementById('country').value = address.country || ''
 
 		updateCombinedAddress(true)
 

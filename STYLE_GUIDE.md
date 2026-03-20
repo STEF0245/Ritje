@@ -52,7 +52,7 @@ Use these classes before adding custom styling:
 
 ## Alerts
 
-Alerts use [views/partials/auth_error.ejs](views/partials/auth_error.ejs) and should always pass:
+Alerts use [views/partials/notify.ejs](views/partials/notify.ejs) and should always pass:
 
 - `authErrorReason`
 - `authErrorType` (`error`, `warning`, `info`)

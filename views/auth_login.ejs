@@ -15,7 +15,7 @@
                 </div>
 
                 <% if (authErrorReason) { %>
-                    <%- include('partials/auth_error', { authErrorReason, authErrorType }) %>
+                    <%- include('partials/notify', { authErrorReason, authErrorType }) %>
                 <% } %>
 
                 <form

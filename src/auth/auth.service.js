@@ -1,9 +1,9 @@
 import { config } from '../config/env.config.js'
-import { supabase } from '../config/supabase.client.js'
+import { supabase, supabaseAdmin } from '../config/supabase.client.js'
 import {
 	ACCESS_TOKEN_COOKIE,
-	AUTH_ERROR_COOKIE,
-	AUTH_ERROR_TYPE_COOKIE,
+	NOTIFY_COOKIE,
+	NOTIFY_TYPE_COOKIE,
 	REFRESH_TOKEN_COOKIE
 } from './auth.constants.js'
 
@@ -19,25 +19,25 @@ export const setAuthError = (
 	type = 'info',
 	maxAgeMs = 20 * 1000
 ) => {
-	res.cookie(AUTH_ERROR_COOKIE, message, {
+	res.cookie(NOTIFY_COOKIE, message, {
 		...baseCookieOptions,
 		maxAge: maxAgeMs
 	})
-	res.cookie(AUTH_ERROR_TYPE_COOKIE, type, {
+	res.cookie(NOTIFY_TYPE_COOKIE, type, {
 		...baseCookieOptions,
 		maxAge: maxAgeMs
 	})
 }
 
 export const consumeAuthReason = (req, res) => {
-	const authErrorReason = req.cookies[AUTH_ERROR_COOKIE] || null
+	const authErrorReason = req.cookies[NOTIFY_COOKIE] || null
 	if (authErrorReason) {
-		res.clearCookie(AUTH_ERROR_COOKIE)
+		res.clearCookie(NOTIFY_COOKIE)
 	}
 
-	const authErrorType = req.cookies[AUTH_ERROR_TYPE_COOKIE] || null
+	const authErrorType = req.cookies[NOTIFY_TYPE_COOKIE] || null
 	if (authErrorType) {
-		res.clearCookie(AUTH_ERROR_TYPE_COOKIE)
+		res.clearCookie(NOTIFY_TYPE_COOKIE)
 	}
 
 	return { authErrorReason, authErrorType }
@@ -73,12 +73,13 @@ export const hasRequiredRegisterFields = (payload) => {
 		payload?.house_number &&
 		payload?.postal_code &&
 		payload?.city &&
-		payload?.country &&
 		payload?.address &&
 		payload?.latitude &&
 		payload?.longitude
 	)
 }
+
+const BELGIUM_COUNTRY = 'Belgium'
 
 const mapRegisterMetadata = (payload) => ({
 	first_name: payload.firstname,
@@ -90,7 +91,7 @@ const mapRegisterMetadata = (payload) => ({
 	house_number: payload.house_number,
 	postal_code: payload.postal_code,
 	city: payload.city,
-	country: payload.country,
+	country: BELGIUM_COUNTRY,
 	latitude: payload.latitude,
 	longitude: payload.longitude
 })
@@ -142,5 +143,11 @@ export const logOut = async (accessToken, scope = 'local') => {
 	return supabase.auth.signOut({
 		accessToken,
 		scope
+	})
+}
+
+export const updateUserMetadataById = async (userId, userMetadata) => {
+	return supabaseAdmin.auth.admin.updateUserById(userId, {
+		user_metadata: userMetadata
 	})
 }

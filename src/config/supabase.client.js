@@ -11,3 +11,14 @@ export const supabase = createClient(
 		}
 	}
 )
+
+export const supabaseAdmin = createClient(
+	config.supabase.url,
+	config.supabase.secretKey,
+	{
+		auth: {
+			autoRefreshToken: false,
+			persistSession: false
+		}
+	}
+)

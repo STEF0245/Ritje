@@ -15,7 +15,7 @@
                 </div>
 
                 <% if (authErrorReason) { %>
-                    <%- include('partials/auth_error', { authErrorReason, authErrorType }) %>
+                    <%- include('partials/notify', { authErrorReason, authErrorType }) %>
                 <% } %>
 
                 <form
@@ -122,7 +122,7 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                             <div>
                                 <label for="postal_code" class="block text-sm font-semibold mb-2 text-slate-300">Postcode</label>
                                 <input
@@ -144,19 +144,6 @@
                                     id="city"
                                     placeholder="Westerlo"
                                     autocomplete="address-level2"
-                                    class="theme-input"
-                                    required
-                                />
-                            </div>
-
-                            <div>
-                                <label for="country" class="block text-sm font-semibold mb-2 text-slate-300">Land</label>
-                                <input
-                                    type="text"
-                                    name="country"
-                                    id="country"
-                                    placeholder="Belgie"
-                                    autocomplete="country-name"
                                     class="theme-input"
                                     required
                                 />
