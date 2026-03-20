@@ -253,7 +253,7 @@
 								</div>
 								<div class="theme-surface theme-pill border theme-border p-4 md:col-span-2">
 									<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Kaart</p>
-									<div id="map" class="w-full h-64 mt-2" data-latitude="<%= metadata?.latitude || '' %>" data-longitude="<%= metadata?.longitude || '' %>"></div>
+									<div id="map" class="w-full h-64 mt-2 rounded-md" data-latitude="<%= metadata?.latitude || '' %>" data-longitude="<%= metadata?.longitude || '' %>"></div>
 								</div>
 							</div>
 						<% } %>
@@ -274,9 +274,8 @@
 
 				if (mapElement && Number.isFinite(latitude) && Number.isFinite(longitude)) {
 					const map = L.map('map').setView([latitude, longitude], 13)
-					L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-						attribution:
-							'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+					L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png', {
+						attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>, &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="http://openstreetmap.org/copyright">OpenStreetMap</a> contributors',
 					}).addTo(map)
 					L.marker([latitude, longitude]).addTo(map)
 				} else if (mapElement) {
