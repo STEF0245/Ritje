@@ -15,6 +15,10 @@ import { ACCESS_TOKEN_COOKIE } from './auth.constants.js'
 export const getLoginPage = (req, res) => {
 	const { authErrorReason, authErrorType } = consumeAuthReason(req, res)
 
+	if (res.locals.user) {
+		return res.redirect('/')
+	}
+
 	res.render('auth_login', {
 		title: 'Inloggen',
 		authErrorReason,
@@ -24,6 +28,10 @@ export const getLoginPage = (req, res) => {
 
 export const getRegisterPage = (req, res) => {
 	const { authErrorReason, authErrorType } = consumeAuthReason(req, res)
+
+	if (res.locals.user) {
+		return res.redirect('/')
+	}
 
 	res.render('auth_register', {
 		title: 'Registreren',
