@@ -207,38 +207,49 @@
 								</div>
 							</form>
 						<% } else { %>
-							<div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-								<div class="theme-surface theme-pill border theme-border p-4">
-									<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Voornaam</p>
-									<p class="theme-text-primary font-semibold mt-1"><%= firstName || '-' %></p>
+							<div class="mt-6 space-y-4">
+								<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+									<div class="theme-surface theme-pill border theme-border p-4">
+										<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Voornaam</p>
+										<p class="theme-text-primary font-semibold mt-1"><%= firstName || '-' %></p>
+									</div>
+									<div class="theme-surface theme-pill border theme-border p-4">
+										<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Achternaam</p>
+										<p class="theme-text-primary font-semibold mt-1"><%= lastName || '-' %></p>
+									</div>
 								</div>
-								<div class="theme-surface theme-pill border theme-border p-4">
-									<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Achternaam</p>
-									<p class="theme-text-primary font-semibold mt-1"><%= lastName || '-' %></p>
+
+								<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+									<div class="theme-surface theme-pill border theme-border p-4 md:col-span-2">
+										<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Straat</p>
+										<p class="theme-text-primary font-semibold mt-1"><%= street || '-' %></p>
+									</div>
+									<div class="theme-surface theme-pill border theme-border p-4 md:col-span-1">
+										<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Huisnummer</p>
+										<p class="theme-text-primary font-semibold mt-1"><%= houseNumber || '-' %></p>
+									</div>
 								</div>
-								<div class="theme-surface theme-pill border theme-border p-4 md:col-span-3">
-									<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Straat</p>
-									<p class="theme-text-primary font-semibold mt-1"><%= street || '-' %></p>
+
+								<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+									<div class="theme-surface theme-pill border theme-border p-4">
+										<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Postcode</p>
+										<p class="theme-text-primary font-semibold mt-1"><%= postalCode || '-' %></p>
+									</div>
+									<div class="theme-surface theme-pill border theme-border p-4">
+										<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Stad</p>
+										<p class="theme-text-primary font-semibold mt-1"><%= city || '-' %></p>
+									</div>
 								</div>
-								<div class="theme-surface theme-pill border theme-border p-4 md:col-span-1">
-									<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Huisnummer</p>
-									<p class="theme-text-primary font-semibold mt-1"><%= houseNumber || '-' %></p>
-								</div>
-								<div class="theme-surface theme-pill border theme-border p-4">
-									<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Postcode</p>
-									<p class="theme-text-primary font-semibold mt-1"><%= postalCode || '-' %></p>
-								</div>
-								<div class="theme-surface theme-pill border theme-border p-4">
-									<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Stad</p>
-									<p class="theme-text-primary font-semibold mt-1"><%= city || '-' %></p>
-								</div>
-								<div class="theme-surface theme-pill border theme-border p-4">
-									<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Latitude</p>
-									<p class="theme-text-primary font-semibold mt-1"><%= hasCoordinates ? metadata?.latitude : '-' %></p>
-								</div>
-								<div class="theme-surface theme-pill border theme-border p-4">
-									<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Longitude</p>
-									<p class="theme-text-primary font-semibold mt-1"><%= hasCoordinates ? metadata?.longitude : '-' %></p>
+
+								<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+									<div class="theme-surface theme-pill border theme-border p-4">
+										<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Latitude</p>
+										<p class="theme-text-primary font-semibold mt-1"><%= hasCoordinates ? metadata?.latitude : '-' %></p>
+									</div>
+									<div class="theme-surface theme-pill border theme-border p-4">
+										<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Longitude</p>
+										<p class="theme-text-primary font-semibold mt-1"><%= hasCoordinates ? metadata?.longitude : '-' %></p>
+									</div>
 								</div>
 								<% if (mapsUrl) { %>
 									<div class="theme-surface theme-pill border theme-border p-4 md:col-span-2">
