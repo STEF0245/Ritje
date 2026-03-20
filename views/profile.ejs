@@ -188,12 +188,12 @@
 
 								<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 									<div class="theme-surface theme-pill border theme-border p-4">
-										<label for="latitude" class="text-xs uppercase tracking-[0.12em] theme-text-muted block">Latitude (auto)</label>
-										<input type="text" name="latitude_preview" id="latitude" class="theme-text-primary font-semibold mt-1 w-full" value="<%= metadata?.latitude || '' %>" readonly />
+										<label for="latitude" class="text-xs uppercase tracking-[0.12em] theme-text-muted block pointer-events-none">Latitude (auto)</label>
+										<input type="text" name="latitude_preview" id="latitude" class="theme-text-primary font-semibold mt-1 w-full opacity-60 pointer-events-none" value="<%= metadata?.latitude || '' %>" readonly tabindex="-1" />
 									</div>
 									<div class="theme-surface theme-pill border theme-border p-4">
-										<label for="longitude" class="text-xs uppercase tracking-[0.12em] theme-text-muted block">Longitude (auto)</label>
-										<input type="text" name="longitude_preview" id="longitude" class="theme-text-primary font-semibold mt-1 w-full" value="<%= metadata?.longitude || '' %>" readonly />
+										<label for="longitude" class="text-xs uppercase tracking-[0.12em] theme-text-muted block pointer-events-none">Longitude (auto)</label>
+										<input type="text" name="longitude_preview" id="longitude" class="theme-text-primary font-semibold mt-1 w-full opacity-60 pointer-events-none" value="<%= metadata?.longitude || '' %>" readonly tabindex="-1" />
 									</div>
 								</div>
 
