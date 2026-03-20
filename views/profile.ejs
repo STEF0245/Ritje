@@ -251,12 +251,10 @@
 										<p class="theme-text-primary font-semibold mt-1"><%= hasCoordinates ? metadata?.longitude : '-' %></p>
 									</div>
 								</div>
-								<% if (mapsUrl) { %>
-									<div class="theme-surface theme-pill border theme-border p-4 md:col-span-2">
-										<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Kaart</p>
-										<a href="<%= mapsUrl %>" target="_blank" rel="noopener noreferrer" class="theme-link inline-block mt-1">Open locatie in Google Maps</a>
-									</div>
-								<% } %>
+								<div class="theme-surface theme-pill border theme-border p-4 md:col-span-2">
+									<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Kaart</p>
+									<div id="map" class="w-full h-64"></div>
+								</div>
 							</div>
 						<% } %>
 					</article>
@@ -266,6 +264,17 @@
 
 		<% if (isEditing) { %>
 			<script src="/js/profile_edit.js"></script>
+		<% } else { %>
+			<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+			<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+			<script>
+				const map = L.map('map').setView([metadata?.latitude, metadata?.longitude], 13)
+				L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+					attribution:
+						'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+				}).addTo(map)
+				L.marker([metadata?.latitude, metadata?.longitude]).addTo(map)
+			</script>
 		<% } %>
 		<%- include('partials/footer') %>
 	</body>
