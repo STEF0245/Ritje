@@ -154,46 +154,46 @@
 						<% if (isEditing) { %>
 							<form action="/profile/edit" method="post" id="profile-edit-form" class="mt-6 space-y-4">
 								<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-									<div>
-										<label for="first_name" class="block text-sm font-semibold mb-2 theme-text-muted">Voornaam</label>
-										<input type="text" name="first_name" id="first_name" class="theme-input" value="<%= firstName %>" required />
+									<div class="theme-surface theme-pill border theme-border p-4">
+										<label for="first_name" class="text-xs uppercase tracking-[0.12em] theme-text-muted block">Voornaam</label>
+										<input type="text" name="first_name" id="first_name" class="theme-input mt-1 w-full" value="<%= firstName %>" required />
 									</div>
-									<div>
-										<label for="last_name" class="block text-sm font-semibold mb-2 theme-text-muted">Achternaam</label>
-										<input type="text" name="last_name" id="last_name" class="theme-input" value="<%= lastName %>" required />
+									<div class="theme-surface theme-pill border theme-border p-4">
+										<label for="last_name" class="text-xs uppercase tracking-[0.12em] theme-text-muted block">Achternaam</label>
+										<input type="text" name="last_name" id="last_name" class="theme-input mt-1 w-full" value="<%= lastName %>" required />
 									</div>
 								</div>
 
 								<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-									<div class="md:col-span-2">
-										<label for="street" class="block text-sm font-semibold mb-2 theme-text-muted">Straat</label>
-										<input type="text" name="street" id="street" class="theme-input" value="<%= street %>" required />
+									<div class="theme-surface theme-pill border theme-border p-4 md:col-span-2">
+										<label for="street" class="text-xs uppercase tracking-[0.12em] theme-text-muted block">Straat</label>
+										<input type="text" name="street" id="street" class="theme-input mt-1 w-full" value="<%= street %>" required />
 									</div>
-									<div>
-										<label for="house_number" class="block text-sm font-semibold mb-2 theme-text-muted">Nummer</label>
-										<input type="text" name="house_number" id="house_number" class="theme-input" value="<%= houseNumber %>" required />
-									</div>
-								</div>
-
-								<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-									<div>
-										<label for="postal_code" class="block text-sm font-semibold mb-2 theme-text-muted">Postcode</label>
-										<input type="text" name="postal_code" id="postal_code" class="theme-input" value="<%= postalCode %>" required />
-									</div>
-									<div>
-										<label for="city" class="block text-sm font-semibold mb-2 theme-text-muted">Stad</label>
-										<input type="text" name="city" id="city" class="theme-input" value="<%= city %>" required />
+									<div class="theme-surface theme-pill border theme-border p-4 md:col-span-1">
+										<label for="house_number" class="text-xs uppercase tracking-[0.12em] theme-text-muted block">Nummer</label>
+										<input type="text" name="house_number" id="house_number" class="theme-input mt-1 w-full" value="<%= houseNumber %>" required />
 									</div>
 								</div>
 
 								<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-									<div>
-										<label for="latitude" class="block text-sm font-semibold mb-2 theme-text-muted">Latitude (auto)</label>
-										<input type="text" name="latitude_preview" id="latitude" class="theme-input" value="<%= metadata?.latitude || '' %>" readonly />
+									<div class="theme-surface theme-pill border theme-border p-4">
+										<label for="postal_code" class="text-xs uppercase tracking-[0.12em] theme-text-muted block">Postcode</label>
+										<input type="text" name="postal_code" id="postal_code" class="theme-input mt-1 w-full" value="<%= postalCode %>" required />
 									</div>
-									<div>
-										<label for="longitude" class="block text-sm font-semibold mb-2 theme-text-muted">Longitude (auto)</label>
-										<input type="text" name="longitude_preview" id="longitude" class="theme-input" value="<%= metadata?.longitude || '' %>" readonly />
+									<div class="theme-surface theme-pill border theme-border p-4">
+										<label for="city" class="text-xs uppercase tracking-[0.12em] theme-text-muted block">Stad</label>
+										<input type="text" name="city" id="city" class="theme-input mt-1 w-full" value="<%= city %>" required />
+									</div>
+								</div>
+
+								<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+									<div class="theme-surface theme-pill border theme-border p-4">
+										<label for="latitude" class="text-xs uppercase tracking-[0.12em] theme-text-muted block">Latitude (auto)</label>
+										<input type="text" name="latitude_preview" id="latitude" class="theme-input mt-1 w-full" value="<%= metadata?.latitude || '' %>" readonly />
+									</div>
+									<div class="theme-surface theme-pill border theme-border p-4">
+										<label for="longitude" class="text-xs uppercase tracking-[0.12em] theme-text-muted block">Longitude (auto)</label>
+										<input type="text" name="longitude_preview" id="longitude" class="theme-input mt-1 w-full" value="<%= metadata?.longitude || '' %>" readonly />
 									</div>
 								</div>
 
