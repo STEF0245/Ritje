@@ -45,18 +45,34 @@ const debounce = (func, wait) => {
 	}
 }
 
-const updateCoordinatesFromAddress = async () => {
-	const addressParts = getAddressParts()
-	const composedAddress = composeAddress(addressParts)
-	addressField.value = composedAddress
+const REQUEST_COOLDOWN_MS = 5000
+let lastRequestTimestamp = 0
+let pendingAddress = ''
+let pendingTimeoutId = null
+let isRequestInFlight = false
+let lastRequestedAddress = ''
 
-	if (!hasAllRequiredFields(addressParts)) {
-		setStatus(
-			'Vul straat, nummer, postcode en stad in voor automatische coördinaten.'
-		)
+const queueGeocodeRequest = (composedAddress, waitMs) => {
+	pendingAddress = composedAddress
+
+	if (pendingTimeoutId) {
+		clearTimeout(pendingTimeoutId)
+	}
+
+	pendingTimeoutId = setTimeout(() => {
+		pendingTimeoutId = null
+		const queuedAddress = pendingAddress
+		pendingAddress = ''
+		void requestCoordinates(queuedAddress)
+	}, waitMs)
+}
+
+const requestCoordinates = async (composedAddress) => {
+	if (!composedAddress || isRequestInFlight) {
 		return
 	}
 
+	isRequestInFlight = true
 	setStatus('Adres controleren en coördinaten bijwerken...')
 
 	try {
@@ -75,6 +91,7 @@ const updateCoordinatesFromAddress = async () => {
 		const data = await response.json()
 		latitudeField.value = data.lat || ''
 		longitudeField.value = data.lon || ''
+		lastRequestedAddress = composedAddress
 		setStatus('Coördinaten automatisch bijgewerkt op basis van je adres.')
 	} catch {
 		latitudeField.value = ''
@@ -83,7 +100,62 @@ const updateCoordinatesFromAddress = async () => {
 			'Adres kon niet automatisch worden omgezet naar coördinaten. Controleer je adres.',
 			true
 		)
+	} finally {
+		isRequestInFlight = false
+		lastRequestTimestamp = Date.now()
+
+		if (pendingAddress && pendingAddress !== lastRequestedAddress) {
+			const waitMs = Math.max(
+				REQUEST_COOLDOWN_MS - (Date.now() - lastRequestTimestamp),
+				0
+			)
+			queueGeocodeRequest(pendingAddress, waitMs)
+		}
 	}
+}
+
+const updateCoordinatesFromAddress = async () => {
+	const addressParts = getAddressParts()
+	const composedAddress = composeAddress(addressParts)
+	addressField.value = composedAddress
+
+	if (!hasAllRequiredFields(addressParts)) {
+		setStatus(
+			'Vul straat, nummer, postcode en stad in voor automatische coördinaten.'
+		)
+		return
+	}
+
+	if (
+		composedAddress === lastRequestedAddress &&
+		latitudeField.value &&
+		longitudeField.value
+	) {
+		setStatus('Coördinaten zijn al bijgewerkt voor dit adres.')
+		return
+	}
+
+	if (isRequestInFlight) {
+		setStatus('Adresupdate is bezig. Nieuwe aanvraag wordt ingepland...')
+		queueGeocodeRequest(composedAddress, REQUEST_COOLDOWN_MS)
+		return
+	}
+
+	const waitMs = Math.max(
+		REQUEST_COOLDOWN_MS - (Date.now() - lastRequestTimestamp),
+		0
+	)
+
+	if (waitMs > 0) {
+		const waitSeconds = Math.ceil(waitMs / 1000)
+		setStatus(
+			`Even wachten: nieuwe geocode aanvraag over ${waitSeconds} seconde${waitSeconds > 1 ? 'n' : ''}.`
+		)
+		queueGeocodeRequest(composedAddress, waitMs)
+		return
+	}
+
+	await requestCoordinates(composedAddress)
 }
 
 const debouncedUpdateCoordinatesFromAddress = debounce(
