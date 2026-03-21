@@ -41,7 +41,6 @@ const ProfileMap = {
 		this.addTileLayer()
 		this.addMarker(latitude, longitude)
 		this.addAttribution()
-		this.mapInstance.scrollWheelZoom.disable()
 	},
 
 	addTileLayer() {
