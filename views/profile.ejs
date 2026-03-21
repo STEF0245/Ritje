@@ -68,6 +68,8 @@
 			hasCoordinates && mapsAddress
 				? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsAddress)}`
 				: null
+		const safeAddressLineOne = [street, houseNumber].filter(Boolean).join(' ')
+		const safeAddressLineTwo = [postalCode, city].filter(Boolean).join(' ')
 	%>
 	<%- include('partials/head', { title }) %>
 
@@ -253,7 +255,16 @@
 								</div>
 								<div class="theme-surface theme-pill border theme-border p-4 md:col-span-2">
 									<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Kaart</p>
-									<div id="map" class="w-full h-64 mt-2 rounded-md" data-latitude="<%= metadata?.latitude || '' %>" data-longitude="<%= metadata?.longitude || '' %>"></div>
+										<div
+											id="map"
+											class="w-full h-64 mt-2 rounded-md"
+											data-latitude="<%= metadata?.latitude || '' %>"
+											data-longitude="<%= metadata?.longitude || '' %>"
+											data-full-name="<%= fullName %>"
+											data-address-line-one="<%= safeAddressLineOne %>"
+											data-address-line-two="<%= safeAddressLineTwo %>"
+											data-maps-url="<%= mapsUrl || '' %>"
+										></div>
 								</div>
 							</div>
 						<% } %>

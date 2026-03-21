@@ -23,6 +23,22 @@ const ProfileMap = {
 		}
 	},
 
+	getProfileLocationDetails(latitude, longitude) {
+		const fullName = this.mapElement?.dataset?.fullName || 'Uw woonplaats'
+		const addressLineOne = this.mapElement?.dataset?.addressLineOne || ''
+		const addressLineTwo = this.mapElement?.dataset?.addressLineTwo || ''
+		const mapsUrl = this.mapElement?.dataset?.mapsUrl || ''
+
+		return {
+			fullName,
+			addressLineOne,
+			addressLineTwo,
+			mapsUrl,
+			latitude,
+			longitude
+		}
+	},
+
 	createMap(latitude, longitude) {
 		this.mapInstance = L.map('map', {
 			minZoom: 9,
@@ -39,7 +55,11 @@ const ProfileMap = {
 		})
 
 		this.addTileLayer()
-		this.addMarker(latitude, longitude)
+		const locationDetails = this.getProfileLocationDetails(
+			latitude,
+			longitude
+		)
+		this.addMarker(latitude, longitude, locationDetails)
 		this.addAttribution()
 	},
 
@@ -54,22 +74,55 @@ const ProfileMap = {
 		).addTo(this.mapInstance)
 	},
 
-	addMarker(latitude, longitude, title) {
-		const label = title || 'Uw woonplaats'
+	addMarker(latitude, longitude, locationDetails) {
+		const label = locationDetails?.fullName || 'Uw woonplaats'
 		const marker = L.marker([latitude, longitude], {
-			title: label,
-			alt: 'Marker die uw woonplaats aangeeft op de kaart'
+			title: label
 		}).addTo(this.mapInstance)
+
+		const popupCard = document.createElement('div')
+		popupCard.className =
+			'theme-surface theme-border theme-pill px-3 py-2 mb-3 text-sm theme-text-primary'
+
+		const titleElement = document.createElement('p')
+		titleElement.className = 'm-0! mb-1! font-semibold leading-tight'
+		titleElement.textContent = label
+		popupCard.appendChild(titleElement)
+
+		const details = [
+			locationDetails?.addressLineOne,
+			locationDetails?.addressLineTwo
+		].filter(Boolean)
+
+		details.forEach((line) => {
+			const lineElement = document.createElement('p')
+			lineElement.className =
+				'm-0! text-xs theme-text-muted! leading-tight'
+			lineElement.textContent = line
+			popupCard.appendChild(lineElement)
+		})
+
+		if (locationDetails?.mapsUrl) {
+			const linkElement = document.createElement('p')
+			linkElement.className =
+				'm-0! text-xs theme-text-muted! leading-tight hover:underline'
+
+			const linkAnchor = document.createElement('a')
+			linkAnchor.className = 'theme-text-muted!'
+			linkAnchor.href = locationDetails.mapsUrl
+			linkAnchor.target = '_blank'
+			linkAnchor.rel = 'noopener noreferrer'
+			linkAnchor.textContent = 'Bekijk op kaart'
+			linkElement.appendChild(linkAnchor)
+			popupCard.appendChild(linkElement)
+		}
 
 		const popupContent = L.popup([latitude, longitude], {
 			closeButton: false,
 			autoClose: false,
 			closeOnClick: true,
 			className: 'map-popup',
-			content: `
-                <div class="theme-surface theme-border theme-pill px-3 py-2 mb-2 text-sm font-semibold theme-text-primary text-center">
-                    <p class="m-0!">${label}</p>
-                </div>`
+			content: popupCard
 		})
 		marker.bindPopup(popupContent)
 		marker.openPopup()

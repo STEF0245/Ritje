@@ -125,6 +125,9 @@
 .theme-text-muted {
 	color: var(--ride-muted);
 }
+.theme-text-muted\! {
+	color: var(--ride-muted) !important;
+}
 
 .theme-text-primary {
 	color: var(--ride-text);
