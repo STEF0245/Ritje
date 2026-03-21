@@ -54,17 +54,20 @@ const ProfileMap = {
 		).addTo(this.mapInstance)
 	},
 
-	addMarker(latitude, longitude) {
+	addMarker(latitude, longitude, title) {
 		const marker = L.marker([latitude, longitude], {
-			title: 'Uw woonplaats',
+			title: title || 'Uw woonplaats',
 			alt: 'Marker die uw woonplaats aangeeft op de kaart'
 		}).addTo(this.mapInstance)
 
 		// Create custom styled popup
-		const popupContent = document.createElement('div')
-		popupContent.className = 'map-popup theme-surface theme-border'
-		popupContent.textContent = 'Uw woonplaats'
-
+		const popupContent = L.popup([latitude, longitude], {
+			closeButton: false,
+			autoClose: false,
+			closeOnClick: true,
+			className: 'map-popup theme-surface theme-border',
+			content: title || 'Uw woonplaats'
+		})
 		marker.bindPopup(popupContent)
 		marker.openPopup()
 	},
