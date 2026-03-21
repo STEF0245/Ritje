@@ -51,8 +51,6 @@ const updateCoordinatesFromAddress = async () => {
 	addressField.value = composedAddress
 
 	if (!hasAllRequiredFields(addressParts)) {
-		latitudeField.value = ''
-		longitudeField.value = ''
 		setStatus(
 			'Vul straat, nummer, postcode en stad in voor automatische coördinaten.'
 		)
