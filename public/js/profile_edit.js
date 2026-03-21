@@ -99,7 +99,7 @@ REQUIRED_FIELD_IDS.forEach((id) => {
 		return
 	}
 
-	field.addEventListener('input', debouncedUpdateCoordinatesFromAddress)
+	field.addEventListener('blur', debouncedUpdateCoordinatesFromAddress)
 })
 
 updateCoordinatesFromAddress()
