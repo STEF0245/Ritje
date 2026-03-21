@@ -227,37 +227,24 @@
 	border-radius: 0.625rem;
 }
 
-.map-popup {
-	border-radius: 0.5rem !important;
-	border: 1px solid color-mix(in srgb, var(--ride-border) 85%, transparent) !important;
-	background: color-mix(
-		in srgb,
-		var(--ride-bg-800) 90%,
-		transparent
-	) !important;
-	padding: 0.625rem 0.875rem !important;
-	font-size: 0.875rem !important;
-	color: var(--ride-text) !important;
+.leaflet-popup.map-popup {
+	margin-bottom: 0.5rem !important;
 }
 
-.leaflet-popup-content-wrapper {
-	border-radius: 0.5rem !important;
+.leaflet-popup.map-popup .leaflet-popup-content-wrapper {
 	background: transparent !important;
 	border: none !important;
 	padding: 0 !important;
 	box-shadow: none !important;
 }
 
-.leaflet-popup-content {
+.leaflet-popup.map-popup .leaflet-popup-content {
 	margin: 0 !important;
 	padding: 0 !important;
-	border-radius: 0.5rem !important;
 }
 
-.leaflet-popup-tip {
-	background: transparent !important;
-	border: none !important;
-	box-shadow: none !important;
+.leaflet-popup.map-popup .leaflet-popup-tip-container {
+	display: none !important;
 }
 
 /* Leaflet attribution styling */
