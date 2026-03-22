@@ -46,8 +46,8 @@ const ProfileMap = {
 			center: [latitude, longitude],
 			zoom: 16,
 			maxBounds: [
-				[49.5, 2.5], // Southwest coordinates of Belgium
-				[51.5, 6.4] // Northeast coordinates of Belgium
+				[51.5051, 6.4081], // Northeast coordinates of Belgium
+				[49.497, 2.5407] // Southwest coordinates of Belgium
 			],
 			attributionControl: false,
 			dragging: true,
@@ -64,14 +64,10 @@ const ProfileMap = {
 	},
 
 	addTileLayer() {
-		L.tileLayer(
-			'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.{ext}',
-			{
-				ext: 'png',
-				minNativeZoom: 0,
-				maxNativeZoom: 20
-			}
-		).addTo(this.mapInstance)
+		L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+			minNativeZoom: 0,
+			maxNativeZoom: 20
+		}).addTo(this.mapInstance)
 	},
 
 	addMarker(latitude, longitude, locationDetails) {
