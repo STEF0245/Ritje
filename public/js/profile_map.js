@@ -73,7 +73,16 @@ const ProfileMap = {
 	addMarker(latitude, longitude, locationDetails) {
 		const label = locationDetails?.fullName || 'Uw woonplaats'
 		const marker = L.marker([latitude, longitude], {
-			title: label
+			title: label,
+			icon: L.divIcon({
+				className: 'custom-div-icon',
+				html: `
+					<i class="fas fa-house text-[1.25rem] theme-accent-text"></i>
+				`,
+				iconSize: [24, 24],
+				iconAnchor: [12, 12],
+				popupAnchor: [0, -6]
+			})
 		}).addTo(this.mapInstance)
 
 		const popupCard = document.createElement('div')
