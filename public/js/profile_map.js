@@ -41,7 +41,7 @@ const ProfileMap = {
 
 	createMap(latitude, longitude) {
 		this.mapInstance = L.map('map', {
-			minZoom: 9,
+			minZoom: 8,
 			maxZoom: 18,
 			center: [latitude, longitude],
 			zoom: 16,
@@ -64,10 +64,9 @@ const ProfileMap = {
 	},
 
 	addTileLayer() {
-		L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-			minNativeZoom: 0,
-			maxNativeZoom: 20
-		}).addTo(this.mapInstance)
+		L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(
+			this.mapInstance
+		)
 	},
 
 	addMarker(latitude, longitude, locationDetails) {
