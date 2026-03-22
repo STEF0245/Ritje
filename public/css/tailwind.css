@@ -302,17 +302,23 @@
 }
 
 /* Leaflet attribution styling */
+.leaflet-dragging .leaflet-control-attribution {
+	pointer-events: none !important;
+	opacity: 0.125 !important;
+}
+
 .leaflet-control-attribution {
 	background: color-mix(
 		in srgb,
-		var(--ride-bg-900) 45%,
+		var(--ride-bg-900) 75%,
 		transparent
 	) !important;
-	border: 1px solid color-mix(in srgb, var(--ride-border) 55%, transparent) !important;
+	border: 1px solid color-mix(in srgb, var(--ride-border) 85%, transparent) !important;
 	border-radius: 0.275rem !important;
 	color: var(--ride-muted) !important;
 	padding: 0.275rem 0.4rem !important;
 	font-size: 0.6rem !important;
+	transition: opacity 0.3s ease !important;
 }
 
 .leaflet-control-attribution a {
