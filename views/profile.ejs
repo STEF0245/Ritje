@@ -255,6 +255,8 @@
 								</div>
 								<div class="theme-surface theme-pill border theme-border p-4 md:col-span-2">
 									<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Kaart</p>
+									<details class="mt-1 transition">
+										<summary class="cursor-pointer theme-text-primary">Open kaart</summary>
 										<div
 											id="map"
 											class="w-full h-64 mt-2 rounded-md"
@@ -265,6 +267,7 @@
 											data-address-line-two="<%= safeAddressLineTwo %>"
 											data-maps-url="<%= mapsUrl || '' %>"
 										></div>
+									</details>
 								</div>
 							</div>
 						<% } %>
