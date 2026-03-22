@@ -254,19 +254,39 @@
 									</div>
 								</div>
 								<div class="theme-surface theme-pill border theme-border p-4 md:col-span-2">
-									<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Kaart</p>
-									<details class="mt-1 transition">
-										<summary class="cursor-pointer theme-text-primary">Open kaart</summary>
-										<div
-											id="map"
-											class="w-full h-64 mt-2 rounded-md"
-											data-latitude="<%= metadata?.latitude || '' %>"
-											data-longitude="<%= metadata?.longitude || '' %>"
-											data-full-name="<%= fullName %>"
-											data-address-line-one="<%= safeAddressLineOne %>"
-											data-address-line-two="<%= safeAddressLineTwo %>"
-											data-maps-url="<%= mapsUrl || '' %>"
-										></div>
+									<div class="flex items-start justify-between gap-3">
+										<div>
+											<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Kaart</p>
+											<p class="mt-1 text-sm theme-text-muted">Bekijk je opgegeven locatie op de kaart.</p>
+										</div>
+										<% if (mapsUrl) { %>
+											<a
+												href="<%= mapsUrl %>"
+												target="_blank"
+												rel="noopener noreferrer"
+												class="theme-link text-xs whitespace-nowrap mt-0.5"
+											>
+												Google Maps
+											</a>
+										<% } %>
+									</div>
+									<details class="profile-map-details mt-3">
+										<summary class="profile-map-summary theme-pill border theme-border theme-surface-strong px-3 py-2">
+											<span class="font-semibold theme-text-primary">Toon kaart</span>
+											<span class="profile-map-chevron" aria-hidden="true">v</span>
+										</summary>
+										<div class="profile-map-panel mt-3 overflow-hidden theme-pill border theme-border">
+											<div
+												id="map"
+												class="w-full h-64"
+												data-latitude="<%= metadata?.latitude || '' %>"
+												data-longitude="<%= metadata?.longitude || '' %>"
+												data-full-name="<%= fullName %>"
+												data-address-line-one="<%= safeAddressLineOne %>"
+												data-address-line-two="<%= safeAddressLineTwo %>"
+												data-maps-url="<%= mapsUrl || '' %>"
+											></div>
+										</div>
 									</details>
 								</div>
 							</div>

@@ -250,6 +250,57 @@
 	display: none !important;
 }
 
+.profile-map-summary {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+	cursor: pointer;
+	list-style: none;
+	transition:
+		border-color 0.2s ease,
+		background-color 0.2s ease;
+}
+
+.profile-map-summary::-webkit-details-marker {
+	display: none;
+}
+
+.profile-map-summary::marker {
+	content: '';
+}
+
+.profile-map-summary:hover {
+	border-color: var(--ride-accent-soft);
+}
+
+.profile-map-chevron {
+	font-size: 0.85rem;
+	line-height: 1;
+	color: var(--ride-muted);
+	transition:
+		transform 0.2s ease,
+		color 0.2s ease;
+}
+
+.profile-map-details[open] .profile-map-chevron {
+	transform: rotate(180deg);
+	color: var(--ride-accent-soft);
+}
+
+.profile-map-panel {
+	background: color-mix(in srgb, var(--ride-bg-800) 84%, transparent);
+	transition: border-color 0.2s ease;
+}
+
+.profile-map-details[open] .profile-map-panel {
+	border-color: color-mix(
+		in srgb,
+		var(--ride-accent-soft) 70%,
+		var(--ride-border)
+	);
+}
+
 /* Leaflet attribution styling */
 .leaflet-control-attribution {
 	background: color-mix(

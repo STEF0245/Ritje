@@ -101,14 +101,14 @@ const ProfileMap = {
 		if (locationDetails?.mapsUrl) {
 			const linkElement = document.createElement('p')
 			linkElement.className =
-				'm-0! text-xs theme-text-muted! leading-tight hover:underline'
+				'm-0! mt-1! text-[0.65rem] theme-text-muted! leading-tight hover:underline'
 
 			const linkAnchor = document.createElement('a')
 			linkAnchor.className = 'theme-text-muted!'
 			linkAnchor.href = locationDetails.mapsUrl
 			linkAnchor.target = '_blank'
 			linkAnchor.rel = 'noopener noreferrer'
-			linkAnchor.textContent = 'Bekijk op kaart'
+			linkAnchor.textContent = 'Google Maps'
 			linkElement.appendChild(linkAnchor)
 			popupCard.appendChild(linkElement)
 		}
