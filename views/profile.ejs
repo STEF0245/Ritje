@@ -346,11 +346,11 @@
 											</div>
 											<div>
 												<label for="schedule_<%= day.key %>_start" class="text-xs uppercase tracking-[0.12em] theme-text-muted block">Begin</label>
-												<div class="grid grid-cols-2 gap-2 mt-1">
+												<div class="theme-select-grid">
 													<select
 														name="schedule_<%= day.key %>_start_hour"
 														id="schedule_<%= day.key %>_start"
-														class="theme-text-primary font-semibold w-full"
+														class="theme-select"
 													>
 														<option value="" <%= !startHour ? 'selected' : '' %>>Uur</option>
 														<% scheduleHourOptions.forEach((hourOption) => { %>
@@ -362,7 +362,7 @@
 													</select>
 													<select
 														name="schedule_<%= day.key %>_start_minute"
-														class="theme-text-primary font-semibold w-full"
+														class="theme-select"
 													>
 														<option value="" <%= !startMinute ? 'selected' : '' %>>Min</option>
 														<% scheduleMinuteOptions.forEach((minuteOption) => { %>
@@ -376,11 +376,11 @@
 											</div>
 											<div>
 												<label for="schedule_<%= day.key %>_end" class="text-xs uppercase tracking-[0.12em] theme-text-muted block">Einde</label>
-												<div class="grid grid-cols-2 gap-2 mt-1">
+												<div class="theme-select-grid">
 													<select
 														name="schedule_<%= day.key %>_end_hour"
 														id="schedule_<%= day.key %>_end"
-														class="theme-text-primary font-semibold w-full"
+														class="theme-select"
 													>
 														<option value="" <%= !endHour ? 'selected' : '' %>>Uur</option>
 														<% scheduleHourOptions.forEach((hourOption) => { %>
@@ -392,7 +392,7 @@
 													</select>
 													<select
 														name="schedule_<%= day.key %>_end_minute"
-														class="theme-text-primary font-semibold w-full"
+														class="theme-select"
 													>
 														<option value="" <%= !endMinute ? 'selected' : '' %>>Min</option>
 														<% scheduleMinuteOptions.forEach((minuteOption) => { %>

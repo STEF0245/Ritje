@@ -109,6 +109,62 @@
 		color-mix(in srgb, var(--ride-accent) 35%, transparent);
 }
 
+.theme-select-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 0.5rem;
+	margin-top: 0.25rem;
+}
+
+.theme-select {
+	appearance: none;
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	width: 100%;
+	padding: 0.625rem 2.25rem 0.625rem 0.75rem;
+	border-radius: 0.5rem;
+	border: 1px solid color-mix(in srgb, var(--ride-border) 88%, transparent);
+	background-color: color-mix(in srgb, var(--ride-bg-800) 88%, transparent);
+	background-image:
+		linear-gradient(45deg, transparent 50%, var(--ride-muted) 50%),
+		linear-gradient(135deg, var(--ride-muted) 50%, transparent 50%);
+	background-position:
+		calc(100% - 0.95rem) calc(50% - 0.15rem),
+		calc(100% - 0.65rem) calc(50% - 0.15rem);
+	background-size:
+		0.35rem 0.35rem,
+		0.35rem 0.35rem;
+	background-repeat: no-repeat;
+	color: var(--ride-text);
+	font-weight: 600;
+	line-height: 1.25;
+	transition:
+		border-color 0.2s ease,
+		box-shadow 0.2s ease,
+		background-color 0.2s ease;
+}
+
+.theme-select:hover {
+	border-color: color-mix(
+		in srgb,
+		var(--ride-accent-soft) 62%,
+		var(--ride-border)
+	);
+	background-color: color-mix(in srgb, var(--ride-bg-800) 94%, transparent);
+}
+
+.theme-select:focus {
+	outline: none;
+	border-color: var(--ride-accent);
+	box-shadow: 0 0 0 2px
+		color-mix(in srgb, var(--ride-accent) 35%, transparent);
+}
+
+.theme-select option {
+	background-color: #101823;
+	color: var(--ride-text);
+}
+
 .theme-link {
 	color: var(--ride-muted);
 	transition: color 0.2s ease;
