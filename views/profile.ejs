@@ -299,7 +299,7 @@
 						<% } %>
 					</article>
 
-					<article class="theme-panel p-6 lg:col-span-2">
+					<article class="theme-panel p-6 lg:col-span-2 lg:col-start-2">
 						<h2 class="text-xl font-extrabold theme-text-primary">
 							<%= isEditing ? 'Urenrooster bewerken' : 'Urenrooster' %>
 						</h2>
@@ -378,7 +378,7 @@
 								</div>
 							</form>
 						<% } else { %>
-							<div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+							<div class="mt-6 grid grid-cols-1 md:grid-cols-3 md:col-width-auto gap-4">
 								<% scheduleDays.forEach((day) => {
 									const daySchedule = weeklySchedule?.[day.key] || null
 									const hasHours = Boolean(daySchedule?.start && daySchedule?.end)
