@@ -77,17 +77,20 @@
 			{ key: 'thursday', label: 'Donderdag' },
 			{ key: 'friday', label: 'Vrijdag' },
 		]
-		const scheduleMinMinutes = 6 * 60
-		const scheduleMaxMinutes = 19 * 60
-		const scheduleStepMinutes = 5
-		const scheduleHourOptions = []
-		for (let minutes = scheduleMinMinutes; minutes <= scheduleMaxMinutes; minutes += 60) {
-			scheduleHourOptions.push(String(Math.floor(minutes / 60)).padStart(2, '0'))
-		}
-		const scheduleMinuteOptions = []
-		for (let minute = 0; minute < 60; minute += scheduleStepMinutes) {
-			scheduleMinuteOptions.push(String(minute).padStart(2, '0'))
-		}
+		const classBoundaryTimes = [
+			'08:25',
+			'09:15',
+			'10:05',
+			'10:20',
+			'11:10',
+			'12:00',
+			'13:00',
+			'13:50',
+			'14:40',
+			'14:55',
+			'15:45',
+			'16:35'
+		]
 		const weeklySchedule = metadata?.weekly_schedule || {}
 	%>
 	<%- include('partials/head', { title }) %>
@@ -319,7 +322,7 @@
 						</h2>
 						<p class="theme-text-muted text-sm mt-1">
 							<%= isEditing
-								? 'Pas je urenrooster per dag aan. Kies uren tussen 06:00 en 19:00 in stappen van 5 minuten. Laat begin- en einduur leeg op dagen dat je geen rit zoekt.'
+								? 'Pas je urenrooster per dag aan. Je kan enkel officiële lesstart- en leseinde-tijden kiezen. Laat begin- en einduur leeg op dagen dat je geen rit zoekt.'
 								: 'Bekijk je huidige urenrooster per dag. Dit helpt collega\'s om ritten te plannen.' %>
 						</p>
 
@@ -331,14 +334,12 @@
 									const daySchedule = weeklySchedule?.[day.key] || null
 									const startValue = daySchedule?.start || ''
 									const endValue = daySchedule?.end || ''
-									const [startHour = '', startMinute = ''] = startValue.split(':')
-									const [endHour = '', endMinute = ''] = endValue.split(':')
-									const isStartHourValid = startHour && scheduleHourOptions.includes(startHour)
-									const isStartMinuteValid = startMinute && scheduleMinuteOptions.includes(startMinute)
-									const isEndHourValid = endHour && scheduleHourOptions.includes(endHour)
-									const isEndMinuteValid = endMinute && scheduleMinuteOptions.includes(endMinute)
+									const isStartValid = startValue && classBoundaryTimes.includes(startValue)
+									const isEndValid = endValue && classBoundaryTimes.includes(endValue)
+									const firstBoundaryTime = classBoundaryTimes[-1]
+									const lastBoundaryTime = classBoundaryTimes[classBoundaryTimes.length - 1]
 								%>
-									<div class="theme-surface theme-pill border theme-border p-4">
+									<div class="theme-surface theme-pill border theme-border p-4" data-schedule-row>
 										<div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
 											<div>
 												<p class="text-xs uppercase tracking-[0.12em] theme-text-muted"><%= day.label %></p>
@@ -346,63 +347,41 @@
 											</div>
 											<div>
 												<label for="schedule_<%= day.key %>_start" class="text-xs uppercase tracking-[0.12em] theme-text-muted block">Begin</label>
-												<div class="theme-select-grid">
-													<select
-														name="schedule_<%= day.key %>_start_hour"
-														id="schedule_<%= day.key %>_start"
-														class="theme-select"
-													>
-														<option value="" <%= !startHour ? 'selected' : '' %>>Uur</option>
-														<% scheduleHourOptions.forEach((hourOption) => { %>
-															<option value="<%= hourOption %>" <%= startHour === hourOption ? 'selected' : '' %>><%= hourOption %></option>
-														<% }) %>
-														<% if (startHour && !isStartHourValid) { %>
-															<option value="<%= startHour %>" selected><%= startHour %> (!)</option>
+												<select
+													name="schedule_<%= day.key %>_start"
+													id="schedule_<%= day.key %>_start"
+													class="theme-select mt-1"
+													data-schedule-bound="start"
+												>
+													<option value="" <%= !startValue ? 'selected' : '' %>>Geen beginuur</option>
+													<% classBoundaryTimes.forEach((timeOption) => { %>
+														<% if (timeOption !== lastBoundaryTime) { %>
+															<option value="<%= timeOption %>" <%= startValue === timeOption ? 'selected' : '' %>><%= timeOption %></option>
 														<% } %>
-													</select>
-													<select
-														name="schedule_<%= day.key %>_start_minute"
-														class="theme-select"
-													>
-														<option value="" <%= !startMinute ? 'selected' : '' %>>Min</option>
-														<% scheduleMinuteOptions.forEach((minuteOption) => { %>
-															<option value="<%= minuteOption %>" <%= startMinute === minuteOption ? 'selected' : '' %>><%= minuteOption %></option>
-														<% }) %>
-														<% if (startMinute && !isStartMinuteValid) { %>
-															<option value="<%= startMinute %>" selected><%= startMinute %> (!)</option>
-														<% } %>
-													</select>
-												</div>
+													<% }) %>
+													<% if (startValue && !isStartValid) { %>
+														<option value="<%= startValue %>" selected>Ongeldige opgeslagen waarde (<%= startValue %>)</option>
+													<% } %>
+												</select>
 											</div>
 											<div>
 												<label for="schedule_<%= day.key %>_end" class="text-xs uppercase tracking-[0.12em] theme-text-muted block">Einde</label>
-												<div class="theme-select-grid">
-													<select
-														name="schedule_<%= day.key %>_end_hour"
-														id="schedule_<%= day.key %>_end"
-														class="theme-select"
-													>
-														<option value="" <%= !endHour ? 'selected' : '' %>>Uur</option>
-														<% scheduleHourOptions.forEach((hourOption) => { %>
-															<option value="<%= hourOption %>" <%= endHour === hourOption ? 'selected' : '' %>><%= hourOption %></option>
-														<% }) %>
-														<% if (endHour && !isEndHourValid) { %>
-															<option value="<%= endHour %>" selected><%= endHour %> (!)</option>
+												<select
+													name="schedule_<%= day.key %>_end"
+													id="schedule_<%= day.key %>_end"
+													class="theme-select mt-1"
+													data-schedule-bound="end"
+												>
+													<option value="" <%= !endValue ? 'selected' : '' %>>Geen einduur</option>
+													<% classBoundaryTimes.forEach((timeOption) => { %>
+														<% if (timeOption !== firstBoundaryTime) { %>
+															<option value="<%= timeOption %>" <%= endValue === timeOption ? 'selected' : '' %>><%= timeOption %></option>
 														<% } %>
-													</select>
-													<select
-														name="schedule_<%= day.key %>_end_minute"
-														class="theme-select"
-													>
-														<option value="" <%= !endMinute ? 'selected' : '' %>>Min</option>
-														<% scheduleMinuteOptions.forEach((minuteOption) => { %>
-															<option value="<%= minuteOption %>" <%= endMinute === minuteOption ? 'selected' : '' %>><%= minuteOption %></option>
-														<% }) %>
-														<% if (endMinute && !isEndMinuteValid) { %>
-															<option value="<%= endMinute %>" selected><%= endMinute %> (!)</option>
-														<% } %>
-													</select>
-												</div>
+													<% }) %>
+													<% if (endValue && !isEndValid) { %>
+														<option value="<%= endValue %>" selected>Ongeldige opgeslagen waarde (<%= endValue %>)</option>
+													<% } %>
+												</select>
 											</div>
 										</div>
 									</div>
@@ -432,6 +411,7 @@
 
 		<% if (isEditing) { %>
 			<script src="/js/profile_edit.js"></script>
+			<script src="/js/profile_schedule.js"></script>
 		<% } else { %>
 			<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 			<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>

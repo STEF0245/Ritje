@@ -2,9 +2,20 @@ import { forwardGeocode } from '../location/location.service.js'
 import { updateUserMetadataById } from '../auth/auth.service.js'
 
 const BELGIUM_COUNTRY = 'Belgium'
-const SCHEDULE_MIN_TIME = '06:00'
-const SCHEDULE_MAX_TIME = '19:00'
-const SCHEDULE_STEP_MINUTES = 5
+const CLASS_BOUNDARY_TIMES = [
+	'08:25',
+	'09:15',
+	'10:05',
+	'10:20',
+	'11:10',
+	'12:00',
+	'13:00',
+	'13:50',
+	'14:40',
+	'14:55',
+	'15:45',
+	'16:35'
+]
 const SCHEDULE_DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
 
 const isValidTime = (value) => /^([01]\d|2[0-3]):([0-5]\d)$/.test(value)
@@ -14,15 +25,7 @@ const toMinutes = (value) => {
 	return hours * 60 + minutes
 }
 
-const isInAllowedWindow = (value) => {
-	const minutes = toMinutes(value)
-	return (
-		minutes >= toMinutes(SCHEDULE_MIN_TIME) &&
-		minutes <= toMinutes(SCHEDULE_MAX_TIME)
-	)
-}
-
-const isStepAligned = (value) => toMinutes(value) % SCHEDULE_STEP_MINUTES === 0
+const isClassBoundaryTime = (value) => CLASS_BOUNDARY_TIMES.includes(value)
 
 const getBoundTimeFromPayload = (payload, day, bound) => {
 	const directValue = String(
@@ -65,11 +68,9 @@ const parseScheduleFromPayload = (payload) => {
 			!end ||
 			!isValidTime(start) ||
 			!isValidTime(end) ||
-			!isInAllowedWindow(start) ||
-			!isInAllowedWindow(end) ||
-			!isStepAligned(start) ||
-			!isStepAligned(end) ||
-			start >= end
+			!isClassBoundaryTime(start) ||
+			!isClassBoundaryTime(end) ||
+			toMinutes(start) >= toMinutes(end)
 		) {
 			return {
 				schedule: null,
@@ -131,7 +132,7 @@ const getProfileStatusFeedback = (query) => {
 	if (query?.error === 'schedule_invalid') {
 		return {
 			authErrorReason:
-				'Controleer je urenrooster. Gebruik tijden tussen 06:00 en 19:00, in stappen van 5 minuten, en zorg dat einduur later is dan beginuur.',
+				'Controleer je urenrooster. Kies enkel officiële lesstart/leseinde tijden en zorg dat einduur later is dan beginuur.',
 			authErrorType: 'error'
 		}
 	}
