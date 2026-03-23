@@ -2,22 +2,58 @@ import { forwardGeocode } from '../location/location.service.js'
 import { updateUserMetadataById } from '../auth/auth.service.js'
 
 const BELGIUM_COUNTRY = 'Belgium'
-const SCHEDULE_DAYS = [
-	'monday',
-	'tuesday',
-	'wednesday',
-	'thursday',
-	'friday',
-]
+const SCHEDULE_MIN_TIME = '06:00'
+const SCHEDULE_MAX_TIME = '19:00'
+const SCHEDULE_STEP_MINUTES = 5
+const SCHEDULE_DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
 
 const isValidTime = (value) => /^([01]\d|2[0-3]):([0-5]\d)$/.test(value)
+
+const toMinutes = (value) => {
+	const [hours, minutes] = value.split(':').map(Number)
+	return hours * 60 + minutes
+}
+
+const isInAllowedWindow = (value) => {
+	const minutes = toMinutes(value)
+	return (
+		minutes >= toMinutes(SCHEDULE_MIN_TIME) &&
+		minutes <= toMinutes(SCHEDULE_MAX_TIME)
+	)
+}
+
+const isStepAligned = (value) => toMinutes(value) % SCHEDULE_STEP_MINUTES === 0
+
+const getBoundTimeFromPayload = (payload, day, bound) => {
+	const directValue = String(
+		payload?.[`schedule_${day}_${bound}`] || ''
+	).trim()
+	if (directValue) {
+		return directValue
+	}
+
+	const hour = String(payload?.[`schedule_${day}_${bound}_hour`] || '').trim()
+	const minute = String(
+		payload?.[`schedule_${day}_${bound}_minute`] || ''
+	).trim()
+
+	if (!hour && !minute) {
+		return ''
+	}
+
+	if (!hour || !minute) {
+		return `${hour}:${minute}`
+	}
+
+	return `${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`
+}
 
 const parseScheduleFromPayload = (payload) => {
 	const schedule = {}
 
 	for (const day of SCHEDULE_DAYS) {
-		const start = String(payload?.[`schedule_${day}_start`] || '').trim()
-		const end = String(payload?.[`schedule_${day}_end`] || '').trim()
+		const start = getBoundTimeFromPayload(payload, day, 'start')
+		const end = getBoundTimeFromPayload(payload, day, 'end')
 
 		if (!start && !end) {
 			schedule[day] = null
@@ -29,6 +65,10 @@ const parseScheduleFromPayload = (payload) => {
 			!end ||
 			!isValidTime(start) ||
 			!isValidTime(end) ||
+			!isInAllowedWindow(start) ||
+			!isInAllowedWindow(end) ||
+			!isStepAligned(start) ||
+			!isStepAligned(end) ||
 			start >= end
 		) {
 			return {
@@ -91,7 +131,7 @@ const getProfileStatusFeedback = (query) => {
 	if (query?.error === 'schedule_invalid') {
 		return {
 			authErrorReason:
-				'Controleer je urenrooster. Gebruik geldige tijden (HH:MM) en zorg dat einduur later is dan beginuur.',
+				'Controleer je urenrooster. Gebruik tijden tussen 06:00 en 19:00, in stappen van 5 minuten, en zorg dat einduur later is dan beginuur.',
 			authErrorType: 'error'
 		}
 	}

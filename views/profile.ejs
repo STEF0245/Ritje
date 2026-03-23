@@ -77,6 +77,17 @@
 			{ key: 'thursday', label: 'Donderdag' },
 			{ key: 'friday', label: 'Vrijdag' },
 		]
+		const scheduleMinMinutes = 6 * 60
+		const scheduleMaxMinutes = 19 * 60
+		const scheduleStepMinutes = 5
+		const scheduleHourOptions = []
+		for (let minutes = scheduleMinMinutes; minutes <= scheduleMaxMinutes; minutes += 60) {
+			scheduleHourOptions.push(String(Math.floor(minutes / 60)).padStart(2, '0'))
+		}
+		const scheduleMinuteOptions = []
+		for (let minute = 0; minute < 60; minute += scheduleStepMinutes) {
+			scheduleMinuteOptions.push(String(minute).padStart(2, '0'))
+		}
 		const weeklySchedule = metadata?.weekly_schedule || {}
 	%>
 	<%- include('partials/head', { title }) %>
@@ -308,7 +319,7 @@
 						</h2>
 						<p class="theme-text-muted text-sm mt-1">
 							<%= isEditing
-								? 'Pas je urenrooster per dag aan. Laat begin- en einduur leeg op dagen dat je geen rit zoekt.'
+								? 'Pas je urenrooster per dag aan. Kies uren tussen 06:00 en 19:00 in stappen van 5 minuten. Laat begin- en einduur leeg op dagen dat je geen rit zoekt.'
 								: 'Bekijk je huidige urenrooster per dag. Dit helpt collega\'s om ritten te plannen.' %>
 						</p>
 
@@ -320,6 +331,12 @@
 									const daySchedule = weeklySchedule?.[day.key] || null
 									const startValue = daySchedule?.start || ''
 									const endValue = daySchedule?.end || ''
+									const [startHour = '', startMinute = ''] = startValue.split(':')
+									const [endHour = '', endMinute = ''] = endValue.split(':')
+									const isStartHourValid = startHour && scheduleHourOptions.includes(startHour)
+									const isStartMinuteValid = startMinute && scheduleMinuteOptions.includes(startMinute)
+									const isEndHourValid = endHour && scheduleHourOptions.includes(endHour)
+									const isEndMinuteValid = endMinute && scheduleMinuteOptions.includes(endMinute)
 								%>
 									<div class="theme-surface theme-pill border theme-border p-4">
 										<div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
@@ -329,23 +346,63 @@
 											</div>
 											<div>
 												<label for="schedule_<%= day.key %>_start" class="text-xs uppercase tracking-[0.12em] theme-text-muted block">Begin</label>
-												<input
-													type="time"
-													name="schedule_<%= day.key %>_start"
-													id="schedule_<%= day.key %>_start"
-													class="theme-text-primary font-semibold mt-1 w-full"
-													value="<%= startValue %>"
-												/>
+												<div class="grid grid-cols-2 gap-2 mt-1">
+													<select
+														name="schedule_<%= day.key %>_start_hour"
+														id="schedule_<%= day.key %>_start"
+														class="theme-text-primary font-semibold w-full"
+													>
+														<option value="" <%= !startHour ? 'selected' : '' %>>Uur</option>
+														<% scheduleHourOptions.forEach((hourOption) => { %>
+															<option value="<%= hourOption %>" <%= startHour === hourOption ? 'selected' : '' %>><%= hourOption %></option>
+														<% }) %>
+														<% if (startHour && !isStartHourValid) { %>
+															<option value="<%= startHour %>" selected><%= startHour %> (!)</option>
+														<% } %>
+													</select>
+													<select
+														name="schedule_<%= day.key %>_start_minute"
+														class="theme-text-primary font-semibold w-full"
+													>
+														<option value="" <%= !startMinute ? 'selected' : '' %>>Min</option>
+														<% scheduleMinuteOptions.forEach((minuteOption) => { %>
+															<option value="<%= minuteOption %>" <%= startMinute === minuteOption ? 'selected' : '' %>><%= minuteOption %></option>
+														<% }) %>
+														<% if (startMinute && !isStartMinuteValid) { %>
+															<option value="<%= startMinute %>" selected><%= startMinute %> (!)</option>
+														<% } %>
+													</select>
+												</div>
 											</div>
 											<div>
 												<label for="schedule_<%= day.key %>_end" class="text-xs uppercase tracking-[0.12em] theme-text-muted block">Einde</label>
-												<input
-													type="time"
-													name="schedule_<%= day.key %>_end"
-													id="schedule_<%= day.key %>_end"
-													class="theme-text-primary font-semibold mt-1 w-full"
-													value="<%= endValue %>"
-												/>
+												<div class="grid grid-cols-2 gap-2 mt-1">
+													<select
+														name="schedule_<%= day.key %>_end_hour"
+														id="schedule_<%= day.key %>_end"
+														class="theme-text-primary font-semibold w-full"
+													>
+														<option value="" <%= !endHour ? 'selected' : '' %>>Uur</option>
+														<% scheduleHourOptions.forEach((hourOption) => { %>
+															<option value="<%= hourOption %>" <%= endHour === hourOption ? 'selected' : '' %>><%= hourOption %></option>
+														<% }) %>
+														<% if (endHour && !isEndHourValid) { %>
+															<option value="<%= endHour %>" selected><%= endHour %> (!)</option>
+														<% } %>
+													</select>
+													<select
+														name="schedule_<%= day.key %>_end_minute"
+														class="theme-text-primary font-semibold w-full"
+													>
+														<option value="" <%= !endMinute ? 'selected' : '' %>>Min</option>
+														<% scheduleMinuteOptions.forEach((minuteOption) => { %>
+															<option value="<%= minuteOption %>" <%= endMinute === minuteOption ? 'selected' : '' %>><%= minuteOption %></option>
+														<% }) %>
+														<% if (endMinute && !isEndMinuteValid) { %>
+															<option value="<%= endMinute %>" selected><%= endMinute %> (!)</option>
+														<% } %>
+													</select>
+												</div>
 											</div>
 										</div>
 									</div>
