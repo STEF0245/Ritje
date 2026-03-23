@@ -2,11 +2,64 @@ import { forwardGeocode } from '../location/location.service.js'
 import { updateUserMetadataById } from '../auth/auth.service.js'
 
 const BELGIUM_COUNTRY = 'Belgium'
+const SCHEDULE_DAYS = [
+	'monday',
+	'tuesday',
+	'wednesday',
+	'thursday',
+	'friday',
+]
+
+const isValidTime = (value) => /^([01]\d|2[0-3]):([0-5]\d)$/.test(value)
+
+const parseScheduleFromPayload = (payload) => {
+	const schedule = {}
+
+	for (const day of SCHEDULE_DAYS) {
+		const start = String(payload?.[`schedule_${day}_start`] || '').trim()
+		const end = String(payload?.[`schedule_${day}_end`] || '').trim()
+
+		if (!start && !end) {
+			schedule[day] = null
+			continue
+		}
+
+		if (
+			!start ||
+			!end ||
+			!isValidTime(start) ||
+			!isValidTime(end) ||
+			start >= end
+		) {
+			return {
+				schedule: null,
+				hasError: true
+			}
+		}
+
+		schedule[day] = {
+			start,
+			end
+		}
+	}
+
+	return {
+		schedule,
+		hasError: false
+	}
+}
 
 const getProfileStatusFeedback = (query) => {
 	if (query?.status === 'updated') {
 		return {
 			authErrorReason: 'Profiel succesvol bijgewerkt.',
+			authErrorType: 'info'
+		}
+	}
+
+	if (query?.status === 'schedule_updated') {
+		return {
+			authErrorReason: 'Urenrooster succesvol bijgewerkt.',
 			authErrorType: 'info'
 		}
 	}
@@ -31,6 +84,14 @@ const getProfileStatusFeedback = (query) => {
 		return {
 			authErrorReason:
 				'Opslaan van je profiel is mislukt. Probeer het opnieuw.',
+			authErrorType: 'error'
+		}
+	}
+
+	if (query?.error === 'schedule_invalid') {
+		return {
+			authErrorReason:
+				'Controleer je urenrooster. Gebruik geldige tijden (HH:MM) en zorg dat einduur later is dan beginuur.',
 			authErrorType: 'error'
 		}
 	}
@@ -68,6 +129,34 @@ export const getProfileEditPage = (req, res) => {
 
 export const postProfileEditPage = async (req, res) => {
 	try {
+		const formType = String(req.body?.form_type || 'profile').trim()
+
+		if (formType === 'schedule') {
+			const { schedule, hasError } = parseScheduleFromPayload(req.body)
+
+			if (hasError) {
+				return res.redirect('/profile/edit?error=schedule_invalid')
+			}
+
+			const existingMetadata = req.user?.user_metadata || {}
+			const mergedMetadata = {
+				...existingMetadata,
+				weekly_schedule: schedule
+			}
+
+			const { error } = await updateUserMetadataById(
+				req.user.id,
+				mergedMetadata
+			)
+
+			if (error) {
+				console.error('Schedule update failed:', error)
+				return res.redirect('/profile/edit?error=save_failed')
+			}
+
+			return res.redirect('/profile?status=schedule_updated')
+		}
+
 		const firstName = String(req.body?.first_name || '').trim()
 		const lastName = String(req.body?.last_name || '').trim()
 		const street = String(req.body?.street || '').trim()

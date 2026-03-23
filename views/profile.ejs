@@ -70,6 +70,14 @@
 				: null
 		const safeAddressLineOne = [street, houseNumber].filter(Boolean).join(' ')
 		const safeAddressLineTwo = [postalCode, city].filter(Boolean).join(' ')
+		const scheduleDays = [
+			{ key: 'monday', label: 'Maandag' },
+			{ key: 'tuesday', label: 'Dinsdag' },
+			{ key: 'wednesday', label: 'Woensdag' },
+			{ key: 'thursday', label: 'Donderdag' },
+			{ key: 'friday', label: 'Vrijdag' },
+		]
+		const weeklySchedule = metadata?.weekly_schedule || {}
 	%>
 	<%- include('partials/head', { title }) %>
 
@@ -155,6 +163,7 @@
 
 						<% if (isEditing) { %>
 							<form action="/profile/edit" method="post" id="profile-edit-form" class="mt-6 space-y-4">
+								<input type="hidden" name="form_type" value="profile" />
 								<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 									<div class="theme-surface theme-pill border theme-border p-4">
 										<label for="first_name" class="text-xs uppercase tracking-[0.12em] theme-text-muted block">Voornaam</label>
@@ -289,6 +298,74 @@
 										</div>
 									</details>
 								</div>
+							</div>
+						<% } %>
+					</article>
+
+					<article class="theme-panel p-6 lg:col-span-2">
+						<h2 class="text-xl font-extrabold theme-text-primary">
+							<%= isEditing ? 'Urenrooster bewerken' : 'Urenrooster' %>
+						</h2>
+						<p class="theme-text-muted text-sm mt-1">
+							<%= isEditing
+								? 'Pas je urenrooster per dag aan. Laat begin- en einduur leeg op dagen dat je geen rit zoekt.'
+								: 'Bekijk je huidige urenrooster per dag. Dit helpt collega\'s om ritten te plannen.' %>
+						</p>
+
+						<% if (isEditing) { %>
+							<form action="/profile/edit" method="post" class="mt-6 space-y-4">
+								<input type="hidden" name="form_type" value="schedule" />
+
+								<% scheduleDays.forEach((day) => {
+									const daySchedule = weeklySchedule?.[day.key] || null
+									const startValue = daySchedule?.start || ''
+									const endValue = daySchedule?.end || ''
+								%>
+									<div class="theme-surface theme-pill border theme-border p-4">
+										<div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+											<div>
+												<p class="text-xs uppercase tracking-[0.12em] theme-text-muted"><%= day.label %></p>
+												<p class="theme-text-primary font-semibold mt-1"><%= startValue && endValue ? `${startValue} - ${endValue}` : 'Geen uren ingesteld' %></p>
+											</div>
+											<div>
+												<label for="schedule_<%= day.key %>_start" class="text-xs uppercase tracking-[0.12em] theme-text-muted block">Begin</label>
+												<input
+													type="time"
+													name="schedule_<%= day.key %>_start"
+													id="schedule_<%= day.key %>_start"
+													class="theme-text-primary font-semibold mt-1 w-full"
+													value="<%= startValue %>"
+												/>
+											</div>
+											<div>
+												<label for="schedule_<%= day.key %>_end" class="text-xs uppercase tracking-[0.12em] theme-text-muted block">Einde</label>
+												<input
+													type="time"
+													name="schedule_<%= day.key %>_end"
+													id="schedule_<%= day.key %>_end"
+													class="theme-text-primary font-semibold mt-1 w-full"
+													value="<%= endValue %>"
+												/>
+											</div>
+										</div>
+									</div>
+								<% }) %>
+
+								<div class="pt-2 flex justify-end">
+									<button type="submit" class="theme-btn-primary px-5 py-3 cursor-pointer">Urenrooster opslaan</button>
+								</div>
+							</form>
+						<% } else { %>
+							<div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+								<% scheduleDays.forEach((day) => {
+									const daySchedule = weeklySchedule?.[day.key] || null
+									const hasHours = Boolean(daySchedule?.start && daySchedule?.end)
+								%>
+									<div class="theme-surface theme-pill border theme-border p-4">
+										<p class="text-xs uppercase tracking-[0.12em] theme-text-muted"><%= day.label %></p>
+										<p class="theme-text-primary font-semibold mt-1"><%= hasHours ? `${daySchedule.start} - ${daySchedule.end}` : 'Geen uren ingesteld' %></p>
+									</div>
+								<% }) %>
 							</div>
 						<% } %>
 					</article>
