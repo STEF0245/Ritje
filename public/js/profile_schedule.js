@@ -31,15 +31,8 @@ const updateRowBoundOptions = (row, changedBound = null) => {
 
 	const nextStartValue = startSelect.value
 	const nextEndValue = endSelect.value
-	const startBoundaryOptions = Array.from(startSelect.options).filter(
-		(option) => option.value
-	)
-	const endBoundaryOptions = Array.from(endSelect.options).filter(
-		(option) => option.value
-	)
-	const firstBoundaryValue = endBoundaryOptions[0]?.value || ''
-	const lastBoundaryValue =
-		startBoundaryOptions[startBoundaryOptions.length - 1]?.value || ''
+	const firstBoundaryValue = row.dataset.firstBoundary || ''
+	const lastBoundaryValue = row.dataset.lastBoundary || ''
 
 	for (const option of startSelect.options) {
 		if (!option.value) {

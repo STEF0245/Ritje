@@ -70,27 +70,10 @@
 				: null
 		const safeAddressLineOne = [street, houseNumber].filter(Boolean).join(' ')
 		const safeAddressLineTwo = [postalCode, city].filter(Boolean).join(' ')
-		const scheduleDays = [
-			{ key: 'monday', label: 'Maandag' },
-			{ key: 'tuesday', label: 'Dinsdag' },
-			{ key: 'wednesday', label: 'Woensdag' },
-			{ key: 'thursday', label: 'Donderdag' },
-			{ key: 'friday', label: 'Vrijdag' },
-		]
-		const classBoundaryTimes = [
-			'08:25',
-			'09:15',
-			'10:05',
-			'10:20',
-			'11:10',
-			'12:00',
-			'13:00',
-			'13:50',
-			'14:40',
-			'14:55',
-			'15:45',
-			'16:35'
-		]
+		const scheduleDays = locals.scheduleDays || []
+		const classBoundaryTimes = locals.classBoundaryTimes || []
+		const firstBoundaryTime = classBoundaryTimes[0] || ''
+		const lastBoundaryTime = classBoundaryTimes[classBoundaryTimes.length - 1] || ''
 		const weeklySchedule = metadata?.weekly_schedule || {}
 	%>
 	<%- include('partials/head', { title }) %>
@@ -336,10 +319,13 @@
 									const endValue = daySchedule?.end || ''
 									const isStartValid = startValue && classBoundaryTimes.includes(startValue)
 									const isEndValid = endValue && classBoundaryTimes.includes(endValue)
-									const firstBoundaryTime = classBoundaryTimes[-1]
-									const lastBoundaryTime = classBoundaryTimes[classBoundaryTimes.length - 1]
 								%>
-									<div class="theme-surface theme-pill border theme-border p-4" data-schedule-row>
+									<div
+										class="theme-surface theme-pill border theme-border p-4"
+										data-schedule-row
+										data-first-boundary="<%= firstBoundaryTime %>"
+										data-last-boundary="<%= lastBoundaryTime %>"
+									>
 										<div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
 											<div>
 												<p class="text-xs uppercase tracking-[0.12em] theme-text-muted"><%= day.label %></p>

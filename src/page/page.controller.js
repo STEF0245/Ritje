@@ -16,7 +16,16 @@ const CLASS_BOUNDARY_TIMES = [
 	'15:45',
 	'16:35'
 ]
-const SCHEDULE_DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
+const SCHEDULE_DAYS = [
+	{ key: 'monday', label: 'Maandag' },
+	{ key: 'tuesday', label: 'Dinsdag' },
+	{ key: 'wednesday', label: 'Woensdag' },
+	{ key: 'thursday', label: 'Donderdag' },
+	{ key: 'friday', label: 'Vrijdag' }
+]
+const SCHEDULE_DAY_KEYS = SCHEDULE_DAYS.map((day) => day.key)
+const FIRST_BOUNDARY_TIME = CLASS_BOUNDARY_TIMES[0]
+const LAST_BOUNDARY_TIME = CLASS_BOUNDARY_TIMES[CLASS_BOUNDARY_TIMES.length - 1]
 
 const isValidTime = (value) => /^([01]\d|2[0-3]):([0-5]\d)$/.test(value)
 
@@ -26,35 +35,17 @@ const toMinutes = (value) => {
 }
 
 const isClassBoundaryTime = (value) => CLASS_BOUNDARY_TIMES.includes(value)
+const isAllowedStartBoundary = (value) => value !== LAST_BOUNDARY_TIME
+const isAllowedEndBoundary = (value) => value !== FIRST_BOUNDARY_TIME
 
 const getBoundTimeFromPayload = (payload, day, bound) => {
-	const directValue = String(
-		payload?.[`schedule_${day}_${bound}`] || ''
-	).trim()
-	if (directValue) {
-		return directValue
-	}
-
-	const hour = String(payload?.[`schedule_${day}_${bound}_hour`] || '').trim()
-	const minute = String(
-		payload?.[`schedule_${day}_${bound}_minute`] || ''
-	).trim()
-
-	if (!hour && !minute) {
-		return ''
-	}
-
-	if (!hour || !minute) {
-		return `${hour}:${minute}`
-	}
-
-	return `${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`
+	return String(payload?.[`schedule_${day}_${bound}`] || '').trim()
 }
 
 const parseScheduleFromPayload = (payload) => {
 	const schedule = {}
 
-	for (const day of SCHEDULE_DAYS) {
+	for (const day of SCHEDULE_DAY_KEYS) {
 		const start = getBoundTimeFromPayload(payload, day, 'start')
 		const end = getBoundTimeFromPayload(payload, day, 'end')
 
@@ -70,6 +61,8 @@ const parseScheduleFromPayload = (payload) => {
 			!isValidTime(end) ||
 			!isClassBoundaryTime(start) ||
 			!isClassBoundaryTime(end) ||
+			!isAllowedStartBoundary(start) ||
+			!isAllowedEndBoundary(end) ||
 			toMinutes(start) >= toMinutes(end)
 		) {
 			return {
@@ -150,6 +143,8 @@ export const getProfilePage = (req, res) => {
 
 	res.render('profile', {
 		title: 'Mijn Profiel',
+		scheduleDays: SCHEDULE_DAYS,
+		classBoundaryTimes: CLASS_BOUNDARY_TIMES,
 		authErrorReason,
 		authErrorType
 	})
@@ -163,6 +158,8 @@ export const getProfileEditPage = (req, res) => {
 	res.render('profile', {
 		title: 'Profiel Bewerken',
 		isEditMode: true,
+		scheduleDays: SCHEDULE_DAYS,
+		classBoundaryTimes: CLASS_BOUNDARY_TIMES,
 		authErrorReason,
 		authErrorType
 	})
