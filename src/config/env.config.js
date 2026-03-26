@@ -10,9 +10,10 @@ const requiredEnvVars = [
 // Validate required environment variables
 requiredEnvVars.forEach((varName) => {
 	if (!process.env[varName]) {
-		throw new Error(
-			`Missing required environment variable: ${varName}. Please check your .env file.`
+		console.log(
+			`❌ Environment variable ${varName} is required but not set.`
 		)
+		process.exit(1)
 	}
 })
 
