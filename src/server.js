@@ -23,10 +23,6 @@ const shutdown = async (signal) => {
 			console.log('✓ HTTP server closed.')
 		})
 
-		// // Close database connection
-		// await sql.end({ timeout: 5 })
-		// console.log('✓ Database connection closed.')
-
 		console.log('✓ Graceful shutdown complete.')
 		process.exit(0)
 	} catch (err) {
