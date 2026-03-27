@@ -9,13 +9,10 @@ import morgan from 'morgan'
 // =====================
 // Importing modules
 // =====================
-import { config } from './config/env.config.js'
-import { errorHandler, notFoundHandler } from './misc/error.middleware.js'
-import { optionalAuth, requireAuth } from './auth/auth.middleware.js'
-import pageRoutes from './page/page.routes.js'
-import authRoutes from './auth/auth.routes.js'
-import rideRoutes from './ride/ride.routes.js'
-import locationRoutes from './location/location.routes.js'
+import config from './config.js'
+import notFoundHandler from './middleware/notFound.middleware.js'
+import errorHandler from './middleware/error.middleware.js'
+import authRoutes from './routes/auth.routes.js'
 
 // =====================
 // Initializing the app
@@ -73,12 +70,9 @@ app.use((req, res, next) => {
 // =====================
 // Routes setup
 // =====================
-app.use('/', pageRoutes)
 app.use('/auth', authRoutes)
-app.use('/ride', requireAuth, rideRoutes)
-app.use('/api/location', locationRoutes)
 
 app.use(notFoundHandler)
 app.use(errorHandler)
 
-export { app }
+export default app

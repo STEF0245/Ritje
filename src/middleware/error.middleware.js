@@ -1,10 +1,9 @@
-import { config } from '../config/env.config.js'
+import path from 'path'
+import config from '../config.js'
 
-export const errorHandler = (err, req, res, next) => {
+const errorHandler = (err, req, res, next) => {
 	err.statusCode = err.statusCode || 500
 	err.status = err.status || 'error'
-
-	// Log error
 	console.error('Error:', {
 		message: err.message,
 		statusCode: err.statusCode,
@@ -13,9 +12,8 @@ export const errorHandler = (err, req, res, next) => {
 		method: req.method
 	})
 
-	// Send error response
 	res.status(err.statusCode).render('error', {
-		title: 'Oeps, er ging iets mis',
+		title: `Error ${err.statusCode}`,
 		error: {
 			status: err.statusCode,
 			message:
@@ -26,12 +24,4 @@ export const errorHandler = (err, req, res, next) => {
 	})
 }
 
-export const notFoundHandler = (req, res) => {
-	res.status(404).render('error', {
-		title: 'Oei, deze weg loopt dood',
-		error: {
-			status: 404,
-			message: 'De pagina die je zoekt bestaat niet.'
-		}
-	})
-}
+export default errorHandler
