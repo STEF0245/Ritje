@@ -1,6 +1,5 @@
 import auth from '../firebase/auth.js'
 import db from '../firebase/db.js'
-import { generateShortUid } from '../misc/id.util.js'
 import { config } from '../config/env.config.js'
 
 const SESSION_COOKIE_NAME = 'session'
