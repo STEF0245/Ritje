@@ -1,11 +1,23 @@
-import { getUserByUid } from './auth.service.js'
+import { getUserFromSessionCookie } from './auth.service.js'
+
+const SESSION_COOKIE_NAME = 'session'
+
+const shouldReturnJson = (req) => {
+	const accepts = req.headers.accept || ''
+	return accepts.includes('application/json')
+}
 
 export const optionalAuth = async (req, res, next) => {
 	try {
-		const uid = req.headers.authorization?.split(' ')[1]
-		if (uid) {
-			const user = await getUserByUid(uid)
-			req.user = user
+		const sessionCookie = req.cookies?.[SESSION_COOKIE_NAME]
+		if (sessionCookie) {
+			const { data, error } =
+				await getUserFromSessionCookie(sessionCookie)
+			if (!error && data) {
+				req.user = data
+			} else {
+				res.clearCookie(SESSION_COOKIE_NAME)
+			}
 		}
 		next()
 	} catch (error) {
@@ -15,12 +27,24 @@ export const optionalAuth = async (req, res, next) => {
 
 export const requireAuth = async (req, res, next) => {
 	try {
-		const uid = req.headers.authorization?.split(' ')[1]
-		if (!uid) {
-			return res.status(401).json({ error: 'Unauthorized' })
+		const sessionCookie = req.cookies?.[SESSION_COOKIE_NAME]
+		if (!sessionCookie) {
+			if (shouldReturnJson(req)) {
+				return res.status(401).json({ error: 'Unauthorized' })
+			}
+			return res.redirect('/auth/login')
 		}
-		const user = await getUserByUid(uid)
-		req.user = user
+
+		const { data, error } = await getUserFromSessionCookie(sessionCookie)
+		if (error || !data) {
+			res.clearCookie(SESSION_COOKIE_NAME)
+			if (shouldReturnJson(req)) {
+				return res.status(401).json({ error: 'Unauthorized' })
+			}
+			return res.redirect('/auth/login')
+		}
+
+		req.user = data
 		next()
 	} catch (error) {
 		next(error)

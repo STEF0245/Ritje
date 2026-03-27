@@ -1,76 +1,87 @@
 import auth from '../firebase/auth.js'
 import db from '../firebase/db.js'
 import { generateShortUid } from '../misc/id.util.js'
+import { config } from '../config/env.config.js'
 
-const createUserWithRetry = async (userData, attempts = 0) => {
-	if (attempts > 5)
-		throw new Error('Failed to generate a unique UID after 5 attempts.')
+const SESSION_COOKIE_NAME = 'session'
+const CSRF_COOKIE_NAME = 'csrfToken'
+const SESSION_DURATION_MS = 60 * 60 * 24 * 5 * 1000 // 5 days
 
-	const uid = generateShortUid()
-	try {
-		return await auth.createUser({ ...userData, uid })
-	} catch (error) {
-		// If the UID exists, try again
-		if (error.code === 'auth/uid-already-exists') {
-			return createUserWithRetry(userData, attempts + 1)
+const getCookieOptions = (maxAge) => ({
+	httpOnly: true,
+	secure: config.isProduction,
+	sameSite: 'lax',
+	maxAge
+})
+
+const toPublicUser = async (userRecord) => {
+	const snapshot = await db.ref(`users/${userRecord.uid}`).get()
+	const profile = snapshot.exists() ? snapshot.val() : {}
+	const firstName = profile.first_name || profile.firstName || ''
+	const lastName = profile.last_name || profile.lastName || ''
+	const fullName =
+		profile.full_name ||
+		profile.display_name ||
+		[firstName, lastName].filter(Boolean).join(' ') ||
+		userRecord.displayName ||
+		''
+
+	return {
+		id: userRecord.uid,
+		uid: userRecord.uid,
+		email: userRecord.email || profile.email || null,
+		phone: userRecord.phoneNumber || profile.phone_number || null,
+		created_at:
+			userRecord.metadata?.creationTime || profile.created_at || null,
+		updated_at: profile.updated_at || null,
+		last_sign_in_at: userRecord.metadata?.lastSignInTime || null,
+		email_confirmed_at: userRecord.emailVerified
+			? userRecord.metadata?.lastRefreshTime ||
+				userRecord.metadata?.creationTime
+			: null,
+		app_metadata: userRecord.customClaims || {},
+		user_metadata: {
+			first_name: firstName,
+			last_name: lastName,
+			full_name: fullName,
+			display_name: fullName,
+			street: profile.street || profile.address?.street || '',
+			house_number:
+				profile.house_number || profile.address?.house_number || '',
+			postal_code:
+				profile.postal_code || profile.address?.postal_code || '',
+			city: profile.city || profile.address?.city || '',
+			country: profile.country || profile.address?.country || 'Belgium',
+			address: profile.address || profile.address?.address || '',
+			latitude: profile.latitude || profile.address?.latitude || '',
+			longitude: profile.longitude || profile.address?.longitude || '',
+			weekly_schedule: profile.weekly_schedule || {}
 		}
-		throw error // Propagate other errors (email already exists, etc.)
-	}
-}
-
-export const registerWithPassword = async (data) => {
-	try {
-		const email = data.email
-		const password = data.password
-		const phoneNumber = data.phoneNumber || null
-		const firstName = data.firstName || ''
-		const lastName = data.lastName || ''
-		const photoURL = data.photoURL || null
-		const address = data.address || {}
-		const displayName = `${firstName} ${lastName}`
-
-		const userRecord = await createUserWithRetry({
-			email,
-			password,
-			phoneNumber,
-			photoURL,
-			displayName
-		})
-
-		await db.ref(`users/${userRecord.uid}`).set({
-			email,
-			phoneNumber,
-			firstName,
-			lastName,
-			photoURL,
-			createdAt: Date.now(),
-			address
-		})
-
-		return { data: userRecord.toJSON(), error: null }
-	} catch (error) {
-		console.error('Error creating user:', error)
-		return { data: null, error: error.message }
 	}
 }
 
 export const signIn = async (req, res) => {
 	try {
-		const idToken = req.body.idToken.toString()
-		const csrfToken = req.body.csrfToken.toString()
+		const idToken = String(req.body?.idToken || '')
+		const csrfToken = String(req.body?.csrfToken || '')
 		if (csrfToken !== req.cookies.csrfToken) {
-			res.status(401).send('Unauthorized')
 			return { data: null, error: 'Invalid CSRF token' }
 		}
 
-		const expiresIn = 60 * 60 * 24 * 5 * 1000 // 5 days
+		await auth.verifyIdToken(idToken, true)
+
 		const sessionCookie = await auth.createSessionCookie(idToken, {
-			expiresIn
+			expiresIn: SESSION_DURATION_MS
 		})
-		const options = { maxAge: expiresIn, httpOnly: true, secure: true }
-		res.cookie('session', sessionCookie, options)
-		res.end(JSON.stringify({ status: 'success' }))
-		return { data: true, error: null }
+
+		res.cookie(
+			SESSION_COOKIE_NAME,
+			sessionCookie,
+			getCookieOptions(SESSION_DURATION_MS)
+		)
+		res.clearCookie(CSRF_COOKIE_NAME)
+
+		return { data: { session: true }, error: null }
 	} catch (error) {
 		console.error('Login error:', error)
 		return { data: null, error: error.message }
@@ -86,19 +97,11 @@ export const createUserToken = async (uid) => {
 	}
 }
 
-export const updateUser = async (uid, updates) => {
-	try {
-		const userRecord = await auth.updateUser(uid, updates)
-		return { data: userRecord.toJSON(), error: null }
-	} catch (error) {
-		return { data: null, error: error.message }
-	}
-}
-
 export const getUserByUid = async (uid) => {
 	try {
 		const userRecord = await auth.getUser(uid)
-		return { data: userRecord.toJSON(), error: null }
+		const user = await toPublicUser(userRecord)
+		return { data: user, error: null }
 	} catch (error) {
 		return { data: null, error: error.message }
 	}
@@ -115,29 +118,23 @@ export const getUserByEmail = async (email) => {
 
 export const signOut = (req, res) => {
 	try {
-		res.clearCookie('session').redirect('/login')
+		res.clearCookie(SESSION_COOKIE_NAME)
+		res.clearCookie(CSRF_COOKIE_NAME)
 		return { data: true, error: null }
 	} catch (error) {
 		return { data: null, error: error.message }
 	}
 }
 
-export const hasRequiredRegisterFields = (payload) => {
-	return Boolean(
-		payload?.email &&
-		payload?.password &&
-		payload?.firstname &&
-		payload?.lastname &&
-		payload?.street &&
-		payload?.house_number &&
-		payload?.postal_code &&
-		payload?.city &&
-		payload?.address &&
-		payload?.latitude &&
-		payload?.longitude
-	)
+export const getUserFromSessionCookie = async (sessionCookie) => {
+	try {
+		const decodedToken = await auth.verifySessionCookie(sessionCookie, true)
+		return getUserByUid(decodedToken.uid)
+	} catch (error) {
+		return { data: null, error: error.message }
+	}
 }
 
 export const hasRequiredLoginFields = (payload) => {
-	return Boolean(payload?.email && payload?.password)
+	return Boolean(payload?.idToken && payload?.csrfToken)
 }
