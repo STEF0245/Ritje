@@ -3,12 +3,11 @@ import {
 	getLoginPage,
 	loginController,
 	logoutController
-} from './auth.controller.js'
+} from '../controllers/auth.controller.js'
 
 const router = express.Router()
 
 router.get('/login', getLoginPage)
-router.get('/logout', logoutController)
 router.post('/login', loginController)
 router.post('/logout', logoutController)
 
