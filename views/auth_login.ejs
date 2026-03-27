@@ -3,6 +3,7 @@
     <%- include('partials/head', { title }) %>
 
 	<body class="theme-body min-h-screen flex flex-col">
+        <%- include('partials/notifications', { notifications }) %>
 		<%- include('partials/header', { user }) %>
         <main class="theme-main flex-1">
             <section class="max-w-xl mx-auto">
@@ -14,19 +15,12 @@
                     <p class="theme-subtext">Log in en ga meteen verder met je volgende rit.</p>
                 </div>
 
-				<% if (authErrorReason) { %>
-					<%- include('partials/notify', { authErrorReason, authErrorType }) %>
-				<% } %>
-
                 <form
                     action="/auth/login"
                     method="post"
                     id="login-form"
                     class="theme-panel p-6 md:p-8"
                 >
-					<input type="hidden" name="idToken" id="idToken" />
-					<input type="hidden" name="csrfToken" id="csrfToken" value="<%= csrfToken %>" />
-					<p id="login-status" class="text-xs text-slate-400 mb-4" aria-live="polite"></p>
                     <div>
                         <label for="email" class="block text-sm font-semibold mb-2 text-slate-300">E-mail</label>
                         <input

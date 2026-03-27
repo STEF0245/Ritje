@@ -3,7 +3,7 @@ import {
 	getLoginPage,
 	loginController,
 	logoutController
-} from '../controllers/auth.controller.js'
+} from '../controller/auth.controller.js'
 
 const router = express.Router()
 

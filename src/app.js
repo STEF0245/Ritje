@@ -12,6 +12,7 @@ import morgan from 'morgan'
 import config from './config.js'
 import notFoundHandler from './middleware/notFound.middleware.js'
 import errorHandler from './middleware/error.middleware.js'
+import requireAuth from './middleware/auth.middleware.js'
 import authRoutes from './routes/auth.routes.js'
 
 // =====================
@@ -61,9 +62,10 @@ if (!config.isProduction) {
 // =====================
 // Global Middleware
 // =====================
-app.use(optionalAuth) // Add user to all requests if authenticated
+app.use(requireAuth) // Add user to all requests if authenticated
 app.use((req, res, next) => {
 	res.locals.user = req.user || null // Make user available in all views
+	res.locals.notifications = [] // Placeholder for future notifications
 	next()
 })
 
