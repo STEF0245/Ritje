@@ -24,14 +24,35 @@ const requiredEnvVars = [
 	'FIREBASE_ADMIN_UNIVERSE_DOMAIN'
 ]
 
-requiredEnvVars.forEach((varName) => {
-	if (!process.env[varName]) {
+const optionalEnvVars = [
+	'GEOAPIFY_API_KEY',
+	'GEOAPIFY_USER_AGENT',
+	'GEOAPIFY_RATE_LIMIT_WINDOW_MS',
+	'GEOAPIFY_RATE_LIMIT_MAX'
+]
+
+function validateEnvVars() {
+	const unsetRequiredEnvVars = requiredEnvVars.filter(
+		(varName) => !process.env[varName]
+	)
+	const unsetOptionalEnvVars = optionalEnvVars.filter(
+		(varName) => !process.env[varName]
+	)
+
+	if (unsetRequiredEnvVars.length > 0) {
 		console.error(
-			`❌ Environment variable ${varName} is required but not set.`
+			`Error: The following required environment variables are not set: ${unsetRequiredEnvVars.join(', ')}`
 		)
 		process.exit(1)
 	}
-})
+	if (unsetOptionalEnvVars.length > 0) {
+		console.warn(
+			`Warning: The following optional environment variables are not set: ${unsetOptionalEnvVars.join(', ')}`
+		)
+	}
+}
+
+validateEnvVars()
 
 const config = {
 	port: process.env.PORT || 3000,
@@ -62,6 +83,16 @@ const config = {
 				process.env.FIREBASE_ADMIN_AUTH_PROVIDER_X509_CERT_URL,
 			clientX509CertUrl: process.env.FIREBASE_ADMIN_CLIENT_X509_CERT_URL,
 			universeDomain: process.env.FIREBASE_ADMIN_UNIVERSE_DOMAIN
+		}
+	},
+
+	geoapify: {
+		apiKey: process.env.GEOAPIFY_API_KEY,
+		userAgent: process.env.GEOAPIFY_USER_AGENT,
+		rateLimit: {
+			windowMs:
+				parseInt(process.env.GEOAPIFY_RATE_LIMIT_WINDOW_MS) || 5000,
+			max: parseInt(process.env.GEOAPIFY_RATE_LIMIT_MAX) || 1
 		}
 	}
 }
