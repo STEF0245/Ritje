@@ -1,5 +1,5 @@
 import { forwardGeocode } from '../location/location.service.js'
-import { updateUserMetadataById } from '../auth/auth.service.js'
+import { updateUser } from '../auth/auth.service.js'
 
 const BELGIUM_COUNTRY = 'Belgium'
 const CLASS_BOUNDARY_TIMES = [
@@ -182,10 +182,7 @@ export const postProfileEditPage = async (req, res) => {
 				weekly_schedule: schedule
 			}
 
-			const { error } = await updateUserMetadataById(
-				req.user.id,
-				mergedMetadata
-			)
+			const { error } = await updateUser(req.user.id, mergedMetadata)
 
 			if (error) {
 				console.error('Schedule update failed:', error)
@@ -237,10 +234,7 @@ export const postProfileEditPage = async (req, res) => {
 			longitude: result.lon
 		}
 
-		const { error } = await updateUserMetadataById(
-			req.user.id,
-			mergedMetadata
-		)
+		const { error } = await updateUser(req.user.id, mergedMetadata)
 
 		if (error) {
 			console.error('Profile update failed:', error)
