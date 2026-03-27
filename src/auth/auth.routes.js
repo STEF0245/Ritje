@@ -13,6 +13,6 @@ router.get('/login', getLoginPage)
 router.get('/register', getRegisterPage)
 router.post('/register', registerController)
 router.post('/login', loginController)
-router.get('/logout', logoutController)
+router.post('/logout', logoutController)
 
 export default router

@@ -14,10 +14,6 @@
                     <p class="theme-subtext">Log in en ga meteen verder met je volgende rit.</p>
                 </div>
 
-                <% if (authErrorReason) { %>
-                    <%- include('partials/notify', { authErrorReason, authErrorType }) %>
-                <% } %>
-
                 <form
                     action="/auth/login"
                     method="post"

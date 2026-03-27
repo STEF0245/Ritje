@@ -14,10 +14,6 @@
                     <p class="theme-subtext">Maak je profiel aan en vind of deel ritten met je netwerk.</p>
                 </div>
 
-                <% if (authErrorReason) { %>
-                    <%- include('partials/notify', { authErrorReason, authErrorType }) %>
-                <% } %>
-
                 <form
                     action="/auth/register"
                     method="post"
