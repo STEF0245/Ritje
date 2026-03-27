@@ -1,24 +1,18 @@
 const NOMINATIM_ENDPOINT = 'https://nominatim.openstreetmap.org/reverse'
-const LOCATIONIQ_ENDPOINT = 'https://us1.locationiq.com/v1/reverse'
 const GEOAPIFY_ENDPOINT = 'https://api.geoapify.com/v1/geocode/reverse'
 const NOMINATIM_FORWARD_ENDPOINT = 'https://nominatim.openstreetmap.org/search'
-const LOCATIONIQ_FORWARD_ENDPOINT = 'https://us1.locationiq.com/v1/search'
 const GEOAPIFY_FORWARD_ENDPOINT = 'https://api.geoapify.com/v1/geocode/search'
 
 const NOMINATIM_USER_AGENT =
 	process.env.GEOCODER_USER_AGENT ||
 	'Ritje/1.0 (reverse geocoding endpoint; contact: admin@example.com)'
 
-const KNOWN_PROVIDERS = ['nominatim', 'locationiq', 'geoapify']
+const KNOWN_PROVIDERS = ['nominatim', 'geoapify']
 
 export const RATE_LIMIT_CONFIG = {
 	nominatim: {
 		windowMs: Number(process.env.NOMINATIM_RATE_LIMIT_WINDOW_MS || 1000),
 		max: Number(process.env.NOMINATIM_RATE_LIMIT_MAX || 1)
-	},
-	locationiq: {
-		windowMs: Number(process.env.LOCATIONIQ_RATE_LIMIT_WINDOW_MS || 1000),
-		max: Number(process.env.LOCATIONIQ_RATE_LIMIT_MAX || 5)
 	},
 	geoapify: {
 		windowMs: Number(process.env.GEOAPIFY_RATE_LIMIT_WINDOW_MS || 1000),
@@ -33,11 +27,6 @@ export const PROVIDER_ATTRIBUTION = {
 		requiredCredit:
 			'Geocoding by Nominatim (OpenStreetMap contributors). See ODbL: https://www.openstreetmap.org/copyright'
 	},
-	locationiq: {
-		name: 'LocationIQ',
-		url: 'https://locationiq.com/',
-		requiredCredit: 'Geocoding by LocationIQ (OpenStreetMap contributors).'
-	},
 	geoapify: {
 		name: 'Geoapify',
 		url: 'https://www.geoapify.com/',
@@ -46,10 +35,6 @@ export const PROVIDER_ATTRIBUTION = {
 }
 
 const isProviderAvailable = (provider) => {
-	if (provider === 'locationiq') {
-		return Boolean(process.env.LOCATIONIQ_API_KEY)
-	}
-
 	if (provider === 'geoapify') {
 		return Boolean(process.env.GEOAPIFY_API_KEY)
 	}
@@ -68,10 +53,6 @@ export const getProvider = () => {
 
 	if (isProviderAvailable('geoapify')) {
 		return 'geoapify'
-	}
-
-	if (isProviderAvailable('locationiq')) {
-		return 'locationiq'
 	}
 
 	return 'nominatim'
@@ -152,42 +133,6 @@ const reverseWithNominatim = async (lat, lon) => {
 	}
 }
 
-const reverseWithLocationIQ = async (lat, lon) => {
-	const apiKey = process.env.LOCATIONIQ_API_KEY
-
-	if (!apiKey) {
-		throw new Error('Missing LOCATIONIQ_API_KEY for LocationIQ provider')
-	}
-
-	const geocoderURL = new URL(LOCATIONIQ_ENDPOINT)
-	geocoderURL.searchParams.set('key', apiKey)
-	geocoderURL.searchParams.set('lat', String(lat))
-	geocoderURL.searchParams.set('lon', String(lon))
-	geocoderURL.searchParams.set('format', 'json')
-
-	const response = await fetch(geocoderURL, {
-		headers: {
-			Accept: 'application/json'
-		}
-	})
-
-	if (!response.ok) {
-		throw new Error(`LocationIQ failed with status ${response.status}`)
-	}
-
-	const data = await response.json()
-
-	if (!data?.display_name) {
-		return null
-	}
-
-	return {
-		displayName: data.display_name,
-		address: mapAddress(data.address),
-		raw: data
-	}
-}
-
 const reverseWithGeoapify = async (lat, lon) => {
 	const apiKey = process.env.GEOAPIFY_API_KEY
 
@@ -232,8 +177,6 @@ export const reverseGeocode = async (lat, lon) => {
 
 	if (provider === 'geoapify') {
 		result = await reverseWithGeoapify(lat, lon)
-	} else if (provider === 'locationiq') {
-		result = await reverseWithLocationIQ(lat, lon)
 	} else {
 		result = await reverseWithNominatim(lat, lon)
 	}
@@ -268,43 +211,6 @@ const forwardWithNominatim = async (address) => {
 		}
 
 		throw new Error(`Nominatim failed with status ${response.status}`)
-	}
-
-	const data = await response.json()
-	const firstMatch = Array.isArray(data) ? data[0] : null
-
-	if (!firstMatch) {
-		return null
-	}
-
-	return {
-		lat: parseResultCoordinate(firstMatch.lat, 'latitude'),
-		lon: parseResultCoordinate(firstMatch.lon, 'longitude'),
-		raw: firstMatch
-	}
-}
-
-const forwardWithLocationIQ = async (address) => {
-	const apiKey = process.env.LOCATIONIQ_API_KEY
-
-	if (!apiKey) {
-		throw new Error('Missing LOCATIONIQ_API_KEY for LocationIQ provider')
-	}
-
-	const geocoderURL = new URL(LOCATIONIQ_FORWARD_ENDPOINT)
-	geocoderURL.searchParams.set('key', apiKey)
-	geocoderURL.searchParams.set('q', address)
-	geocoderURL.searchParams.set('format', 'json')
-	geocoderURL.searchParams.set('limit', '1')
-
-	const response = await fetch(geocoderURL, {
-		headers: {
-			Accept: 'application/json'
-		}
-	})
-
-	if (!response.ok) {
-		throw new Error(`LocationIQ failed with status ${response.status}`)
 	}
 
 	const data = await response.json()
@@ -370,8 +276,6 @@ export const forwardGeocode = async (address) => {
 	let result
 	if (provider === 'geoapify') {
 		result = await forwardWithGeoapify(address)
-	} else if (provider === 'locationiq') {
-		result = await forwardWithLocationIQ(address)
 	} else {
 		result = await forwardWithNominatim(address)
 	}
