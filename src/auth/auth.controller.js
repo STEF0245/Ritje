@@ -1,6 +1,6 @@
 import { hasRequiredLoginFields, signIn, signOut } from './auth.service.js'
 import { randomBytes } from 'node:crypto'
-import { config } from '../config/env.config.js'
+import config from '../config.js'
 
 const CSRF_COOKIE_NAME = 'csrfToken'
 
