@@ -1,10 +1,10 @@
 import 'dotenv/config'
 
 const requiredEnvVars = [
-	'SUPABASE_URL',
-	'SUPABASE_PUBLISHABLE_KEY',
-	'SUPABASE_SECRET_KEY',
-	'SUPABASE_DATABASE_URL'
+	'FIREBASE_WEB_API_KEY',
+	'FIREBASE_WEB_AUTH_DOMAIN',
+	'FIREBASE_WEB_PROJECT_ID',
+	'FIREBASE_WEB_APP_ID'
 ]
 
 // Validate required environment variables
@@ -21,11 +21,16 @@ export const config = {
 	nodeEnv: process.env.NODE_ENV || 'development',
 	isProduction: process.env.NODE_ENV === 'production',
 
-	supabase: {
-		url: process.env.SUPABASE_URL,
-		publishableKey: process.env.SUPABASE_PUBLISHABLE_KEY,
-		secretKey: process.env.SUPABASE_SECRET_KEY,
-		databaseUrl: process.env.SUPABASE_DATABASE_URL
+	firebase: {
+		web: {
+			apiKey: process.env.FIREBASE_WEB_API_KEY,
+			authDomain: process.env.FIREBASE_WEB_AUTH_DOMAIN,
+			projectId: process.env.FIREBASE_WEB_PROJECT_ID,
+			appId: process.env.FIREBASE_WEB_APP_ID,
+			storageBucket: process.env.FIREBASE_WEB_STORAGE_BUCKET,
+			messagingSenderId: process.env.FIREBASE_WEB_MESSAGING_SENDER_ID,
+			measurementId: process.env.FIREBASE_WEB_MEASUREMENT_ID
+		}
 	},
 
 	port: process.env.PORT || 3000
