@@ -29,6 +29,12 @@ export const loginController = async (req, res) => {
 	}
 }
 
+export const getProfilePage = (req, res) => {
+	res.render('profile', {
+		title: 'Profile'
+	})
+}
+
 export const logoutController = (req, res) => {
 	res.clearCookie('token', {
 		httpOnly: true,
