@@ -6,13 +6,14 @@ const requireAuth = async (req, res, next) => {
 			return next() // Skip auth check for /login route
 		}
 
-		const token = req.cookies.token
-		if (!token) {
+		const idToken = req.cookies.token
+		if (!idToken) {
 			return res
 				.status(401)
 				.json({ message: 'Unauthorized: No token provided' })
 		}
-		const user = await auth.verifyToken(token, true) // Pass true to check if token is revoked
+		const user = await auth.verifyIdToken(idToken, true) // Pass true to check if token is revoked
+		console.log('Authenticated user:', user)
 		req.user = user
 		next()
 	} catch (err) {

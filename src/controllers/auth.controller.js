@@ -1,3 +1,6 @@
+import auth from '../services/auth.service.js'
+import config from '../config.js'
+
 export const getLoginPage = (req, res) => {
 	res.render('auth_login', { title: 'Login' })
 }
