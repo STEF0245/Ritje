@@ -1,80 +1,11 @@
 <!DOCTYPE html>
 <html lang="nl" class="text-slate-200">
-	<%
+	<% 
+		const fullName = `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'Ritje Gebruiker'
+		const initials = fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+		const joinedDate = user?.created_at ? new Date(user.created_at).toLocaleDateString('nl-NL', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Onbekend'
+		const lastSignInDate = user?.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString('nl-NL', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Onbekend'
 		const metadata = user?.user_metadata || {}
-		const appMetadata = user?.app_metadata || {}
-		const isEditing = Boolean(locals.isEditMode)
-		const firstName = metadata?.first_name || ''
-		const lastName = metadata?.last_name || ''
-		const fullName =
-			metadata?.full_name ||
-			metadata?.display_name ||
-			[firstName, lastName].filter(Boolean).join(' ') ||
-			'user'
-		const initials =
-			fullName
-				.split(' ')
-				.filter(Boolean)
-				.slice(0, 2)
-				.map((part) => part[0]?.toUpperCase())
-				.join('') || 'U'
-		const joinedDate = user?.created_at
-			? new Date(user.created_at).toLocaleString('nl-BE', {
-				year: 'numeric',
-				month: '2-digit',
-				day: '2-digit',
-				hour: '2-digit',
-				minute: '2-digit'
-			})
-			: 'Onbekend'
-		const lastSignInDate = user?.last_sign_in_at
-			? new Date(user.last_sign_in_at).toLocaleString('nl-BE', {
-				year: 'numeric',
-				month: '2-digit',
-				day: '2-digit',
-				hour: '2-digit',
-				minute: '2-digit'
-			})
-			: 'Onbekend'
-		const updatedDate = user?.updated_at
-			? new Date(user.updated_at).toLocaleString('nl-BE', {
-				year: 'numeric',
-				month: '2-digit',
-				day: '2-digit',
-				hour: '2-digit',
-				minute: '2-digit'
-			})
-			: 'Onbekend'
-		const street = metadata?.street || ''
-		const houseNumber = metadata?.house_number || ''
-		const postalCode = metadata?.postal_code || ''
-		const city = metadata?.city || ''
-		const country = metadata?.country || 'Belgium'
-		const hasCoordinates =
-			metadata?.latitude !== undefined &&
-			metadata?.latitude !== null &&
-			metadata?.latitude !== '' &&
-			metadata?.longitude !== undefined &&
-			metadata?.longitude !== null &&
-			metadata?.longitude !== ''
-		const mapsAddress = [
-			`${street} ${houseNumber}`.trim(),
-			`${postalCode} ${city}`.trim(),
-			country
-		]
-			.filter(Boolean)
-			.join(', ')
-		const mapsUrl =
-			hasCoordinates && mapsAddress
-				? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsAddress)}`
-				: null
-		const safeAddressLineOne = [street, houseNumber].filter(Boolean).join(' ')
-		const safeAddressLineTwo = [postalCode, city].filter(Boolean).join(' ')
-		const scheduleDays = locals.scheduleDays || []
-		const classBoundaryTimes = locals.classBoundaryTimes || []
-		const firstBoundaryTime = classBoundaryTimes[0] || ''
-		const lastBoundaryTime = classBoundaryTimes[classBoundaryTimes.length - 1] || ''
-		const weeklySchedule = metadata?.weekly_schedule || {}
 	%>
 	<%- include('partials/head', { title }) %>
 
@@ -85,20 +16,9 @@
 			<section class="max-w-5xl mx-auto">
 				<div class="mb-8 md:mb-10 text-center">
 					<p class="theme-kicker">Ritje Profiel</p>
-					<h1 class="theme-heading">
-						<%= isEditing ? 'Bewerk je profiel' : 'Welkom,' %>
-						<span class="theme-accent-text"><%= fullName %></span>
-					</h1>
-					<p class="theme-subtext">
-						<%= isEditing
-							? 'Pas je gegevens aan. Coördinaten worden automatisch bijgewerkt op basis van je adres.'
-							: 'Bekijk je accountgegevens en profielinformatie.' %>
-					</p>
+					<h1 class="theme-heading">Welkom, <span class="theme-accent-text"><%= fullName %></span></h1>
+					<p class="theme-subtext">Bekijk je accountgegevens en profielinformatie.</p>
 				</div>
-
-				<% if (authErrorReason) { %>
-					<%- include('partials/notify', { authErrorReason, authErrorType }) %>
-				<% } %>
 
 				<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 					<article class="theme-panel p-6 lg:col-span-1 h-full flex flex-col max-h-110">
@@ -127,10 +47,6 @@
 								<span class="theme-text-primary"><%= lastSignInDate %></span>
 							</div>
 							<div class="flex items-center justify-between gap-4">
-								<span class="theme-text-muted">Laatst bijgewerkt</span>
-								<span class="theme-text-primary"><%= updatedDate %></span>
-							</div>
-							<div class="flex items-center justify-between gap-4">
 								<span class="theme-text-muted">E-mail bevestigd</span>
 								<span class="<%= user?.email_confirmed_at ? 'text-emerald-300' : 'text-amber-300' %>">
 									<%= user?.email_confirmed_at ? 'Ja' : 'Nee' %>
@@ -139,270 +55,123 @@
 						</div>
 
 						<div class="mt-4 pt-3 flex flex-row gap-3">
-							<% if (isEditing) { %>
-								<a href="/profile" class="theme-pill border theme-border theme-surface w-full px-3 py-2 theme-text-primary theme-hover-accent-border text-center">Annuleren</a>
-							<% } else { %>
-								<a href="/profile/edit" class="theme-pill border theme-border theme-surface w-full px-3 py-2 theme-text-primary theme-hover-accent-border text-center">Bewerken</a>
-							<% } %>
-							<a href="/logout" class="theme-pill border theme-border theme-surface w-full px-3 py-2 theme-text-primary theme-hover-accent-border text-center">Uitloggen</a>
+							<a href="/profile/edit" class="theme-pill border theme-border theme-surface w-full px-3 py-2 theme-text-primary theme-hover-accent-border text-center">Bewerken</a>
+							<a href="/logout" onclick="return confirm('Weet je zeker dat je wilt uitloggen?');" class="theme-pill border theme-border theme-surface w-full px-3 py-2 theme-text-primary theme-hover-accent-border text-center">Uitloggen</a>
 						</div>
 					</article>
 
 					<article class="theme-panel p-6 lg:col-span-2">
-						<h2 class="text-xl font-extrabold theme-text-primary">
-							<%= isEditing ? 'Profiel bewerken' : 'Profielgegevens' %>
-						</h2>
-						<p class="theme-text-muted text-sm mt-1">
-							<%= isEditing
-								? 'Pas je naam en adres aan. Coördinaten worden automatisch ingevuld via forward geocoding.'
-								: 'Overzicht van je account en adresinformatie.' %>
-						</p>
+						<h2 class="text-xl font-extrabold theme-text-primary">Profielgegevens</h2>
+						<p class="theme-text-muted text-sm mt-1">Overzicht van je account en adresinformatie.</p>
 
-						<% if (isEditing) { %>
-							<form action="/profile/edit" method="post" id="profile-edit-form" class="mt-6 space-y-4">
-								<input type="hidden" name="form_type" value="profile" />
-								<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-									<div class="theme-surface theme-pill border theme-border p-4">
-										<label for="first_name" class="text-xs uppercase tracking-[0.12em] theme-text-muted block">Voornaam</label>
-										<input type="text" name="first_name" id="first_name" class="theme-text-primary font-semibold mt-1 w-full" value="<%= firstName %>" required />
-									</div>
-									<div class="theme-surface theme-pill border theme-border p-4">
-										<label for="last_name" class="text-xs uppercase tracking-[0.12em] theme-text-muted block">Achternaam</label>
-										<input type="text" name="last_name" id="last_name" class="theme-text-primary font-semibold mt-1 w-full" value="<%= lastName %>" required />
-									</div>
+						<div class="mt-6 space-y-4">
+							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<div class="theme-surface theme-pill border theme-border p-4">
+									<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Voornaam</p>
+									<p class="theme-text-primary font-semibold mt-1"><%= firstName || '-' %></p>
 								</div>
-
-								<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-									<div class="theme-surface theme-pill border theme-border p-4 md:col-span-2">
-										<label for="street" class="text-xs uppercase tracking-[0.12em] theme-text-muted block">Straat</label>
-										<input type="text" name="street" id="street" class="theme-text-primary font-semibold mt-1 w-full" value="<%= street %>" required />
-									</div>
-									<div class="theme-surface theme-pill border theme-border p-4 md:col-span-1">
-										<label for="house_number" class="text-xs uppercase tracking-[0.12em] theme-text-muted block">Nummer</label>
-										<input type="text" name="house_number" id="house_number" class="theme-text-primary font-semibold mt-1 w-full" value="<%= houseNumber %>" required />
-									</div>
-								</div>
-
-								<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-									<div class="theme-surface theme-pill border theme-border p-4">
-										<label for="postal_code" class="text-xs uppercase tracking-[0.12em] theme-text-muted block">Postcode</label>
-										<input type="text" name="postal_code" id="postal_code" class="theme-text-primary font-semibold mt-1 w-full" value="<%= postalCode %>" required />
-									</div>
-									<div class="theme-surface theme-pill border theme-border p-4">
-										<label for="city" class="text-xs uppercase tracking-[0.12em] theme-text-muted block">Stad</label>
-										<input type="text" name="city" id="city" class="theme-text-primary font-semibold mt-1 w-full" value="<%= city %>" required />
-									</div>
-								</div>
-
-								<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-									<div class="theme-surface theme-pill border theme-border p-4">
-										<label for="latitude" class="text-xs uppercase tracking-[0.12em] theme-text-muted block pointer-events-none">Latitude (auto)</label>
-										<input type="text" name="latitude_preview" id="latitude" class="theme-text-primary font-semibold mt-1 w-full opacity-60 pointer-events-none" value="<%= metadata?.latitude || '' %>" readonly tabindex="-1" />
-									</div>
-									<div class="theme-surface theme-pill border theme-border p-4">
-										<label for="longitude" class="text-xs uppercase tracking-[0.12em] theme-text-muted block pointer-events-none">Longitude (auto)</label>
-										<input type="text" name="longitude_preview" id="longitude" class="theme-text-primary font-semibold mt-1 w-full opacity-60 pointer-events-none" value="<%= metadata?.longitude || '' %>" readonly tabindex="-1" />
-									</div>
-								</div>
-
-								<p id="profile-geocode-status" class="text-xs theme-text-muted"></p>
-
-								<input type="hidden" name="country" value="Belgium" />
-								<input type="hidden" name="address" id="address" value="<%= metadata?.address || '' %>" />
-
-								<div class="pt-2 flex justify-end">
-									<button type="submit" class="theme-btn-primary px-5 py-3 cursor-pointer">Opslaan</button>
-								</div>
-							</form>
-						<% } else { %>
-							<div class="mt-6 space-y-4">
-								<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-									<div class="theme-surface theme-pill border theme-border p-4">
-										<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Voornaam</p>
-										<p class="theme-text-primary font-semibold mt-1"><%= firstName || '-' %></p>
-									</div>
-									<div class="theme-surface theme-pill border theme-border p-4">
-										<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Achternaam</p>
-										<p class="theme-text-primary font-semibold mt-1"><%= lastName || '-' %></p>
-									</div>
-								</div>
-
-								<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-									<div class="theme-surface theme-pill border theme-border p-4 md:col-span-2">
-										<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Straat</p>
-										<p class="theme-text-primary font-semibold mt-1"><%= street || '-' %></p>
-									</div>
-									<div class="theme-surface theme-pill border theme-border p-4 md:col-span-1">
-										<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Huisnummer</p>
-										<p class="theme-text-primary font-semibold mt-1"><%= houseNumber || '-' %></p>
-									</div>
-								</div>
-
-								<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-									<div class="theme-surface theme-pill border theme-border p-4">
-										<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Postcode</p>
-										<p class="theme-text-primary font-semibold mt-1"><%= postalCode || '-' %></p>
-									</div>
-									<div class="theme-surface theme-pill border theme-border p-4">
-										<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Stad</p>
-										<p class="theme-text-primary font-semibold mt-1"><%= city || '-' %></p>
-									</div>
-								</div>
-
-								<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-									<div class="theme-surface theme-pill border theme-border p-4">
-										<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Latitude</p>
-										<p class="theme-text-primary font-semibold mt-1"><%= hasCoordinates ? metadata?.latitude : '-' %></p>
-									</div>
-									<div class="theme-surface theme-pill border theme-border p-4">
-										<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Longitude</p>
-										<p class="theme-text-primary font-semibold mt-1"><%= hasCoordinates ? metadata?.longitude : '-' %></p>
-									</div>
-								</div>
-								<div class="theme-surface theme-pill border theme-border p-4 md:col-span-2">
-									<div class="flex items-start justify-between gap-3">
-										<div>
-											<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Kaart</p>
-											<p class="mt-1 text-sm theme-text-muted">Bekijk je opgegeven locatie op de kaart.</p>
-										</div>
-										<% if (mapsUrl) { %>
-											<a
-												href="<%= mapsUrl %>"
-												target="_blank"
-												rel="noopener noreferrer"
-												class="theme-link text-xs whitespace-nowrap mt-0.5"
-											>
-												Google Maps
-											</a>
-										<% } %>
-									</div>
-									<details class="profile-map-details mt-3">
-										<summary class="profile-map-summary theme-pill border theme-border theme-surface-strong px-3 py-2">
-											<span class="font-semibold theme-text-primary">Toon kaart</span>
-											<span class="profile-map-chevron" aria-hidden="true">v</span>
-										</summary>
-										<div class="profile-map-panel mt-3 overflow-hidden theme-pill border theme-border">
-											<div
-												id="map"
-												class="w-full h-64"
-												data-latitude="<%= metadata?.latitude || '' %>"
-												data-longitude="<%= metadata?.longitude || '' %>"
-												data-full-name="<%= fullName %>"
-												data-address-line-one="<%= safeAddressLineOne %>"
-												data-address-line-two="<%= safeAddressLineTwo %>"
-												data-maps-url="<%= mapsUrl || '' %>"
-											></div>
-										</div>
-									</details>
+								<div class="theme-surface theme-pill border theme-border p-4">
+									<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Achternaam</p>
+									<p class="theme-text-primary font-semibold mt-1"><%= lastName || '-' %></p>
 								</div>
 							</div>
-						<% } %>
+
+							<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+								<div class="theme-surface theme-pill border theme-border p-4 md:col-span-2">
+									<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Straat</p>
+									<p class="theme-text-primary font-semibold mt-1"><%= street || '-' %></p>
+								</div>
+								<div class="theme-surface theme-pill border theme-border p-4 md:col-span-1">
+									<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Huisnummer</p>
+									<p class="theme-text-primary font-semibold mt-1"><%= houseNumber || '-' %></p>
+								</div>
+							</div>
+
+							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<div class="theme-surface theme-pill border theme-border p-4">
+									<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Postcode</p>
+									<p class="theme-text-primary font-semibold mt-1"><%= postalCode || '-' %></p>
+								</div>
+								<div class="theme-surface theme-pill border theme-border p-4">
+									<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Stad</p>
+									<p class="theme-text-primary font-semibold mt-1"><%= city || '-' %></p>
+								</div>
+							</div>
+
+							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<div class="theme-surface theme-pill border theme-border p-4">
+									<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Latitude</p>
+									<p class="theme-text-primary font-semibold mt-1"><%= hasCoordinates ? metadata?.latitude : '-' %></p>
+								</div>
+								<div class="theme-surface theme-pill border theme-border p-4">
+									<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Longitude</p>
+									<p class="theme-text-primary font-semibold mt-1"><%= hasCoordinates ? metadata?.longitude : '-' %></p>
+								</div>
+							</div>
+							<div class="theme-surface theme-pill border theme-border p-4 md:col-span-2">
+								<div class="flex items-start justify-between gap-3">
+									<div>
+										<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Kaart</p>
+										<p class="mt-1 text-sm theme-text-muted">Bekijk je opgegeven locatie op de kaart.</p>
+									</div>
+									<% if (mapsUrl) { %>
+										<a
+											href="<%= mapsUrl %>"
+											target="_blank"
+											rel="noopener noreferrer"
+											class="theme-link text-xs whitespace-nowrap mt-0.5"
+										>
+											Google Maps
+										</a>
+									<% } %>
+								</div>
+								<details class="profile-map-details mt-3">
+									<summary class="profile-map-summary theme-pill border theme-border theme-surface-strong px-3 py-2">
+										<span class="font-semibold theme-text-primary">Toon kaart</span>
+										<span class="profile-map-chevron" aria-hidden="true">v</span>
+									</summary>
+									<div class="profile-map-panel mt-3 overflow-hidden theme-pill border theme-border">
+										<div
+											id="map"
+											class="w-full h-64"
+											data-latitude="<%= metadata?.latitude || '' %>"
+											data-longitude="<%= metadata?.longitude || '' %>"
+											data-full-name="<%= fullName %>"
+											data-address-line-one="<%= safeAddressLineOne %>"
+											data-address-line-two="<%= safeAddressLineTwo %>"
+											data-maps-url="<%= mapsUrl || '' %>"
+										></div>
+									</div>
+								</details>
+							</div>
+						</div>
 					</article>
 
 					<article class="theme-panel p-6 lg:col-span-2 lg:col-start-2">
-						<h2 class="text-xl font-extrabold theme-text-primary">
-							<%= isEditing ? 'Urenrooster bewerken' : 'Urenrooster' %>
-						</h2>
+						<h2 class="text-xl font-extrabold theme-text-primary">Urenrooster</h2>
 						<p class="theme-text-muted text-sm mt-1">
-							<%= isEditing
-								? 'Pas je urenrooster per dag aan. Je kan enkel officiële lesstart- en leseinde-tijden kiezen. Laat begin- en einduur leeg op dagen dat je geen rit zoekt.'
-								: 'Bekijk je huidige urenrooster per dag. Dit helpt collega\'s om ritten te plannen.' %>
+							Bekijk je huidige urenrooster per dag. Dit helpt collega's om ritten te plannen.
 						</p>
 
-						<% if (isEditing) { %>
-							<form action="/profile/edit" method="post" class="mt-6 space-y-4">
-								<input type="hidden" name="form_type" value="schedule" />
-
-								<% scheduleDays.forEach((day) => {
-									const daySchedule = weeklySchedule?.[day.key] || null
-									const startValue = daySchedule?.start || ''
-									const endValue = daySchedule?.end || ''
-									const isStartValid = startValue && classBoundaryTimes.includes(startValue)
-									const isEndValid = endValue && classBoundaryTimes.includes(endValue)
-								%>
-									<div
-										class="theme-surface theme-pill border theme-border p-4"
-										data-schedule-row
-										data-first-boundary="<%= firstBoundaryTime %>"
-										data-last-boundary="<%= lastBoundaryTime %>"
-									>
-										<div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-											<div>
-												<p class="text-xs uppercase tracking-[0.12em] theme-text-muted"><%= day.label %></p>
-												<p class="theme-text-primary font-semibold mt-1"><%= startValue && endValue ? `${startValue} - ${endValue}` : 'Geen uren ingesteld' %></p>
-											</div>
-											<div>
-												<label for="schedule_<%= day.key %>_start" class="text-xs uppercase tracking-[0.12em] theme-text-muted block">Begin</label>
-												<select
-													name="schedule_<%= day.key %>_start"
-													id="schedule_<%= day.key %>_start"
-													class="theme-select mt-1"
-													data-schedule-bound="start"
-												>
-													<option value="" <%= !startValue ? 'selected' : '' %>>Geen beginuur</option>
-													<% classBoundaryTimes.forEach((timeOption) => { %>
-														<% if (timeOption !== lastBoundaryTime) { %>
-															<option value="<%= timeOption %>" <%= startValue === timeOption ? 'selected' : '' %>><%= timeOption %></option>
-														<% } %>
-													<% }) %>
-													<% if (startValue && !isStartValid) { %>
-														<option value="<%= startValue %>" selected>Ongeldige opgeslagen waarde (<%= startValue %>)</option>
-													<% } %>
-												</select>
-											</div>
-											<div>
-												<label for="schedule_<%= day.key %>_end" class="text-xs uppercase tracking-[0.12em] theme-text-muted block">Einde</label>
-												<select
-													name="schedule_<%= day.key %>_end"
-													id="schedule_<%= day.key %>_end"
-													class="theme-select mt-1"
-													data-schedule-bound="end"
-												>
-													<option value="" <%= !endValue ? 'selected' : '' %>>Geen einduur</option>
-													<% classBoundaryTimes.forEach((timeOption) => { %>
-														<% if (timeOption !== firstBoundaryTime) { %>
-															<option value="<%= timeOption %>" <%= endValue === timeOption ? 'selected' : '' %>><%= timeOption %></option>
-														<% } %>
-													<% }) %>
-													<% if (endValue && !isEndValid) { %>
-														<option value="<%= endValue %>" selected>Ongeldige opgeslagen waarde (<%= endValue %>)</option>
-													<% } %>
-												</select>
-											</div>
-										</div>
-									</div>
-								<% }) %>
-
-								<div class="pt-2 flex justify-end">
-									<button type="submit" class="theme-btn-primary px-5 py-3 cursor-pointer">Urenrooster opslaan</button>
+						<div class="mt-6 grid grid-cols-1 md:grid-cols-3 md:col-width-auto gap-4">
+							<% scheduleDays.forEach((day) => {
+								const daySchedule = weeklySchedule?.[day.key] || null
+								const hasHours = Boolean(daySchedule?.start && daySchedule?.end)
+							%>
+								<div class="theme-surface theme-pill border theme-border p-4">
+									<p class="text-xs uppercase tracking-[0.12em] theme-text-muted"><%= day.label %></p>
+									<p class="theme-text-primary font-semibold mt-1"><%= hasHours ? `${daySchedule.start} - ${daySchedule.end}` : 'Geen uren ingesteld' %></p>
 								</div>
-							</form>
-						<% } else { %>
-							<div class="mt-6 grid grid-cols-1 md:grid-cols-3 md:col-width-auto gap-4">
-								<% scheduleDays.forEach((day) => {
-									const daySchedule = weeklySchedule?.[day.key] || null
-									const hasHours = Boolean(daySchedule?.start && daySchedule?.end)
-								%>
-									<div class="theme-surface theme-pill border theme-border p-4">
-										<p class="text-xs uppercase tracking-[0.12em] theme-text-muted"><%= day.label %></p>
-										<p class="theme-text-primary font-semibold mt-1"><%= hasHours ? `${daySchedule.start} - ${daySchedule.end}` : 'Geen uren ingesteld' %></p>
-									</div>
-								<% }) %>
-							</div>
-						<% } %>
+							<% }) %>
+						</div>
 					</article>
 				</div>
 			</section>
 		</main>
 
-		<% if (isEditing) { %>
-			<script src="/js/profile_edit.js"></script>
-			<script src="/js/profile_schedule.js"></script>
-		<% } else { %>
-			<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-			<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-			<script src="/js/profile_map.js"></script>
-		<% } %>
+		<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+		<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+		<script src="/js/profile_map.js"></script>
 		<%- include('partials/footer') %>
 	</body>
 </html>
