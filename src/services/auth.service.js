@@ -1,12 +1,15 @@
-const auth = {
-	login: async (email, password) => {
-		// Simulate login logic (replace with actual Firebase auth logic)
-		if (email === '' || password === '') {
-			throw new Error('Email and password are required')
+import auth from '../firebase/auth.js'
+
+const authService = {
+	verifyToken: async (idToken) => {
+		try {
+			const decodedToken = await auth.verifyIdToken(idToken, true)
+			return decodedToken
+		} catch (error) {
+			console.error('Firebase token verification failed:', error)
+			throw error
 		}
-		// Simulate token generation
-		return 'fake-jwt-token'
 	}
 }
 
-export default auth
+export default authService

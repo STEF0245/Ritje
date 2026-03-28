@@ -21,6 +21,7 @@
                     id="login-form"
                     class="theme-panel p-6 md:p-8"
                 >
+                    <input type="hidden" name="idToken" id="idToken" />
                     <div>
                         <label for="email" class="block text-sm font-semibold mb-2 text-slate-300">E-mail</label>
                         <input
@@ -46,6 +47,8 @@
                             required
                         />
                     </div>
+                    
+                    <div id="login-status" class="mt-4 text-sm text-red-500 font-medium"></div>
 
                     <div class="mt-6 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
                         <button
@@ -58,6 +61,11 @@
                 </form>
             </section>
         </main>
+
+        <script>
+            window.__RITJE_FIREBASE_CONFIG__ = <%- JSON.stringify(firebaseConfig) %>;
+        </script>
+        <script type="module" src="/js/auth_login.js"></script>
 
         <%- include('partials/footer') %>
     </body>
