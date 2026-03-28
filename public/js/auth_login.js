@@ -1,9 +1,5 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js'
-import {
-	getAuth,
-	signInWithEmailAndPassword,
-	signOut
-} from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js'
+import { getAuth } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js'
 
 const form = document.getElementById('login-form')
 const statusNode = document.getElementById('login-status')
@@ -12,8 +8,12 @@ const passwordInput = document.getElementById('password')
 const idTokenInput = document.getElementById('idToken')
 
 const requiredConfigKeys = ['apiKey', 'authDomain', 'projectId', 'appId']
-const firebaseConfig = window.__RITJE_FIREBASE_CONFIG__ || {}
-const hasValidConfig = requiredConfigKeys.every((key) => Boolean(firebaseConfig[key]))
+// Fetch config from server instead of window
+const response = await fetch('/api/firebase-config')
+const firebaseConfig = await response.json()
+const hasValidConfig = requiredConfigKeys.every((key) =>
+	Boolean(firebaseConfig[key])
+)
 
 if (!form || !emailInput || !passwordInput || !idTokenInput) {
 	throw new Error('Login formulier is niet correct geladen.')
@@ -48,13 +48,16 @@ form.addEventListener('submit', async (event) => {
 	try {
 		const email = emailInput.value.trim()
 		const password = passwordInput.value
-		const credentials = await signInWithEmailAndPassword(auth, email, password)
+		const credentials = await auth.signInWithEmailAndPassword(
+			email,
+			password
+		)
 		const idToken = await credentials.user.getIdToken(true)
 
 		idTokenInput.value = idToken
 
 		// Clear the in-memory Firebase session; server session cookie becomes source of truth.
-		await signOut(auth)
+		await auth.signOut()
 
 		form.submit()
 	} catch (error) {

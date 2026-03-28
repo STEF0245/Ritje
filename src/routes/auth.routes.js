@@ -10,5 +10,8 @@ const router = express.Router()
 router.get('/login', getLoginPage)
 router.post('/login', loginController)
 router.post('/logout', logoutController)
+router.get('/api/firebase-config', (req, res) => {
+	res.json(config.firebase.web)
+})
 
 export default router
