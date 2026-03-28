@@ -1,5 +1,9 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js'
-import { getAuth } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js'
+import {
+	getAuth,
+	signInWithEmailAndPassword,
+	signOut
+} from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js'
 
 const form = document.getElementById('login-form')
 const statusNode = document.getElementById('login-status')
@@ -48,7 +52,8 @@ form.addEventListener('submit', async (event) => {
 	try {
 		const email = emailInput.value.trim()
 		const password = passwordInput.value
-		const credentials = await auth.signInWithEmailAndPassword(
+		const credentials = await signInWithEmailAndPassword(
+			auth,
 			email,
 			password
 		)
@@ -57,7 +62,7 @@ form.addEventListener('submit', async (event) => {
 		idTokenInput.value = idToken
 
 		// Clear the in-memory Firebase session; server session cookie becomes source of truth.
-		await auth.signOut()
+		await signOut(auth)
 
 		form.submit()
 	} catch (error) {
