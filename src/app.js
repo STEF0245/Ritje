@@ -72,7 +72,7 @@ app.use((req, res, next) => {
 // =====================
 // Routes setup
 // =====================
-app.use('/auth', authRoutes)
+app.use('/', authRoutes)
 
 app.use(notFoundHandler)
 app.use(errorHandler)

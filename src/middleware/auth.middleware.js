@@ -2,8 +2,8 @@ import auth from '../firebase/auth.js'
 
 const requireAuth = async (req, res, next) => {
 	try {
-		if (req.path.startsWith('/auth')) {
-			return next() // Skip auth check for /auth routes
+		if (req.path === '/login') {
+			return next() // Skip auth check for /login route
 		}
 
 		const token = req.cookies.token

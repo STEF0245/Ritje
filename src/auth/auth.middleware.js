@@ -32,7 +32,7 @@ export const requireAuth = async (req, res, next) => {
 			if (shouldReturnJson(req)) {
 				return res.status(401).json({ error: 'Unauthorized' })
 			}
-			return res.redirect('/auth/login')
+			return res.redirect('/login')
 		}
 
 		const { data, error } = await getUserFromSessionCookie(sessionCookie)
@@ -41,7 +41,7 @@ export const requireAuth = async (req, res, next) => {
 			if (shouldReturnJson(req)) {
 				return res.status(401).json({ error: 'Unauthorized' })
 			}
-			return res.redirect('/auth/login')
+			return res.redirect('/login')
 		}
 
 		req.user = data

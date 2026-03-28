@@ -81,19 +81,19 @@ export const getLoginPage = (req, res) => {
 export const loginController = async (req, res) => {
 	try {
 		if (!hasRequiredLoginFields(req.body)) {
-			return res.redirect('/auth/login?error=missing_token')
+			return res.redirect('/login?error=missing_token')
 		}
 
 		const { data, error } = await signIn(req, res)
 
 		if (error || !data?.session) {
-			return res.redirect('/auth/login?error=login_failed')
+			return res.redirect('/login?error=login_failed')
 		}
 
 		return res.redirect('/')
 	} catch (error) {
 		console.error('Login route error:', error)
-		return res.redirect('/auth/login?error=login_failed')
+		return res.redirect('/login?error=login_failed')
 	}
 }
 
@@ -103,5 +103,5 @@ export const logoutController = async (req, res) => {
 	} catch (error) {
 		console.error('Logout error:', error)
 	}
-	return res.redirect('/auth/login')
+	return res.redirect('/login')
 }
