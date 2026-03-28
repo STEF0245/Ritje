@@ -2,7 +2,12 @@ import { verifyIdToken } from '../firebase/auth.js'
 import config from '../config.js'
 
 export const getLoginPage = (req, res) => {
-	res.render('auth_login', {
+	const user = req.user
+	if (user) {
+		return res.redirect('/') // Redirect authenticated users to home page
+	}
+
+	res.render('login', {
 		title: 'Login'
 	})
 }
