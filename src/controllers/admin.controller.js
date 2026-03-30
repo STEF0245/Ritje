@@ -12,7 +12,7 @@ export const getUsersPage = (req, res) => {
 		.once('value')
 		.then((snapshot) => {
 			const usersData = snapshot.val() || {}
-			res.render('users_admin', {
+			res.render('admin_users', {
 				title: 'Leerkrachten',
 				users: usersData
 			})
