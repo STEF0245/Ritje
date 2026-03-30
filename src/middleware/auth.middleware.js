@@ -1,13 +1,16 @@
 import { verifyIdToken } from '../firebase/auth.js'
+import config from '../config.js'
+
+const isAuthFree = (path) => {
+	return config.authFreeEndpoints.includes(path)
+}
 
 const requireAuth = async (req, res, next) => {
 	try {
 		const idToken = req.cookies.token
 		if (!idToken) {
-			if (req.path === '/login') return next()
-			return res
-				.status(401)
-				.json({ message: 'Unauthorized: No token provided' })
+			if (isAuthFree(req.path)) return next()
+			return res.status(401).redirect('/login')
 		}
 		const user = await verifyIdToken(idToken, true) // Pass true to check if token is revoked
 		console.log('Authenticated user:', user.email)
@@ -18,7 +21,7 @@ const requireAuth = async (req, res, next) => {
 		next()
 	} catch (err) {
 		console.error('Authentication error:', err.message)
-		if (req.path === '/login') return next()
+		if (isAuthFree(req.path)) return next()
 		return res.status(401).json({ message: 'Unauthorized: Invalid token' })
 	}
 }

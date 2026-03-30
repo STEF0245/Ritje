@@ -97,7 +97,9 @@ const config = {
 				parseInt(process.env.GEOAPIFY_RATE_LIMIT_WINDOW_MS) || 5000,
 			max: parseInt(process.env.GEOAPIFY_RATE_LIMIT_MAX) || 1
 		}
-	}
+	},
+
+	authFreeEndpoints: ['/login', '/api/firebase-config']
 }
 
 export default config
