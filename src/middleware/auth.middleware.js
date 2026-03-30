@@ -35,7 +35,7 @@ const mapUserData = (firebaseUser, dbUser, admin) => {
 			'',
 		disabled: firebaseUser?.disabled || false,
 		metadata: dbUser || {},
-		admin: admin || false
+		isAdmin: admin || false
 	}
 }
 
