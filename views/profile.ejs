@@ -5,10 +5,16 @@
 		const firstName = metadata?.name?.first || ''
 		const lastName = metadata?.name?.last || ''
 		const fullName = `${metadata?.name?.full || ''}`.trim() || 'Ritje Gebruiker'
-		const initials = fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-		const joinedDate = user?.iat ? new Date(user.iat * 1000).toLocaleString('nl-BE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'Onbekend'
-		const lastSignInDate = user?.auth_time ? new Date(user.auth_time * 1000).toLocaleString('nl-BE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'Onbekend'
-		const address = metadata?.address || {}
+		const initials = fullName.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'A'
+
+		const photoURL = user?.photoURL || null
+		const joinedDate = user?.createdAt ? new Date(user.createdAt).toLocaleString('nl-BE', { 
+			year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' 
+		}) : 'Onbekend';
+
+		const lastSignInDate = user?.lastSignInTime ? new Date(user.lastSignInTime).toLocaleString('nl-BE', { 
+			year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' 
+		}) : 'Onbekend';		const address = metadata?.address || {}
 		const coords = metadata?.coords || {}
 		const street = address?.street || ''
 		const houseNumber = address?.houseNumber || ''
@@ -17,8 +23,7 @@
 		const hasCoordinates = Boolean(coords?.latitude && coords?.longitude)
 		const safeAddressLineOne = `${street} ${houseNumber}`.trim() || '-'
 		const safeAddressLineTwo = `${postalCode} ${city}`.trim() || '-'
-		const mapsUrl = hasCoordinates ? `https://www.google.com/maps/search/?api=1&query=${safeAddressLineOne}, ${safeAddressLineTwo}` : null
-		const scheduleDays = []
+		const mapsUrl = hasCoordinates ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(safeAddressLineOne + ', ' + safeAddressLineTwo)}` : null;		const scheduleDays = []
 	%>
 	<%- include('partials/head', { title }) %>
 
@@ -36,13 +41,17 @@
 				<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 					<article class="theme-panel p-6 lg:col-span-1 h-full flex flex-col max-h-110">
 						<div class="flex items-center gap-4">
-							<div class="theme-avatar h-16 w-16 flex items-center justify-center text-xl font-black">
-								<%= initials %>
-							</div>
+							<% if (photoURL) { %>
+								<img src="<%= photoURL %>" alt="Profielfoto van <%= fullName %>" class="theme-avatar h-16 w-16 object-cover rounded-full">
+							<% } else { %>
+								<div class="theme-avatar h-16 w-16 flex items-center justify-center text-xl font-black">
+									<%= initials %>
+								</div>
+							<% } %>
 							<div>
 								<p class="theme-text-primary text-lg font-bold leading-tight"><%= fullName %></p>
 								<p class="theme-text-muted text-sm"><%= user?.email || 'Geen e-mail gevonden' %></p>
-								<%- user?.phone ? `<p class="theme-text-muted text-sm">${user?.phone}</p>` : '' %>
+								<%- user?.phoneNumber ? `<p class="theme-text-muted text-sm">${user?.phoneNumber}</p>` : '' %>
 							</div>
 						</div>
 
@@ -69,7 +78,7 @@
 
 						<div class="mt-4 pt-3 flex flex-row gap-3">
 							<a href="/profile/edit" class="theme-pill border theme-border theme-surface w-full px-3 py-2 theme-text-primary theme-hover-accent-border text-center">Bewerken</a>
-							<a href="/logout" onclick="return confirm('Weet je zeker dat je wilt uitloggen?');" class="theme-pill border theme-border theme-surface w-full px-3 py-2 theme-text-primary theme-hover-accent-border text-center">Uitloggen</a>
+							<a href="/logout" class="theme-pill border theme-border theme-surface w-full px-3 py-2 theme-text-primary theme-hover-accent-border text-center">Uitloggen</a>
 						</div>
 					</article>
 
