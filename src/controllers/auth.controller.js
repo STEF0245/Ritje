@@ -22,7 +22,7 @@ export const loginController = async (req, res) => {
 			sameSite: 'strict',
 			maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
 		})
-		res.redirect('/')
+		res.redirect('/profile')
 	} catch (err) {
 		console.error('Login error:', err.message)
 		res.status(401).json({ message: 'Invalid token' })
@@ -41,5 +41,5 @@ export const logoutController = (req, res) => {
 		secure: config.isProduction,
 		sameSite: 'strict'
 	})
-	res.json({ message: 'Logout successful' })
+	res.redirect('/login')
 }
