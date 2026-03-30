@@ -1,4 +1,4 @@
-import { verifyIdToken } from '../firebase/auth.js'
+import { verifyIdToken, auth } from '../firebase/auth.js'
 import { getUserRef } from '../firebase/db.js'
 import config from '../config.js'
 
@@ -12,6 +12,24 @@ const getUserByUid = async (uid) => {
 	return snapshot.val()
 }
 
+const mapUserData = (firebaseUser, dbUser) => {
+	return {
+		uid: firebaseUser.uid,
+		email: firebaseUser.email || dbUser?.email || '',
+		phoneNumber: firebaseUser.phoneNumber || dbUser?.phoneNumber || '',
+		displayName: dbUser?.name?.full || firebaseUser.displayName || '',
+		photoURL: firebaseUser.photoURL || dbUser?.photoURL || '',
+		createdAt:
+			firebaseUser.metadata?.creationTime || dbUser?.createdAt || '',
+		lastSignInTime:
+			firebaseUser.metadata?.lastSignInTime ||
+			dbUser?.lastSignInTime ||
+			'',
+		disabled: firebaseUser.disabled || false,
+		metadata: dbUser || {}
+	}
+}
+
 const requireAuth = async (req, res, next) => {
 	try {
 		const idToken = req.cookies.token
@@ -19,12 +37,15 @@ const requireAuth = async (req, res, next) => {
 			if (isAuthFree(req.path)) return next()
 			return res.status(401).redirect('/login')
 		}
-		const user = await verifyIdToken(idToken, true) // Pass true to check if token is revoked
+		const decodedToken = await verifyIdToken(idToken, true) // Pass true to check if token is revoked
+		const user = await auth.getUser(decodedToken.uid) // Fetch user details to check if account is disabled
+		if (user.disabled)
+			return res.status(403).json({ message: 'Account is disabled' })
 		const userData = await getUserByUid(user.uid)
-		req.user = { ...user, metadata: { ...userData } }
+		req.user = mapUserData(user, userData)
+		console.log(req.user)
 
 		if (req.path === '/login') return res.redirect('/')
-
 		next()
 	} catch (err) {
 		console.error('Authentication error:', err.message)

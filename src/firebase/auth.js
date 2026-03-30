@@ -1,7 +1,7 @@
 import { getAuth } from 'firebase-admin/auth'
 import app from './app.js'
 
-const auth = getAuth(app)
+export const auth = getAuth(app)
 
 export const verifyIdToken = async (idToken, checkRevoked = true) => {
 	try {
