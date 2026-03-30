@@ -21,7 +21,7 @@ const requireAuth = async (req, res, next) => {
 		}
 		const user = await verifyIdToken(idToken, true) // Pass true to check if token is revoked
 		const userData = await getUserByUid(user.uid)
-		req.user = { ...user, ...userData }
+		req.user = { ...user, metadata: { ...userData } }
 
 		if (req.path === '/login') return res.redirect('/')
 
