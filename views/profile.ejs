@@ -1,11 +1,24 @@
 <!DOCTYPE html>
 <html lang="nl" class="text-slate-200">
 	<% 
-		const fullName = `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'Ritje Gebruiker'
+		const metadata = user?.metadata || {}
+		const firstName = metadata?.name?.first || ''
+		const lastName = metadata?.name?.last || ''
+		const fullName = `${metadata?.name?.full || ''}`.trim() || 'Ritje Gebruiker'
 		const initials = fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-		const joinedDate = user?.created_at ? new Date(user.created_at).toLocaleDateString('nl-NL', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Onbekend'
-		const lastSignInDate = user?.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString('nl-NL', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Onbekend'
-		const metadata = user?.user_metadata || {}
+		const joinedDate = user?.iat ? new Date(user.iat * 1000).toLocaleString('nl-BE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'Onbekend'
+		const lastSignInDate = user?.auth_time ? new Date(user.auth_time * 1000).toLocaleString('nl-BE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'Onbekend'
+		const address = metadata?.address || {}
+		const coords = metadata?.coords || {}
+		const street = address?.street || ''
+		const houseNumber = address?.houseNumber || ''
+		const postalCode = address?.postalCode || ''
+		const city = address?.city || ''
+		const hasCoordinates = Boolean(coords?.latitude && coords?.longitude)
+		const safeAddressLineOne = `${street} ${houseNumber}`.trim() || '-'
+		const safeAddressLineTwo = `${postalCode} ${city}`.trim() || '-'
+		const mapsUrl = hasCoordinates ? `https://www.google.com/maps/search/?api=1&query=${safeAddressLineOne}, ${safeAddressLineTwo}` : null
+		const scheduleDays = []
 	%>
 	<%- include('partials/head', { title }) %>
 
@@ -29,14 +42,14 @@
 							<div>
 								<p class="theme-text-primary text-lg font-bold leading-tight"><%= fullName %></p>
 								<p class="theme-text-muted text-sm"><%= user?.email || 'Geen e-mail gevonden' %></p>
-								<%- user?.phone ? `<p class="theme-text-muted text-sm">${user.phone}</p>` : '' %>
+								<%- user?.phone ? `<p class="theme-text-muted text-sm">${user?.phone}</p>` : '' %>
 							</div>
 						</div>
 
 						<div class="mt-6 border-t theme-border pt-5 space-y-3 text-sm flex-1">
 							<div class="flex items-center justify-between gap-4">
 								<span class="theme-text-muted">Gebruiker ID</span>
-								<span class="theme-text-primary font-mono text-xs break-all text-right"><%= user?.id || '-' %></span>
+								<span class="theme-text-primary font-mono text-xs break-all text-right"><%= user?.uid || '-' %></span>
 							</div>
 							<div class="flex items-center justify-between gap-4">
 								<span class="theme-text-muted">Aangemaakt op</span>
@@ -48,8 +61,8 @@
 							</div>
 							<div class="flex items-center justify-between gap-4">
 								<span class="theme-text-muted">E-mail bevestigd</span>
-								<span class="<%= user?.email_confirmed_at ? 'text-emerald-300' : 'text-amber-300' %>">
-									<%= user?.email_confirmed_at ? 'Ja' : 'Nee' %>
+								<span class="<%= user?.email_verified ? 'text-emerald-300' : 'text-amber-300' %>">
+									<%= user?.email_verified ? 'Ja' : 'Nee' %>
 								</span>
 							</div>
 						</div>
@@ -101,11 +114,11 @@
 							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 								<div class="theme-surface theme-pill border theme-border p-4">
 									<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Latitude</p>
-									<p class="theme-text-primary font-semibold mt-1"><%= hasCoordinates ? metadata?.latitude : '-' %></p>
+									<p class="theme-text-primary font-semibold mt-1"><%= hasCoordinates ? metadata?.coords?.latitude : '-' %></p>
 								</div>
 								<div class="theme-surface theme-pill border theme-border p-4">
 									<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Longitude</p>
-									<p class="theme-text-primary font-semibold mt-1"><%= hasCoordinates ? metadata?.longitude : '-' %></p>
+									<p class="theme-text-primary font-semibold mt-1"><%= hasCoordinates ? metadata?.coords?.longitude : '-' %></p>
 								</div>
 							</div>
 							<div class="theme-surface theme-pill border theme-border p-4 md:col-span-2">
@@ -134,8 +147,8 @@
 										<div
 											id="map"
 											class="w-full h-64"
-											data-latitude="<%= metadata?.latitude || '' %>"
-											data-longitude="<%= metadata?.longitude || '' %>"
+											data-latitude="<%= metadata?.coords?.latitude || '' %>"
+											data-longitude="<%= metadata?.coords?.longitude || '' %>"
 											data-full-name="<%= fullName %>"
 											data-address-line-one="<%= safeAddressLineOne %>"
 											data-address-line-two="<%= safeAddressLineTwo %>"
