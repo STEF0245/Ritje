@@ -1,4 +1,3 @@
-import path from 'path'
 import config from '../config.js'
 
 const errorHandler = (err, req, res, next) => {
