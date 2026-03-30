@@ -7,8 +7,7 @@ export const getAdminPage = (req, res) => {
 }
 
 export const getUsersPage = (req, res) => {
-	const users = db
-		.ref('users')
+	db.ref('users')
 		.once('value')
 		.then((snapshot) => {
 			const usersData = snapshot.val() || {}
