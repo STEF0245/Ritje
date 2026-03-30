@@ -14,6 +14,7 @@ import notFoundHandler from './middleware/notFound.middleware.js'
 import errorHandler from './middleware/error.middleware.js'
 import requireAuth from './middleware/auth.middleware.js'
 import authRoutes from './routes/auth.routes.js'
+import adminRoutes from './routes/admin.routes.js'
 
 // =====================
 // Initializing the app
@@ -73,6 +74,7 @@ app.use((req, res, next) => {
 // Routes setup
 // =====================
 app.use('/', authRoutes)
+app.use('/admin', adminRoutes)
 
 app.use(notFoundHandler)
 app.use(errorHandler)
