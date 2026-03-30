@@ -30,11 +30,22 @@
 
 		<a
 			href='/profile'
-			class="md:hidden theme-pill flex h-11 w-11 items-center justify-center border theme-border theme-surface text-xs font-black theme-text-primary theme-hover-accent-border"
+			class="md:hidden flex items-center gap-3 theme-pill border theme-border theme-surface px-3 py-2 theme-text-primary theme-hover-accent-border"
 			aria-label="Ga naar je profiel"
 			title="<%= displayName %>"
 		>
-			<%= initials %>
+			<% if (user?.photoURL) { %>
+				<img
+					src="<%= user.photoURL %>"
+					alt="Avatar"
+					class="theme-avatar h-9 w-9 object-cover"
+				/>
+			<% } else { %>
+				<span class="theme-avatar flex h-9 w-9 items-center justify-center text-xs font-black">
+					<%= initials %>
+				</span>
+			<% } %>
+			<span class="max-w-40 truncate"><%= displayName %></span>
 		</a>
 	<% } else { %>
 		<a
