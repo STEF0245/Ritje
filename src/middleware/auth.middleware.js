@@ -1,18 +1,24 @@
 import { verifyIdToken, auth } from '../firebase/auth.js'
-import { getUserRef } from '../firebase/db.js'
+import db from '../firebase/db.js'
 import config from '../config.js'
 
 const isPathAuthFree = (path) => {
 	return config.authFreeEndpoints && config.authFreeEndpoints.includes(path)
 }
 
-const getUserRefByUid = async (uid) => {
-	const userRef = getUserRef(uid)
+const getUserData = async (uid) => {
+	const userRef = db.ref(`users/${uid}`)
 	const snapshot = await userRef.once('value')
-	return snapshot.val()
+	return snapshot.val() || {}
 }
 
-const mapUserData = (firebaseUser, dbUser) => {
+const isAdmin = async (uid) => {
+	const permsRef = db.ref(`admins/${uid}`)
+	const snapshot = await permsRef.once('value')
+	return snapshot.val() === true
+}
+
+const mapUserData = (firebaseUser, dbUser, admin) => {
 	return {
 		uid: firebaseUser?.uid,
 		email: firebaseUser?.email || dbUser?.email || '',
@@ -28,7 +34,8 @@ const mapUserData = (firebaseUser, dbUser) => {
 			dbUser?.lastSignInTime ||
 			'',
 		disabled: firebaseUser?.disabled || false,
-		metadata: dbUser || {}
+		metadata: dbUser || {},
+		admin: admin || false
 	}
 }
 
@@ -43,8 +50,10 @@ const requireAuth = async (req, res, next) => {
 		const user = await auth.getUser(decodedToken.uid) // Fetch user details to check if account is disabled
 		if (user.disabled)
 			return res.status(403).json({ message: 'Account is disabled' })
-		const userData = await getUserRefByUid(user.uid)
-		req.user = mapUserData(user, userData)
+		const userData = await getUserData(user.uid)
+		const admin = await isAdmin(user.uid)
+
+		req.user = mapUserData(user, userData, admin)
 
 		if (req.path === '/login') return res.redirect('/')
 		next()
