@@ -2,7 +2,7 @@ import { verifyIdToken } from '../firebase/auth.js'
 import config from '../config.js'
 
 const isAuthFree = (path) => {
-	return config.authFreeEndpoints.includes(path)
+	return config.authFreeEndpoints && config.authFreeEndpoints.includes(path)
 }
 
 const requireAuth = async (req, res, next) => {
