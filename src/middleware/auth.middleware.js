@@ -51,7 +51,7 @@ const requireAuth = async (req, res, next) => {
 	} catch (err) {
 		console.error('Authentication error:', err.message)
 		if (isPathAuthFree(req.path)) return next()
-		return res.status(401).json({ message: 'Unauthorized: Invalid token' })
+		return res.status(401).redirect('/login')
 	}
 }
 
