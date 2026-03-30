@@ -43,7 +43,6 @@ const requireAuth = async (req, res, next) => {
 			return res.status(403).json({ message: 'Account is disabled' })
 		const userData = await getUserByUid(user.uid)
 		req.user = mapUserData(user, userData)
-		console.log(req.user)
 
 		if (req.path === '/login') return res.redirect('/')
 		next()
