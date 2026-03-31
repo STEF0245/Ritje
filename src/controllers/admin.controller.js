@@ -22,6 +22,12 @@ export const getUsersPage = (req, res) => {
 		})
 }
 
+export const getUserAddPage = (req, res) => {
+	res.render('admin_users_add', {
+		title: 'Toevoegen | Gebruikers | Admin'
+	})
+}
+
 export const getSettingsPage = (req, res) => {
 	res.render('admin_settings', {
 		title: 'Instellingen | Admin'
