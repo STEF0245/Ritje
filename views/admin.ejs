@@ -4,8 +4,8 @@
 
 	<body class="theme-body min-h-screen flex flex-col">
 		<%- include('partials/header', { user }) %>
-        <main class="theme-main flex-1">
-        
+        <main class="theme-main flex-1 pt-0!">
+            <%- include('partials/admin_nav', { selected: { dashboard: true } }) %>
         </main>
         <%- include('partials/footer') %>
     </body>

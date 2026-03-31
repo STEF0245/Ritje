@@ -2,7 +2,7 @@ import db from '../firebase/db.js'
 
 export const getAdminPage = (req, res) => {
 	res.render('admin', {
-		title: 'Admin Dashboard'
+		title: 'Dashboard | Admin'
 	})
 }
 
@@ -12,7 +12,7 @@ export const getUsersPage = (req, res) => {
 		.then((snapshot) => {
 			const usersData = snapshot.val() || {}
 			res.render('admin_users', {
-				title: 'Leerkrachten',
+				title: 'Gebruikers | Admin',
 				users: usersData
 			})
 		})
