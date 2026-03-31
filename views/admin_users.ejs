@@ -2,10 +2,86 @@
 <html lang="nl" class="text-slate-200">
     <%- include('partials/head', { title }) %>
 
-	<body class="theme-body min-h-screen flex flex-col">
-		<%- include('partials/header', { user }) %>
+    <%
+        const userEntries = Object.entries(users || {})
+        const userCount = userEntries.length
+    %>
+
+    <body class="theme-body min-h-screen flex flex-col">
+        <%- include('partials/header', { user }) %>
         <main class="theme-main flex-1 pt-0!">
             <%- include('partials/admin_nav', { selected: { users: true } }) %>
+
+            <section class="max-w-6xl mx-auto px-4 md:px-6 py-8 md:py-10">
+				<div class="mb-8 md:mb-10 text-center">
+                    <p class="theme-kicker">Ritje Admin</p>
+                    <h1 class="theme-heading theme-accent-text">Gebruikers</h1>
+                    <p class="theme-subtext">Bekijk alle gebruikers in een overzicht.</p>
+                </div>
+
+                <div class="mb-8 md:mb-10 flex mx-auto w-xl justify-between gap-3">
+                    <div class="theme-btn-secondary px-4 py-2" aria-label="Lijstweergave actief">
+                        <i class="fa-solid fa-list"></i>
+                    </div>
+                    <div class="theme-surface theme-pill border theme-border px-4 py-2">
+                        <p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Totaal</p>
+                        <p class="text-xl font-black theme-text-primary"><%= userCount %></p>
+                    </div>
+                    <a href="/admin/users/new" class="theme-btn-primary px-4 py-2" aria-label="Gebruiker toevoegen">
+                        <i class="fas fa-add"></i>
+                    </a>
+                </div>
+
+                <% if (userCount === 0) { %>
+                    <article class="theme-panel p-8 md:p-10 text-center">
+                        <h2 class="text-xl font-extrabold theme-text-primary">Nog geen gebruikers gevonden</h2>
+                        <p class="theme-subtext">Zodra iemand een account aanmaakt, verschijnt die persoon hier automatisch.</p>
+                    </article>
+                <% } else { %>
+                    <div class="theme-panel overflow-hidden">
+                        <ul class="divide-y theme-border-soft">
+                        <% userEntries.forEach(([userId, userData]) => {
+                            const profile = userData || {}
+                            const fullName = profile?.name?.full || profile?.displayName || 'Onbekende gebruiker'
+                            const firstInitial = profile?.name?.first?.charAt(0) || fullName.charAt(0) || ''
+                            const lastInitial = profile?.name?.last?.charAt(0) || fullName.split(' ')[1]?.charAt(0) || ''
+                            const initials = `${firstInitial}${lastInitial}`.toUpperCase() || 'RG'
+                            const email = profile?.email || 'Geen e-mail'
+                            const city = profile?.address?.city || 'Onbekend'
+                        %>
+                            <li class="p-4 md:p-5">
+                                <div class="flex items-center gap-3 md:gap-4">
+                                    <% if (profile?.photoURL) { %>
+                                        <img src="<%= profile.photoURL %>" alt="Profielfoto van <%= fullName %>" class="theme-avatar h-14 w-14 object-cover rounded-full">
+                                    <% } else { %>
+                                        <div class="theme-avatar h-14 w-14 flex items-center justify-center text-sm font-black rounded-full">
+                                            <%= initials %>
+                                        </div>
+                                    <% } %>
+
+                                    <div class="min-w-0 flex-1">
+                                        <h2 class="theme-text-primary text-base md:text-lg font-bold leading-tight truncate"><%= fullName %></h2>
+                                        <div class="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs md:text-sm">
+                                            <p class="theme-text-muted">E-mail: <span class="theme-text-primary"><%= email %></span></p>
+                                            <p class="theme-text-muted">Stad: <span class="theme-text-primary"><%= city %></span></p>
+                                            <p class="theme-text-muted">UID: <span class="theme-text-primary font-mono"><%= userId %></span></p>
+                                        </div>
+                                    </div>
+
+                                    <a
+                                        href="/admin/users/<%= encodeURIComponent(userId) %>"
+                                        class="theme-btn-secondary px-3 py-2 text-sm shrink-0"
+                                    >
+                                        Bewerken
+                                    </a>
+                                </div>
+
+                            </li>
+                        <% }) %>
+                        </ul>
+                    </div>
+                <% } %>
+            </section>
         </main>
         <%- include('partials/footer') %>
     </body>
