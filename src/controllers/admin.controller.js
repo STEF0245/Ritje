@@ -21,3 +21,9 @@ export const getUsersPage = (req, res) => {
 			res.status(500).send('Error fetching users')
 		})
 }
+
+export const getSettingsPage = (req, res) => {
+	res.render('admin_settings', {
+		title: 'Instellingen | Admin'
+	})
+}
