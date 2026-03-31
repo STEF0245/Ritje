@@ -1,11 +1,6 @@
 <%
 	const displayName = user?.displayName || user?.email || 'Account'
-	const initials = displayName
-		.split(' ')
-		.filter(Boolean)
-		.slice(0, 2)
-		.map((part) => part[0]?.toUpperCase())
-		.join('') || 'A'
+	const initials = user?.name?.first.charAt(0)?.toUpperCase() + user?.name?.last?.charAt(0)?.toUpperCase() || 'A'
 %>
 
 <div class="flex items-center gap-3 text-sm font-medium justify-end">
