@@ -3,8 +3,8 @@ import rateLimit from 'express-rate-limit'
 import {
 	reverseGeocodeController,
 	forwardGeocodeController
-} from './location.controller.js'
-import { RATE_LIMIT_CONFIG, getProvider } from './location.service.js'
+} from '../location/location.controller.js'
+import { RATE_LIMIT_CONFIG, getProvider } from '../location/location.service.js'
 
 const router = express.Router()
 
@@ -25,10 +25,6 @@ const nominatimLimiter = buildProviderLimiter(
 	'nominatim',
 	RATE_LIMIT_CONFIG.nominatim
 )
-const locationIqLimiter = buildProviderLimiter(
-	'locationiq',
-	RATE_LIMIT_CONFIG.locationiq
-)
 const geoapifyLimiter = buildProviderLimiter(
 	'geoapify',
 	RATE_LIMIT_CONFIG.geoapify
@@ -37,7 +33,6 @@ const geoapifyLimiter = buildProviderLimiter(
 router.post(
 	'/reverse-geocode',
 	nominatimLimiter,
-	locationIqLimiter,
 	geoapifyLimiter,
 	reverseGeocodeController
 )
@@ -45,7 +40,6 @@ router.post(
 router.post(
 	'/forward-geocode',
 	nominatimLimiter,
-	locationIqLimiter,
 	geoapifyLimiter,
 	forwardGeocodeController
 )

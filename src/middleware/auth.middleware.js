@@ -39,7 +39,7 @@ const mapUserData = (firebaseUser, dbUser, admin) => {
 	}
 }
 
-const requireAuth = async (req, res, next) => {
+export const requireAuth = async (req, res, next) => {
 	try {
 		const idToken = req.cookies.token
 		if (!idToken) {
@@ -62,6 +62,13 @@ const requireAuth = async (req, res, next) => {
 		if (isPathAuthFree(req.path)) return next()
 		return res.status(401).redirect('/login')
 	}
+}
+
+export const requireAdmin = (req, res, next) => {
+	if (req.user?.isAdmin) {
+		return next()
+	}
+	return res.status(403).json({ message: 'Admin access required' })
 }
 
 export default requireAuth
