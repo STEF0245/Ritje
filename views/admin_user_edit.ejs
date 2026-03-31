@@ -27,12 +27,6 @@
                     <p class="theme-subtext">Werk profiel- en adresgegevens bij voor UID <span class="font-mono theme-text-primary"><%= userUid %></span>.</p>
                 </div>
 
-                <% if (saved) { %>
-                    <div class="theme-panel border border-emerald-500/40 px-4 py-3 mb-5">
-                        <p class="text-sm text-emerald-300">Wijzigingen zijn opgeslagen.</p>
-                    </div>
-                <% } %>
-
                 <article class="theme-panel p-5 md:p-6">
                     <form method="post" action="/admin/users/<%= encodeURIComponent(userUid) %>" class="space-y-5">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

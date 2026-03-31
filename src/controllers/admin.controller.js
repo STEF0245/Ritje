@@ -44,10 +44,9 @@ export const getUserEditPage = (req, res) => {
 			}
 
 			return res.render('admin_user_edit', {
-				title: 'Gebruiker bewerken | Admin',
+				title: 'Bewerk | Gebruikers | Admin',
 				userUid: uid,
-				editUser: userData,
-				saved: req.query.saved === '1'
+				editUser: userData
 			})
 		})
 		.catch((error) => {
@@ -98,7 +97,7 @@ export const postUserEditPage = (req, res) => {
 	db.ref(`users/${uid}`)
 		.update(updates)
 		.then(() => {
-			res.redirect(`/admin/users/${encodeURIComponent(uid)}?saved=1`)
+			res.redirect(`/admin/users/${encodeURIComponent(uid)}`)
 		})
 		.catch((error) => {
 			console.error('Error updating user:', error)
