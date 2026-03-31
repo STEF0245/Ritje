@@ -20,8 +20,25 @@
                 </div>
 
                 <div class="mb-8 md:mb-10 flex mx-auto w-xl justify-between gap-3">
-                    <div class="theme-btn-secondary px-4 py-2" aria-label="Lijstweergave actief">
-                        <i class="fa-solid fa-list"></i>
+                    <div class="flex items-center gap-2">
+                        <button
+                            id="userViewListBtn"
+                            type="button"
+                            class="theme-btn-secondary px-4 py-2"
+                            aria-label="Toon lijstweergave"
+                            aria-pressed="true"
+                        >
+                            <i class="fa-solid fa-list"></i>
+                        </button>
+                        <button
+                            id="userViewGridBtn"
+                            type="button"
+                            class="theme-btn-secondary px-4 py-2"
+                            aria-label="Toon rasterweergave"
+                            aria-pressed="false"
+                        >
+                            <i class="fa-solid fa-grid-2"></i>
+                        </button>
                     </div>
                     <div class="theme-surface theme-pill border theme-border px-4 py-2">
                         <p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Totaal</p>
@@ -39,7 +56,7 @@
                     </article>
                 <% } else { %>
                     <div class="theme-panel overflow-hidden">
-                        <ul class="divide-y theme-border-soft">
+                        <ul id="userCollection" class="divide-y theme-border-soft">
                         <% userEntries.forEach(([userId, userData]) => {
                             const profile = userData || {}
                             const fullName = profile?.name?.full || profile?.displayName || 'Onbekende gebruiker'
@@ -49,8 +66,8 @@
                             const email = profile?.email || 'Geen e-mail'
                             const city = profile?.address?.city || 'Onbekend'
                         %>
-                            <li class="p-4 md:p-5">
-                                <div class="flex items-center gap-3 md:gap-4">
+                            <li data-user-item class="p-4 md:p-5">
+                                <div data-user-row class="flex items-center gap-3 md:gap-4">
                                     <% if (profile?.photoURL) { %>
                                         <img src="<%= profile.photoURL %>" alt="Profielfoto van <%= fullName %>" class="theme-avatar h-14 w-14 object-cover rounded-full">
                                     <% } else { %>
@@ -61,7 +78,7 @@
 
                                     <div class="min-w-0 flex-1">
                                         <h2 class="theme-text-primary text-base md:text-lg font-bold leading-tight truncate"><%= fullName %></h2>
-                                        <div class="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs md:text-sm">
+                                        <div data-user-meta class="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs md:text-sm">
                                             <p class="theme-text-muted">E-mail: <span class="theme-text-primary"><%= email %></span></p>
                                             <p class="theme-text-muted">Stad: <span class="theme-text-primary"><%= city %></span></p>
                                             <p class="theme-text-muted">UID: <span class="theme-text-primary font-mono"><%= userId %></span></p>
@@ -69,6 +86,7 @@
                                     </div>
 
                                     <a
+                                        data-user-action
                                         href="/admin/users/<%= encodeURIComponent(userId) %>"
                                         class="theme-btn-secondary px-3 py-2 text-sm shrink-0"
                                     >
@@ -83,6 +101,71 @@
                 <% } %>
             </section>
         </main>
+
+        <script>
+            (() => {
+                const listBtn = document.getElementById('userViewListBtn')
+                const gridBtn = document.getElementById('userViewGridBtn')
+                const collection = document.getElementById('userCollection')
+
+                if (!listBtn || !gridBtn || !collection) {
+                    return
+                }
+
+                const storageKey = 'ritje_admin_users_view'
+
+                const applyView = (view) => {
+                    const isGrid = view === 'grid'
+
+                    collection.className = isGrid
+                        ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-5 p-4 md:p-5'
+                        : 'divide-y theme-border-soft'
+
+                    collection.querySelectorAll('[data-user-item]').forEach((item) => {
+                        item.className = isGrid
+                            ? 'theme-surface theme-pill border theme-border p-4 md:p-5'
+                            : 'p-4 md:p-5'
+                    })
+
+                    collection.querySelectorAll('[data-user-row]').forEach((row) => {
+                        row.className = isGrid
+                            ? 'flex flex-col items-start gap-4'
+                            : 'flex items-center gap-3 md:gap-4'
+                    })
+
+                    collection.querySelectorAll('[data-user-meta]').forEach((meta) => {
+                        meta.className = isGrid
+                            ? 'mt-1 flex flex-col gap-1 text-xs md:text-sm'
+                            : 'mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs md:text-sm'
+                    })
+
+                    collection.querySelectorAll('[data-user-action]').forEach((action) => {
+                        action.className = isGrid
+                            ? 'theme-btn-secondary px-3 py-2 text-sm w-full text-center'
+                            : 'theme-btn-secondary px-3 py-2 text-sm shrink-0'
+                    })
+
+                    listBtn.className = isGrid
+                        ? 'theme-btn-secondary px-4 py-2'
+                        : 'theme-btn-primary px-4 py-2'
+                    gridBtn.className = isGrid
+                        ? 'theme-btn-primary px-4 py-2'
+                        : 'theme-btn-secondary px-4 py-2'
+
+                    listBtn.setAttribute('aria-pressed', String(!isGrid))
+                    gridBtn.setAttribute('aria-pressed', String(isGrid))
+
+                    window.localStorage.setItem(storageKey, isGrid ? 'grid' : 'list')
+                }
+
+                listBtn.addEventListener('click', () => applyView('list'))
+                gridBtn.addEventListener('click', () => applyView('grid'))
+
+                const savedView = window.localStorage.getItem(storageKey)
+                applyView(savedView === 'grid' ? 'grid' : 'list')
+            })()
+        </script>
+
         <%- include('partials/footer') %>
     </body>
 </html>

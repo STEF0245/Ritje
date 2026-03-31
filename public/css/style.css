@@ -224,6 +224,7 @@
 	border: 1px solid color-mix(in srgb, var(--ride-accent) 70%, var(--ride-c4));
 	border-radius: 0.5rem;
 	font-weight: 700;
+	cursor: pointer;
 	transition:
 		filter 0.2s ease,
 		transform 0.2s ease;
@@ -242,6 +243,7 @@
 	border: 1px solid color-mix(in srgb, var(--ride-border) 85%, transparent);
 	border-radius: 0.5rem;
 	font-weight: 600;
+	cursor: pointer;
 	transition:
 		border-color 0.2s ease,
 		color 0.2s ease;
