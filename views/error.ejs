@@ -3,8 +3,10 @@
     <%- include('partials/head', { title }) %>
 
     <body class="theme-body min-h-screen flex flex-col">
-		<%- include('partials/header', { user }) %>
+		<%- include('partials/navbar', { user }) %>
         <main class="theme-main flex-1">
+            <%- include('partials/header', { user, kicker: 'Foutmelding', heading: 'Er ging iets mis', subtext: 'Er is een fout opgetreden tijdens het verwerken van je verzoek.' }) %>
+
             <section class="max-w-3xl mx-auto">
                 <div class="theme-panel p-8 md:p-10">
                     <p class="theme-kicker">Foutmelding</p>

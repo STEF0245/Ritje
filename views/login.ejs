@@ -3,16 +3,10 @@
     <%- include('partials/head', { title }) %>
 
 	<body class="theme-body min-h-screen flex flex-col">
-		<%- include('partials/header', { user }) %>
+		<%- include('partials/navbar', { user }) %>
         <main class="theme-main flex-1">
             <section class="max-w-xl mx-auto">
-                <div class="text-center mb-8">
-                    <p class="theme-kicker">Ritje Account</p>
-                    <h1 class="theme-heading">
-                        Welkom terug bij RITJE<span class="theme-brand-dot">.</span>
-                    </h1>
-                    <p class="theme-subtext">Log in en ga meteen verder met je volgende rit.</p>
-                </div>
+                <%- include('partials/header', { user, kicker: 'Ritje Account', heading: 'Welkom terug bij RITJE<span class="theme-brand-dot">.</span>', subtext: 'Log in en ga meteen verder met je volgende rit.' }) %>
 
                 <form
                     action="/login"

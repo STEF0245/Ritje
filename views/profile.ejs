@@ -28,18 +28,14 @@
 	<%- include('partials/head', { title }) %>
 
 	<body class="theme-body min-h-screen flex flex-col">
-		<%- include('partials/header', { user }) %>
+		<%- include('partials/navbar', { user }) %>
 
 		<main class="theme-main flex-1">
 			<section class="max-w-5xl mx-auto">
-				<div class="mb-8 md:mb-10 text-center">
-					<p class="theme-kicker">Ritje Profiel</p>
-					<h1 class="theme-heading">Welkom, <span class="theme-accent-text"><%= fullName %></span></h1>
-					<p class="theme-subtext">Bekijk je accountgegevens en profielinformatie.</p>
-				</div>
+                <%- include('partials/header', { user, kicker: 'Ritje Profiel', heading: `Welkom, <span class="theme-accent-text">${fullName}</span>`, subtext: 'Bekijk je accountgegevens en profielinformatie.' }) %>
 
 				<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-					<article class="theme-panel p-6 lg:col-span-1 h-full flex flex-col max-h-110">
+					<article class="theme-panel p-6 lg:col-span-1 h-full flex flex-col max-h-110 sticky top-26">
 						<div class="flex items-center gap-4">
 							<% if (photoURL) { %>
 								<img src="<%= photoURL %>" alt="Profielfoto van <%= fullName %>" class="theme-avatar h-16 w-16 object-cover rounded-full">

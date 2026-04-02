@@ -3,9 +3,27 @@
     <%- include('partials/head', { title }) %>
 
 	<body class="theme-body min-h-screen flex flex-col">
-		<%- include('partials/header', { user }) %>
-        <main class="theme-main flex-1 pt-0!">
-            <%- include('partials/admin_nav', { selected: { settings: true } }) %>
+		<%- include('partials/navbar', { user }) %>
+        <main class="theme-main flex-1">
+            <%- include('partials/header', { user, kicker: 'Ritje Admin', heading: 'Instellingen', subtext: 'Beheer hier de administratieve instellingen Ritje.' }) %>
+
+            <section class="max-w-7xl mx-auto px-4 md:px-6">
+                <div class="grid gap-6 lg:grid-cols-[18rem_minmax(0,1fr)] lg:items-start">
+                    <%- include('partials/admin_nav', { selected: { settings: true } }) %>
+
+                    <div class="space-y-6">
+                        <article class="theme-panel p-6 md:p-8">
+                            <p class="theme-kicker">Ritje Admin</p>
+                            <h1 class="theme-heading theme-accent-text mt-2">Instellingen</h1>
+                            <p class="theme-subtext">Beheer hier de administratieve instellingen van de app.</p>
+                            <div class="mt-6 flex flex-wrap gap-3">
+                                <a href="/admin/users" class="theme-btn-secondary px-4 py-3 text-sm">Naar gebruikers</a>
+                                <a href="/admin" class="theme-btn-secondary px-4 py-3 text-sm">Terug naar dashboard</a>
+                            </div>
+                        </article>
+                    </div>
+                </div>
+            </section>
         </main>
         <%- include('partials/footer') %>
     </body>
