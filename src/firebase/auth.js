@@ -7,7 +7,13 @@ export const verifyIdToken = async (idToken, checkRevoked = true) => {
 	try {
 		return await auth.verifyIdToken(idToken, checkRevoked)
 	} catch (error) {
-		console.error('Firebase token verification failed:', error.message)
+		if (error.code === 'auth/id-token-expired') {
+			console.warn('Firebase token has expired:', error.message)
+		} else if (error.code === 'auth/id-token-revoked') {
+			console.warn('Firebase token has been revoked:', error.message)
+		} else {
+			console.error('Error verifying Firebase token:', error.message)
+		}
 		throw error
 	}
 }

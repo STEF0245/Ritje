@@ -23,10 +23,19 @@ if (!form || !emailInput || !passwordInput || !idTokenInput) {
 	throw new Error('Login formulier is niet correct geladen.')
 }
 
+const setStatus = (message, type) => {
+	if (statusNode) {
+		statusNode.textContent = message
+		statusNode.className = `mt-4 text-sm font-medium ${type === 'info' ? 'text-blue-500' : ''} ${type === 'danger' ? 'text-red-500' : ''}`
+	}
+}
+
 if (!hasValidConfig) {
 	if (statusNode) {
-		statusNode.textContent =
-			'Authenticatieconfiguratie ontbreekt. Neem contact op met de beheerder.'
+		setStatus(
+			'Authenticatieconfiguratie ontbreekt. Neem contact op met de beheerder.',
+			'danger'
+		)
 	}
 	throw new Error('Missing Firebase web configuration for login flow.')
 }
@@ -34,15 +43,9 @@ if (!hasValidConfig) {
 const app = initializeApp(firebaseConfig)
 const auth = getAuth(app)
 
-const setStatus = (message) => {
-	if (statusNode) {
-		statusNode.textContent = message
-	}
-}
-
 form.addEventListener('submit', async (event) => {
 	event.preventDefault()
-	setStatus('Bezig met inloggen...')
+	setStatus('Bezig met inloggen...', 'info')
 
 	const submitButton = form.querySelector('button[type="submit"]')
 	if (submitButton) {
@@ -67,7 +70,10 @@ form.addEventListener('submit', async (event) => {
 		form.submit()
 	} catch (error) {
 		console.error('Login error:', error)
-		setStatus('Inloggen is mislukt. Controleer je e-mail en wachtwoord.')
+		setStatus(
+			'Inloggen is mislukt. Controleer je e-mail en wachtwoord.',
+			'danger'
+		)
 		if (submitButton) {
 			submitButton.disabled = false
 		}
