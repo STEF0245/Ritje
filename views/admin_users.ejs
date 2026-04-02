@@ -20,32 +20,18 @@
                 </div>
 
                 <div class="mb-8 md:mb-10 flex mx-auto w-xl justify-between gap-3">
-                    <div class="flex items-center gap-2">
-                        <button
-                            id="userViewListBtn"
-                            type="button"
-                            class="theme-btn-secondary px-4 py-2"
-                            aria-label="Toon lijstweergave"
-                            aria-pressed="true"
-                        >
-                            <i class="fa-solid fa-list"></i>
-                        </button>
-                        <button
-                            id="userViewGridBtn"
-                            type="button"
-                            class="theme-btn-secondary px-4 py-2"
-                            aria-label="Toon rasterweergave"
-                            aria-pressed="false"
-                        >
-                            <i class="fa-solid fa-grid-2"></i>
-                        </button>
-                    </div>
+                    <select id="sortSelect" class="theme-surface theme-pill border theme-border px-4 py-2 cursor-pointer" aria-label="Sorteer gebruikers" onchange="sortUsers(this.value)">
+                        <option value="name">Sorteren op naam (A-Z)</option>
+                        <option value="name_reverse">Sorteren op naam (Z-A)</option>
+                        <option value="city">Sorteren op stad (A-Z)</option>
+                        <option value="city_reverse">Sorteren op stad (Z-A)</option>
+                    </select>
                     <div class="theme-surface theme-pill border theme-border px-4 py-2">
                         <p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Totaal</p>
                         <p class="text-xl font-black theme-text-primary"><%= userCount %></p>
                     </div>
-                    <a href="/admin/users/new" class="theme-btn-primary px-4 py-2" aria-label="Gebruiker toevoegen">
-                        <i class="fas fa-add"></i>
+                    <a href="/admin/users/new" class="theme-btn-primary p-2 aspect-square w-15.5" aria-label="Gebruiker toevoegen">
+                        <i class="fas fa-plus"></i>
                     </a>
                 </div>
 
@@ -103,67 +89,36 @@
         </main>
 
         <script>
-            (() => {
-                const listBtn = document.getElementById('userViewListBtn')
-                const gridBtn = document.getElementById('userViewGridBtn')
-                const collection = document.getElementById('userCollection')
+            function sortUsers(criteria) {
+                const userList = document.getElementById('userCollection');
+                const users = Array.from(userList.querySelectorAll('[data-user-item]'));
 
-                if (!listBtn || !gridBtn || !collection) {
-                    return
-                }
+                users.sort((a, b) => {
+                    const aName = a.querySelector('h2').textContent.trim().toLowerCase();
+                    const bName = b.querySelector('h2').textContent.trim().toLowerCase();
+                    const aCity = a.querySelector('[data-user-meta] p:nth-child(2)').textContent.replace('Stad: ', '').trim().toLowerCase();
+                    const bCity = b.querySelector('[data-user-meta] p:nth-child(2)').textContent.replace('Stad: ', '').trim().toLowerCase();
 
-                const storageKey = 'ritje_admin_users_view'
+                    switch (criteria) {
+                        case 'name':
+                            return aName.localeCompare(bName);
+                        case 'name_reverse':
+                            return bName.localeCompare(aName);
+                        case 'city':
+                            return aCity.localeCompare(bCity);
+                        case 'city_reverse':
+                            return bCity.localeCompare(aCity);
+                        default:
+                            return 0;
+                    }
+                });
 
-                const applyView = (view) => {
-                    const isGrid = view === 'grid'
+                // Clear the current list and re-append sorted items
+                userList.innerHTML = '';
+                users.forEach(user => userList.appendChild(user));
+            }
 
-                    collection.className = isGrid
-                        ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-5 p-4 md:p-5'
-                        : 'divide-y theme-border-soft'
-
-                    collection.querySelectorAll('[data-user-item]').forEach((item) => {
-                        item.className = isGrid
-                            ? 'theme-surface theme-pill border theme-border p-4 md:p-5'
-                            : 'p-4 md:p-5'
-                    })
-
-                    collection.querySelectorAll('[data-user-row]').forEach((row) => {
-                        row.className = isGrid
-                            ? 'flex flex-col items-start gap-4'
-                            : 'flex items-center gap-3 md:gap-4'
-                    })
-
-                    collection.querySelectorAll('[data-user-meta]').forEach((meta) => {
-                        meta.className = isGrid
-                            ? 'mt-1 flex flex-col gap-1 text-xs md:text-sm'
-                            : 'mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs md:text-sm'
-                    })
-
-                    collection.querySelectorAll('[data-user-action]').forEach((action) => {
-                        action.className = isGrid
-                            ? 'theme-btn-secondary px-3 py-2 text-sm w-full text-center'
-                            : 'theme-btn-secondary px-3 py-2 text-sm shrink-0'
-                    })
-
-                    listBtn.className = isGrid
-                        ? 'theme-btn-secondary px-4 py-2'
-                        : 'theme-btn-primary px-4 py-2'
-                    gridBtn.className = isGrid
-                        ? 'theme-btn-primary px-4 py-2'
-                        : 'theme-btn-secondary px-4 py-2'
-
-                    listBtn.setAttribute('aria-pressed', String(!isGrid))
-                    gridBtn.setAttribute('aria-pressed', String(isGrid))
-
-                    window.localStorage.setItem(storageKey, isGrid ? 'grid' : 'list')
-                }
-
-                listBtn.addEventListener('click', () => applyView('list'))
-                gridBtn.addEventListener('click', () => applyView('grid'))
-
-                const savedView = window.localStorage.getItem(storageKey)
-                applyView(savedView === 'grid' ? 'grid' : 'list')
-            })()
+            sortUsers(document.getElementById('sortSelect').value);
         </script>
 
         <%- include('partials/footer') %>
