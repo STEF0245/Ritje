@@ -189,7 +189,7 @@ export const reverseGeocode = async (lat, lon) => {
 }
 
 // ========== Forward geocoding ==========
-const forwardWithNominatim = async (address) => {
+const forwardWithNominatim = async (address, signal) => {
 	const geocoderURL = new URL(NOMINATIM_FORWARD_ENDPOINT)
 	geocoderURL.searchParams.set('format', 'jsonv2')
 	geocoderURL.searchParams.set('q', address)
@@ -200,7 +200,8 @@ const forwardWithNominatim = async (address) => {
 		headers: {
 			'User-Agent': NOMINATIM_USER_AGENT,
 			Accept: 'application/json'
-		}
+		},
+		signal
 	})
 
 	if (!response.ok) {
@@ -227,7 +228,7 @@ const forwardWithNominatim = async (address) => {
 	}
 }
 
-const forwardWithGeoapify = async (address) => {
+const forwardWithGeoapify = async (address, signal) => {
 	const apiKey = process.env.GEOAPIFY_API_KEY
 
 	if (!apiKey) {
@@ -242,7 +243,8 @@ const forwardWithGeoapify = async (address) => {
 	const response = await fetch(geocoderURL, {
 		headers: {
 			Accept: 'application/json'
-		}
+		},
+		signal
 	})
 
 	if (!response.ok) {
@@ -273,15 +275,15 @@ const forwardWithGeoapify = async (address) => {
 	}
 }
 
-export const forwardGeocode = async (address) => {
+export const forwardGeocode = async (address, signal) => {
 	const provider = getProvider()
 	const attribution = PROVIDER_ATTRIBUTION[provider]
 
 	let result
 	if (provider === 'geoapify') {
-		result = await forwardWithGeoapify(address)
+		result = await forwardWithGeoapify(address, signal)
 	} else {
-		result = await forwardWithNominatim(address)
+		result = await forwardWithNominatim(address, signal)
 	}
 
 	return {

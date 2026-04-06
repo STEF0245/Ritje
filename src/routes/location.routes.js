@@ -1,9 +1,6 @@
 import express from 'express'
 import rateLimit from 'express-rate-limit'
-import {
-	reverseGeocodeController,
-	forwardGeocodeController
-} from '../location/location.controller.js'
+import { reverseGeocodeController } from '../location/location.controller.js'
 import { RATE_LIMIT_CONFIG, getProvider } from '../location/location.service.js'
 
 const router = express.Router()
@@ -36,13 +33,6 @@ router.post(
 	nominatimLimiter,
 	geoapifyLimiter,
 	reverseGeocodeController
-)
-
-router.post(
-	'/forward-geocode',
-	nominatimLimiter,
-	geoapifyLimiter,
-	forwardGeocodeController
 )
 
 export default router

@@ -15,13 +15,12 @@
 
 		const lastSignInDate = user?.lastSignInTime ? new Date(user.lastSignInTime).toLocaleString('nl-BE', { 
 			year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' 
-		}) : 'Onbekend';		const address = metadata?.address || {}
-		const coords = metadata?.coords || {}
+		}) : 'Onbekend';
+		const address = metadata?.address || {}
 		const street = address?.street || ''
 		const houseNumber = address?.houseNumber || ''
 		const postalCode = address?.postalCode || ''
 		const city = address?.city || ''
-		const hasCoordinates = Boolean(coords?.latitude && coords?.longitude)
 	%>
 	<%- include('partials/head', { title }) %>
 
@@ -125,20 +124,8 @@
 								</div>
 							</div>
 
-							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-								<div class="theme-surface theme-pill border theme-border p-4">
-									<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Latitude</p>
-									<input required disabled type="text" name="latitude" id="latitude" class="theme-text-primary font-semibold mt-1" value="<%= hasCoordinates ? metadata?.coords?.latitude : '-' %>">
-								</div>
-								<div class="theme-surface theme-pill border theme-border p-4">
-									<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Longitude</p>
-									<input required disabled type="text" name="longitude" id="longitude" class="theme-text-primary font-semibold mt-1" value="<%= hasCoordinates ? metadata?.coords?.longitude : '-' %>">
-								</div>
-							</div>
-
-							<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-								<p id="profile-geocode-status" class="text-xs theme-text-muted md:col-span-2"></p>
-								<button type="submit" class="theme-btn-primary px-5 py-3 cursor-pointer md:col-span-1">Opslaan</button>
+							<div class="justify-self-end pt-2">
+								<button type="submit" class="theme-btn-primary px-5 py-3 cursor-pointer">Opslaan</button>
 							</div>
 						</form>
 					</article>
@@ -146,9 +133,6 @@
 			</section>
 		</main>
 
-		<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-		<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-		<script src="/js/profile_edit.js"></script>
 		<%- include('partials/footer') %>
 	</body>
 </html>
