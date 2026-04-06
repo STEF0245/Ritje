@@ -65,6 +65,10 @@ export const getUsersNewPage = (req, res) => {
 	})
 }
 
+export const postUserNewPage = (req, res) => {}
+
+export const getUserPage = (req, res) => {}
+
 export const getUserEditPage = (req, res) => {
 	const { uid } = req.params
 	if (!isValidFirebaseUid(uid)) {
