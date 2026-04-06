@@ -47,11 +47,11 @@
                                     <%= initials %>
                                 </div>
                             <% } %>
-                            <div>
-                                <p class="theme-text-primary text-lg font-bold leading-tight"><%= fullName %></p>
-                                <p class="theme-text-muted text-sm"><%= email || 'Geen e-mail gevonden' %></p>
+                            <div class="min-w-0">
+                                <p class="theme-text-primary text-lg font-bold leading-tight truncate"><%= fullName %></p>
+                                <p class="theme-text-muted text-sm truncate"><%= email || 'Geen e-mail gevonden' %></p>
                                 <% if (phoneNumber) { %>
-                                    <p class="theme-text-muted text-sm"><%= phoneNumber %></p>
+                                    <p class="theme-text-muted text-sm truncate"><%= phoneNumber %></p>
                                 <% } %>
                             </div>
                         </div>
