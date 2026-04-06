@@ -3,6 +3,8 @@ import {
 	getAdminPage,
 	getUsersPage,
 	getUsersNewPage,
+	postUserNewPage,
+	getUserPage,
 	getUserEditPage,
 	postUserEditPage,
 	getSettingsPage
@@ -13,8 +15,10 @@ const router = express.Router()
 router.get('/', getAdminPage)
 router.get('/users', getUsersPage)
 router.get('/users/new', getUsersNewPage)
-router.get('/users/:uid', getUserEditPage)
-router.post('/users/:uid', postUserEditPage)
+router.post('/users/new', postUserNewPage)
+router.get('/users/:uid', getUserPage)
+router.get('/users/:uid/edit', getUserEditPage)
+router.post('/users/:uid/edit', postUserEditPage)
 router.get('/settings', getSettingsPage)
 
 export default router
