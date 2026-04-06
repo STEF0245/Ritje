@@ -14,6 +14,7 @@ import config from './config.js'
 import notFoundHandler from './middleware/notFound.middleware.js'
 import errorHandler from './middleware/error.middleware.js'
 import { requireAuth, requireAdmin } from './middleware/auth.middleware.js'
+import checkMaintenanceMode from './middleware/maintenance.middleware.js'
 import authRoutes from './routes/auth.routes.js'
 import profileRoutes from './routes/profile.routes.js'
 import adminRoutes from './routes/admin.routes.js'
@@ -139,6 +140,7 @@ if (!config.isProduction) {
 // =====================
 // Global Middleware
 // =====================
+app.use(checkMaintenanceMode) // Check if the site is in maintenance mode
 app.use(requireAuth) // Add user to all requests if authenticated
 app.use((req, res, next) => {
 	res.locals.user = req.user || null // Make user available in all views

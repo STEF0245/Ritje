@@ -1,0 +1,56 @@
+<% 
+    const title = locals.title || 'Onderhoud'
+    const message = locals.message || 'De site is tijdelijk in onderhoud. Probeer het later opnieuw.'
+    const startTime = locals.startTime ? new Date(locals.startTime).toLocaleString('nl-BE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : null
+    const endTime = locals.endTime ? new Date(locals.endTime).toLocaleString('nl-BE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : null
+    const updateTime = new Date().toLocaleString('nl-BE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+%>
+
+<!DOCTYPE html>
+<html lang="nl" class="text-slate-200">
+    <%- include('partials/head', { title }) %>
+
+	<body class="theme-body min-h-screen flex flex-col">
+        <main class="theme-main flex-1">
+            <section class="max-w-3xl mx-auto px-4 md:px-6 py-8 md:py-12">
+                <div class="text-center mb-8 md:mb-10">
+                    <p class="theme-kicker">Ritje Status</p>
+                    <h1 class="theme-heading">Tijdelijk in <span class="theme-accent-text">onderhoud</span></h1>
+                    <p class="theme-subtext mt-3"><%= message %></p>
+                </div>
+
+                <article class="theme-panel p-6 md:p-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="theme-surface theme-pill border theme-border p-4">
+                            <p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Status</p>
+                            <p class="theme-text-primary font-semibold mt-1">Onderhoud actief</p>
+                        </div>
+
+                        <div class="theme-surface theme-pill border theme-border p-4">
+                            <p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Laatst bijgewerkt</p>
+                            <p class="theme-text-primary font-semibold mt-1"><%= updateTime %></p>
+                        </div>
+
+                        <% if (startTime) { %>
+                            <div class="theme-surface theme-pill border theme-border p-4 md:col-span-1">
+                                <p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Gestart op</p>
+                                <p class="theme-text-primary font-semibold mt-1"><%= startTime %></p>
+                            </div>
+                        <% } %>
+
+                        <% if (endTime) { %>
+                            <div class="theme-surface theme-pill border theme-border p-4 <%= startTime ? 'md:col-span-1' : 'md:col-span-2' %>">
+                                <p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Verwachte voltooiing</p>
+                                <p class="theme-text-primary font-semibold mt-1"><%= endTime %></p>
+                            </div>
+                        <% } %>
+                    </div>
+
+                    <div class="mt-6 border-t theme-border pt-5 text-sm theme-text-muted">
+                        <p>Bedankt voor je geduld. We brengen Ritje zo snel mogelijk terug online.</p>
+                    </div>
+                </article>
+            </section>
+        </main>
+    </body>
+</html>
