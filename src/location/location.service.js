@@ -257,6 +257,10 @@ const forwardWithGeoapify = async (address) => {
 		return null
 	}
 
+	if (!properties?.category?.includes('building')) {
+		return null
+	}
+
 	const latCandidate =
 		properties.lat ?? firstFeature?.geometry?.coordinates?.[1]
 	const lonCandidate =
