@@ -16,8 +16,9 @@ const buildProviderLimiter = (providerName, config) =>
 		legacyHeaders: false,
 		skip: () => getProvider() !== providerName,
 		message: {
-			error: `Too many reverse-geocode requests for ${providerName}`,
-			provider: providerName
+			error: `Too many geocode requests for ${providerName}`,
+			provider: providerName,
+			status: 429
 		}
 	})
 
