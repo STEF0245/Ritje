@@ -1,4 +1,5 @@
 import config from '../config.js'
+import { renderInlinePageError } from './pageErrorRenderer.middleware.js'
 
 const errorHandler = (err, req, res, next) => {
 	err.statusCode = err.statusCode || 500
@@ -11,16 +12,32 @@ const errorHandler = (err, req, res, next) => {
 		method: req.method
 	})
 
-	res.status(err.statusCode).render('error', {
-		title: `Error ${err.statusCode}`,
-		error: {
+	const safeMessage =
+		config.isProduction && !err.isOperational
+			? 'Er is een onverwachte fout opgetreden. Probeer het later opnieuw.'
+			: err.message
+
+	if (
+		renderInlinePageError({
+			req,
+			res,
 			status: err.statusCode,
-			message:
-				config.isProduction && !err.isOperational
-					? 'Er is een onverwachte fout opgetreden. Probeer het later opnieuw.'
-					: err.message
-		}
-	})
+			message: safeMessage
+		})
+	) {
+		return
+	}
+
+	if (req.accepts('json')) {
+		return res.status(err.statusCode).json({
+			error: {
+				status: err.statusCode,
+				message: safeMessage
+			}
+		})
+	}
+
+	return res.status(err.statusCode).type('text/plain').send(safeMessage)
 }
 
 export default errorHandler

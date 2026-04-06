@@ -84,7 +84,13 @@ export const loginController = async (req, res) => {
 	const { idToken } = req.body
 	try {
 		if (!idToken) {
-			return res.status(400).json({ message: 'Token is required' })
+			return res.status(400).render('login', {
+				title: 'Login',
+				pageError: {
+					status: 400,
+					message: 'Inloggen mislukt. Probeer opnieuw.'
+				}
+			})
 		}
 		// Verify the token to ensure it is valid
 		await verifyIdToken(idToken, true) // Pass true to check if token is revoked
@@ -98,7 +104,14 @@ export const loginController = async (req, res) => {
 		res.redirect('/profile')
 	} catch (err) {
 		console.error('Login error:', err.message)
-		res.status(401).json({ message: 'Invalid token' })
+		res.status(401).render('login', {
+			title: 'Login',
+			pageError: {
+				status: 401,
+				message:
+					'Ongeldige login. Controleer je gegevens en probeer opnieuw.'
+			}
+		})
 	}
 }
 
@@ -118,9 +131,9 @@ export const profileEditController = async (req, res) => {
 	const userId = req.user?.uid
 
 	if (!userId || !FIREBASE_UID_PATTERN.test(userId)) {
-		return res.status(403).render('error', {
-			title: 'Toegang geweigerd',
-			error: {
+		return res.status(403).render('profile-edit', {
+			title: 'Bewerk Profiel',
+			pageError: {
 				status: 403,
 				message: 'Je sessie is ongeldig. Log opnieuw in.'
 			}
@@ -131,9 +144,10 @@ export const profileEditController = async (req, res) => {
 	try {
 		address = parseAndValidateProfileAddress(req.body)
 	} catch {
-		return res.status(400).render('error', {
-			title: 'Ongeldige invoer',
-			error: {
+		return res.status(400).render('profile-edit', {
+			title: 'Bewerk Profiel',
+			formData: req.body,
+			pageError: {
 				status: 400,
 				message: 'Controleer straat, huisnummer, postcode en stad.'
 			}
@@ -149,9 +163,10 @@ export const profileEditController = async (req, res) => {
 		)
 
 		if (!result?.lat || !result?.lon) {
-			return res.status(422).render('error', {
-				title: 'Adres niet gevonden',
-				error: {
+			return res.status(422).render('profile-edit', {
+				title: 'Bewerk Profiel',
+				formData: req.body,
+				pageError: {
 					status: 422,
 					message:
 						'Het adres kon niet geverifieerd worden. Controleer je gegevens en probeer opnieuw.'
@@ -176,9 +191,10 @@ export const profileEditController = async (req, res) => {
 		return res.redirect('/profile')
 	} catch (error) {
 		console.error('Profile update geocoding error:', error?.message)
-		return res.status(502).render('error', {
-			title: 'Adrescontrole mislukt',
-			error: {
+		return res.status(502).render('profile-edit', {
+			title: 'Bewerk Profiel',
+			formData: req.body,
+			pageError: {
 				status: 502,
 				message:
 					'Adresverificatie is tijdelijk niet beschikbaar. Probeer later opnieuw.'
