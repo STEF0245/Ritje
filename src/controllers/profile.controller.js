@@ -1,25 +1,12 @@
 import db from '../firebase/db.js'
 import { forwardGeocode } from '../location/location.service.js'
+import { sanitizeText, validateLength } from '../utils/input.util.js'
+import { isValidFirebaseUid } from '../utils/firebase.util.js'
+import { renderWithPageError } from '../utils/page-error.util.js'
 
-const FIREBASE_UID_PATTERN = /^[A-Za-z0-9_-]{8,128}$/
 const GEOCODE_TIMEOUT_MS = Number(
 	process.env.PROFILE_GEOCODE_TIMEOUT_MS || 7000
 )
-
-const sanitizeText = (value, maxLength) => {
-	return `${value ?? ''}`
-		.normalize('NFKC')
-		.replace(/[\u0000-\u001F\u007F]/g, ' ')
-		.replace(/\s+/g, ' ')
-		.trim()
-		.slice(0, maxLength)
-}
-
-const validateAddressField = (value, label, minLength, maxLength) => {
-	if (value.length < minLength || value.length > maxLength) {
-		throw new Error(`${label} has an invalid length`)
-	}
-}
 
 const parseAndValidateProfileAddress = (body = {}) => {
 	const street = sanitizeText(body.street, 120)
@@ -27,10 +14,10 @@ const parseAndValidateProfileAddress = (body = {}) => {
 	const postalCode = sanitizeText(body.postalCode, 20)
 	const city = sanitizeText(body.city, 100)
 
-	validateAddressField(street, 'Street', 2, 120)
-	validateAddressField(houseNumber, 'House number', 1, 20)
-	validateAddressField(postalCode, 'Postal code', 2, 20)
-	validateAddressField(city, 'City', 2, 100)
+	validateLength(street, 'Street', 2, 120)
+	validateLength(houseNumber, 'House number', 1, 20)
+	validateLength(postalCode, 'Postal code', 2, 20)
+	validateLength(city, 'City', 2, 100)
 
 	const streetPattern = /^(?=.{2,120}$)[\p{L}\p{N} .,'\-\/]+$/u
 	const houseNumberPattern = /^(?=.{1,20}$)[\p{L}\p{N} .\-\/]+$/u
@@ -87,13 +74,12 @@ export const getProfileEditPage = (req, res) => {
 export const profileEditController = async (req, res) => {
 	const userId = req.user?.uid
 
-	if (!userId || !FIREBASE_UID_PATTERN.test(userId)) {
-		return res.status(403).render('profile-edit', {
+	if (!isValidFirebaseUid(userId)) {
+		return renderWithPageError(res, {
+			status: 403,
+			view: 'profile-edit',
 			title: 'Bewerk Profiel',
-			pageError: {
-				status: 403,
-				message: 'Je sessie is ongeldig. Log opnieuw in.'
-			}
+			message: 'Je sessie is ongeldig. Log opnieuw in.'
 		})
 	}
 
@@ -101,13 +87,12 @@ export const profileEditController = async (req, res) => {
 	try {
 		address = parseAndValidateProfileAddress(req.body)
 	} catch {
-		return res.status(400).render('profile-edit', {
+		return renderWithPageError(res, {
+			status: 400,
+			view: 'profile-edit',
 			title: 'Bewerk Profiel',
-			formData: req.body,
-			pageError: {
-				status: 400,
-				message: 'Controleer straat, huisnummer, postcode en stad.'
-			}
+			message: 'Controleer straat, huisnummer, postcode en stad.',
+			extra: { formData: req.body }
 		})
 	}
 
@@ -120,14 +105,13 @@ export const profileEditController = async (req, res) => {
 		)
 
 		if (!result?.lat || !result?.lon) {
-			return res.status(422).render('profile-edit', {
+			return renderWithPageError(res, {
+				status: 422,
+				view: 'profile-edit',
 				title: 'Bewerk Profiel',
-				formData: req.body,
-				pageError: {
-					status: 422,
-					message:
-						'Het adres kon niet geverifieerd worden. Controleer je gegevens en probeer opnieuw.'
-				}
+				message:
+					'Het adres kon niet geverifieerd worden. Controleer je gegevens en probeer opnieuw.',
+				extra: { formData: req.body }
 			})
 		}
 
@@ -148,14 +132,13 @@ export const profileEditController = async (req, res) => {
 		return res.redirect('/profile')
 	} catch (error) {
 		console.error('Profile update geocoding error:', error?.message)
-		return res.status(502).render('profile-edit', {
+		return renderWithPageError(res, {
+			status: 502,
+			view: 'profile-edit',
 			title: 'Bewerk Profiel',
-			formData: req.body,
-			pageError: {
-				status: 502,
-				message:
-					'Adresverificatie is tijdelijk niet beschikbaar. Probeer later opnieuw.'
-			}
+			message:
+				'Adresverificatie is tijdelijk niet beschikbaar. Probeer later opnieuw.',
+			extra: { formData: req.body }
 		})
 	}
 }

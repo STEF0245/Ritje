@@ -1,20 +1,7 @@
 import db from '../firebase/db.js'
-
-const FIREBASE_UID_PATTERN = /^[A-Za-z0-9_-]{8,128}$/
-
-const safeTrim = (value, maxLength = 255) => {
-	return `${value ?? ''}`.trim().slice(0, maxLength)
-}
-
-const isValidPhotoURL = (value) => {
-	if (!value) return true
-	try {
-		const parsed = new URL(value)
-		return parsed.protocol === 'https:'
-	} catch {
-		return false
-	}
-}
+import { safeTrim, isValidHttpsUrl, isValidEmail } from '../utils/input.util.js'
+import { isValidFirebaseUid } from '../utils/firebase.util.js'
+import { renderWithPageError } from '../utils/page-error.util.js'
 
 const mapFormDataToEditUser = (formData = {}) => {
 	const safeFirstName = safeTrim(formData.firstName, 100)
@@ -61,14 +48,13 @@ export const getUsersPage = (req, res) => {
 		})
 		.catch((error) => {
 			console.error('Error fetching users:', error)
-			res.status(500).render('admin_users', {
+			return renderWithPageError(res, {
+				status: 500,
+				view: 'admin_users',
 				title: 'Gebruikers | Admin',
-				users: {},
-				pageError: {
-					status: 500,
-					message:
-						'Gebruikers konden niet worden geladen. Probeer het opnieuw.'
-				}
+				message:
+					'Gebruikers konden niet worden geladen. Probeer het opnieuw.',
+				extra: { users: {} }
 			})
 		})
 }
@@ -81,14 +67,15 @@ export const getUsersNewPage = (req, res) => {
 
 export const getUserEditPage = (req, res) => {
 	const { uid } = req.params
-	if (!FIREBASE_UID_PATTERN.test(uid)) {
-		return res.status(400).render('admin_user_edit', {
+	if (!isValidFirebaseUid(uid)) {
+		return renderWithPageError(res, {
+			status: 400,
+			view: 'admin_user_edit',
 			title: 'Bewerk | Gebruikers | Admin',
-			userUid: uid,
-			editUser: {},
-			pageError: {
-				status: 400,
-				message: 'Ongeldige gebruikers-ID opgegeven.'
+			message: 'Ongeldige gebruikers-ID opgegeven.',
+			extra: {
+				userUid: uid,
+				editUser: {}
 			}
 		})
 	}
@@ -99,13 +86,14 @@ export const getUserEditPage = (req, res) => {
 			const userData = snapshot.val()
 
 			if (!userData) {
-				return res.status(404).render('admin_user_edit', {
+				return renderWithPageError(res, {
+					status: 404,
+					view: 'admin_user_edit',
 					title: 'Bewerk | Gebruikers | Admin',
-					userUid: uid,
-					editUser: {},
-					pageError: {
-						status: 404,
-						message: 'Deze gebruiker bestaat niet of is verwijderd.'
+					message: 'Deze gebruiker bestaat niet of is verwijderd.',
+					extra: {
+						userUid: uid,
+						editUser: {}
 					}
 				})
 			}
@@ -118,14 +106,15 @@ export const getUserEditPage = (req, res) => {
 		})
 		.catch((error) => {
 			console.error('Error fetching user for edit page:', error)
-			res.status(500).render('admin_user_edit', {
+			return renderWithPageError(res, {
+				status: 500,
+				view: 'admin_user_edit',
 				title: 'Bewerk | Gebruikers | Admin',
-				userUid: uid,
-				editUser: {},
-				pageError: {
-					status: 500,
-					message:
-						'Gebruiker kon niet worden geladen. Probeer het opnieuw.'
+				message:
+					'Gebruiker kon niet worden geladen. Probeer het opnieuw.',
+				extra: {
+					userUid: uid,
+					editUser: {}
 				}
 			})
 		})
@@ -133,14 +122,15 @@ export const getUserEditPage = (req, res) => {
 
 export const postUserEditPage = (req, res) => {
 	const { uid } = req.params
-	if (!FIREBASE_UID_PATTERN.test(uid)) {
-		return res.status(400).render('admin_user_edit', {
+	if (!isValidFirebaseUid(uid)) {
+		return renderWithPageError(res, {
+			status: 400,
+			view: 'admin_user_edit',
 			title: 'Bewerk | Gebruikers | Admin',
-			userUid: uid,
-			editUser: mapFormDataToEditUser(req.body),
-			pageError: {
-				status: 400,
-				message: 'Ongeldige gebruikers-ID opgegeven.'
+			message: 'Ongeldige gebruikers-ID opgegeven.',
+			extra: {
+				userUid: uid,
+				editUser: mapFormDataToEditUser(req.body)
 			}
 		})
 	}
@@ -166,26 +156,28 @@ export const postUserEditPage = (req, res) => {
 	const safePhotoURL = safeTrim(photoURL, 2048)
 	const fullName = `${safeFirstName} ${safeLastName}`.trim()
 
-	if (safeEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(safeEmail)) {
-		return res.status(400).render('admin_user_edit', {
+	if (safeEmail && !isValidEmail(safeEmail)) {
+		return renderWithPageError(res, {
+			status: 400,
+			view: 'admin_user_edit',
 			title: 'Bewerk | Gebruikers | Admin',
-			userUid: uid,
-			editUser: mapFormDataToEditUser(req.body),
-			pageError: {
-				status: 400,
-				message: 'Ongeldig e-mailadres opgegeven.'
+			message: 'Ongeldig e-mailadres opgegeven.',
+			extra: {
+				userUid: uid,
+				editUser: mapFormDataToEditUser(req.body)
 			}
 		})
 	}
 
-	if (!isValidPhotoURL(safePhotoURL)) {
-		return res.status(400).render('admin_user_edit', {
+	if (!isValidHttpsUrl(safePhotoURL)) {
+		return renderWithPageError(res, {
+			status: 400,
+			view: 'admin_user_edit',
 			title: 'Bewerk | Gebruikers | Admin',
-			userUid: uid,
-			editUser: mapFormDataToEditUser(req.body),
-			pageError: {
-				status: 400,
-				message: 'Profielfoto-URL moet een geldige HTTPS URL zijn.'
+			message: 'Profielfoto-URL moet een geldige HTTPS URL zijn.',
+			extra: {
+				userUid: uid,
+				editUser: mapFormDataToEditUser(req.body)
 			}
 		})
 	}
@@ -213,14 +205,15 @@ export const postUserEditPage = (req, res) => {
 		})
 		.catch((error) => {
 			console.error('Error updating user:', error)
-			res.status(500).render('admin_user_edit', {
+			return renderWithPageError(res, {
+				status: 500,
+				view: 'admin_user_edit',
 				title: 'Bewerk | Gebruikers | Admin',
-				userUid: uid,
-				editUser: mapFormDataToEditUser(req.body),
-				pageError: {
-					status: 500,
-					message:
-						'Gebruiker kon niet worden opgeslagen. Probeer het opnieuw.'
+				message:
+					'Gebruiker kon niet worden opgeslagen. Probeer het opnieuw.',
+				extra: {
+					userUid: uid,
+					editUser: mapFormDataToEditUser(req.body)
 				}
 			})
 		})

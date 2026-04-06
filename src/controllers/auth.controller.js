@@ -1,5 +1,6 @@
 import { verifyIdToken } from '../firebase/auth.js'
 import config from '../config.js'
+import { renderWithPageError } from '../utils/page-error.util.js'
 
 export const getLoginPage = (req, res) => {
 	res.render('login', {
@@ -11,12 +12,11 @@ export const loginController = async (req, res) => {
 	const { idToken } = req.body
 	try {
 		if (!idToken) {
-			return res.status(400).render('login', {
+			return renderWithPageError(res, {
+				status: 400,
+				view: 'login',
 				title: 'Login',
-				pageError: {
-					status: 400,
-					message: 'Inloggen mislukt. Probeer opnieuw.'
-				}
+				message: 'Inloggen mislukt. Probeer opnieuw.'
 			})
 		}
 		// Verify the token to ensure it is valid
@@ -31,13 +31,12 @@ export const loginController = async (req, res) => {
 		res.redirect('/profile')
 	} catch (err) {
 		console.error('Login error:', err.message)
-		res.status(401).render('login', {
+		return renderWithPageError(res, {
+			status: 401,
+			view: 'login',
 			title: 'Login',
-			pageError: {
-				status: 401,
-				message:
-					'Ongeldige login. Controleer je gegevens en probeer opnieuw.'
-			}
+			message:
+				'Ongeldige login. Controleer je gegevens en probeer opnieuw.'
 		})
 	}
 }
