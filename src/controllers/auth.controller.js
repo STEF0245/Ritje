@@ -31,8 +31,18 @@ export const loginController = async (req, res) => {
 
 export const getProfilePage = (req, res) => {
 	res.render('profile', {
-		title: 'Profile'
+		title: 'Profiel'
 	})
+}
+
+export const getProfileEditPage = (req, res) => {
+	res.render('profile-edit', {
+		title: 'Bewerk Profiel'
+	})
+}
+
+export const profileEditController = (req, res) => {
+	res.status(200).json({ message: 'Profile updated successfully' })
 }
 
 export const logoutController = (req, res) => {
