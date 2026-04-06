@@ -10,13 +10,26 @@ import {
 
 const router = express.Router()
 
-const ratelimit = rateLimit()
+const loginRateLimit = rateLimit({
+	windowMs: 15 * 60 * 1000,
+	max: 10,
+	standardHeaders: true,
+	legacyHeaders: false,
+	message: { message: 'Too many login attempts. Please try again later.' }
+})
+
+const logoutRateLimit = rateLimit({
+	windowMs: 60 * 1000,
+	max: 20,
+	standardHeaders: true,
+	legacyHeaders: false,
+	message: { message: 'Too many logout attempts. Please try again later.' }
+})
 
 router.get('/login', getLoginPage)
-router.post('/login', ratelimit, loginController)
+router.post('/login', loginRateLimit, loginController)
 router.get('/profile', getProfilePage)
-router.get('/logout', ratelimit, logoutController)
-router.post('/logout', ratelimit, logoutController)
+router.post('/logout', logoutRateLimit, logoutController)
 router.get('/api/firebase-config', (req, res) => {
 	res.json(config.firebase.web)
 })

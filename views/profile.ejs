@@ -8,6 +8,7 @@
 		const initials = fullName.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'A'
 
 		const photoURL = user?.photoURL || null
+		const phoneNumber = user?.phoneNumber || ''
 		const joinedDate = user?.createdAt ? new Date(user.createdAt).toLocaleString('nl-BE', { 
 			year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' 
 		}) : 'Onbekend';
@@ -51,7 +52,9 @@
 							<div>
 								<p class="theme-text-primary text-lg font-bold leading-tight"><%= fullName %></p>
 								<p class="theme-text-muted text-sm"><%= user?.email || 'Geen e-mail gevonden' %></p>
-								<%- user?.phoneNumber ? `<p class="theme-text-muted text-sm">${user?.phoneNumber}</p>` : '' %>
+								<% if (phoneNumber) { %>
+									<p class="theme-text-muted text-sm"><%= phoneNumber %></p>
+								<% } %>
 							</div>
 						</div>
 
@@ -81,7 +84,9 @@
 								<a href="/admin" class="theme-pill border theme-border theme-surface w-full px-3 py-2 theme-text-primary theme-hover-accent-border text-center col-span-2">Admin Panel</a>
 							<% } %>
 							<a href="/profile/edit" class="theme-pill border theme-border theme-surface w-full px-3 py-2 theme-text-primary theme-hover-accent-border text-center">Bewerken</a>
-							<a href="/logout" class="theme-pill border theme-border theme-surface w-full px-3 py-2 theme-text-primary theme-hover-accent-border text-center">Uitloggen</a>
+							<form action="/logout" method="post" class="w-full">
+								<button type="submit" class="theme-pill border theme-border theme-surface w-full px-3 py-2 theme-text-primary theme-hover-accent-border text-center cursor-pointer">Uitloggen</button>
+							</form>
 						</div>
 					</article>
 
