@@ -104,7 +104,7 @@ export const profileEditController = async (req, res) => {
 			GEOCODE_TIMEOUT_MS
 		)
 
-		if (!result?.lat || !result?.lon) {
+		if (!result?.lat || !result?.lon || !result?.raw) {
 			return renderWithPageError(res, {
 				status: 422,
 				view: 'profile-edit',
@@ -115,16 +115,21 @@ export const profileEditController = async (req, res) => {
 			})
 		}
 
+		const raw = result.raw
+		const address = {
+			street: raw.street || address.street,
+			houseNumber: raw.housenumber || address.houseNumber,
+			postalCode: raw.postcode || address.postalCode,
+			city: raw.city || raw.town || raw.village || address.city
+		}
+
 		const updates = {
 			address,
 			coords: {
 				latitude: result.lat,
 				longitude: result.lon
 			},
-			geocoding: {
-				provider,
-				updatedAt: new Date().toISOString()
-			}
+			updatedAt: new Date()
 		}
 
 		await db.ref(`users/${userId}`).update(updates)
