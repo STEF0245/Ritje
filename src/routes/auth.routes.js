@@ -4,9 +4,6 @@ import config from '../config.js'
 import {
 	getLoginPage,
 	loginController,
-	getProfilePage,
-	getProfileEditPage,
-	profileEditController,
 	logoutController
 } from '../controllers/auth.controller.js'
 
@@ -20,16 +17,6 @@ const loginRateLimit = rateLimit({
 	message: { message: 'Too many login attempts. Please try again later.' }
 })
 
-const profileRateLimit = rateLimit({
-	windowMs: 15 * 60 * 1000,
-	max: 20,
-	standardHeaders: true,
-	legacyHeaders: false,
-	message: {
-		message: 'Too many profile update attempts. Please try again later.'
-	}
-})
-
 const logoutRateLimit = rateLimit({
 	windowMs: 15 * 60 * 1000,
 	max: 20,
@@ -40,9 +27,6 @@ const logoutRateLimit = rateLimit({
 
 router.get('/login', getLoginPage)
 router.post('/login', loginRateLimit, loginController)
-router.get('/profile', getProfilePage)
-router.get('/profile/edit', getProfileEditPage)
-router.post('/profile/edit', profileRateLimit, profileEditController)
 router.post('/logout', logoutRateLimit, logoutController)
 router.get('/api/firebase-config', (req, res) => {
 	res.json(config.firebase.web)
