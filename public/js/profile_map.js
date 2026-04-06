@@ -24,7 +24,7 @@ const ProfileMap = {
 	},
 
 	getProfileLocationDetails(latitude, longitude) {
-		const fullName = this.mapElement?.dataset?.fullName || 'Uw woonplaats'
+		const fullName = 'Uw woonplaats'
 		const addressLineOne = this.mapElement?.dataset?.addressLineOne || ''
 		const addressLineTwo = this.mapElement?.dataset?.addressLineTwo || ''
 		const mapsUrl = this.mapElement?.dataset?.mapsUrl || ''
