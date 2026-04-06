@@ -1,5 +1,21 @@
 import db from '../firebase/db.js'
 
+const FIREBASE_UID_PATTERN = /^[A-Za-z0-9_-]{10,128}$/
+
+const safeTrim = (value, maxLength = 255) => {
+	return `${value ?? ''}`.trim().slice(0, maxLength)
+}
+
+const isValidPhotoURL = (value) => {
+	if (!value) return true
+	try {
+		const parsed = new URL(value)
+		return parsed.protocol === 'https:'
+	} catch {
+		return false
+	}
+}
+
 export const getAdminPage = (req, res) => {
 	res.render('admin', {
 		title: 'Dashboard | Admin'
@@ -30,6 +46,15 @@ export const getUsersNewPage = (req, res) => {
 
 export const getUserEditPage = (req, res) => {
 	const { uid } = req.params
+	if (!FIREBASE_UID_PATTERN.test(uid)) {
+		return res.status(400).render('error', {
+			title: 'Ongeldige gebruiker',
+			error: {
+				status: 400,
+				message: 'Ongeldige gebruikers-ID opgegeven.'
+			}
+		})
+	}
 
 	db.ref(`users/${uid}`)
 		.once('value')
@@ -57,6 +82,16 @@ export const getUserEditPage = (req, res) => {
 
 export const postUserEditPage = (req, res) => {
 	const { uid } = req.params
+	if (!FIREBASE_UID_PATTERN.test(uid)) {
+		return res.status(400).render('error', {
+			title: 'Ongeldige gebruiker',
+			error: {
+				status: 400,
+				message: 'Ongeldige gebruikers-ID opgegeven.'
+			}
+		})
+	}
+
 	const {
 		firstName = '',
 		lastName = '',
@@ -68,15 +103,35 @@ export const postUserEditPage = (req, res) => {
 		photoURL = ''
 	} = req.body
 
-	const safeFirstName = `${firstName}`.trim()
-	const safeLastName = `${lastName}`.trim()
-	const safeEmail = `${email}`.trim()
-	const safeCity = `${city}`.trim()
-	const safeStreet = `${street}`.trim()
-	const safeHouseNumber = `${houseNumber}`.trim()
-	const safePostalCode = `${postalCode}`.trim()
-	const safePhotoURL = `${photoURL}`.trim()
+	const safeFirstName = safeTrim(firstName, 100)
+	const safeLastName = safeTrim(lastName, 100)
+	const safeEmail = safeTrim(email, 254)
+	const safeCity = safeTrim(city, 100)
+	const safeStreet = safeTrim(street, 120)
+	const safeHouseNumber = safeTrim(houseNumber, 20)
+	const safePostalCode = safeTrim(postalCode, 20)
+	const safePhotoURL = safeTrim(photoURL, 2048)
 	const fullName = `${safeFirstName} ${safeLastName}`.trim()
+
+	if (safeEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(safeEmail)) {
+		return res.status(400).render('error', {
+			title: 'Ongeldige invoer',
+			error: {
+				status: 400,
+				message: 'Ongeldig e-mailadres opgegeven.'
+			}
+		})
+	}
+
+	if (!isValidPhotoURL(safePhotoURL)) {
+		return res.status(400).render('error', {
+			title: 'Ongeldige invoer',
+			error: {
+				status: 400,
+				message: 'Profielfoto-URL moet een geldige HTTPS URL zijn.'
+			}
+		})
+	}
 
 	const updates = {
 		email: safeEmail,
