@@ -71,7 +71,7 @@ app.use(
 				frameAncestors: ["'none'"]
 			}
 		},
-		referrerPolicy: { policy: 'no-referrer' },
+		referrerPolicy: { policy: 'origin-when-cross-origin' },
 		frameguard: { action: 'deny' }
 	})
 )
