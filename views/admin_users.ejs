@@ -20,7 +20,7 @@
                 </div>
 
                 <div class="mb-8 md:mb-10 flex mx-auto w-xl justify-between gap-3">
-                    <select id="sortSelect" class="theme-surface theme-pill border theme-border px-4 py-2 cursor-pointer" aria-label="Sorteer gebruikers" onchange="sortUsers(this.value)">
+                    <select id="sortSelect" class="theme-surface theme-pill border theme-border px-4 py-2 cursor-pointer" aria-label="Sorteer gebruikers">
                         <option value="name">Sorteren op naam (A-Z)</option>
                         <option value="name_reverse">Sorteren op naam (Z-A)</option>
                         <option value="city">Sorteren op stad (A-Z)</option>
@@ -49,10 +49,15 @@
                             const firstInitial = profile?.name?.first?.charAt(0) || fullName.charAt(0) || ''
                             const lastInitial = profile?.name?.last?.charAt(0) || fullName.split(' ')[1]?.charAt(0) || ''
                             const initials = `${firstInitial}${lastInitial}`.toUpperCase() || 'RG'
-                            const email = profile?.email || 'Geen e-mail'
                             const city = profile?.address?.city || 'Onbekend'
+                            const email = profile?.email || 'Geen e-mail'
                         %>
-                            <li data-user-item class="p-4 md:p-5">
+                            <li
+                                data-user-item
+                                data-sort-name="<%= fullName.toLocaleLowerCase('nl-BE') %>"
+                                data-sort-city="<%= city.toLocaleLowerCase('nl-BE') %>"
+                                class="p-4 md:p-5"
+                            >
                                 <div data-user-row class="flex items-center gap-3 md:gap-4">
                                     <% if (profile?.photoURL) { %>
                                         <img src="<%= profile.photoURL %>" alt="Profielfoto van <%= fullName %>" class="theme-avatar h-14 w-14 object-cover rounded-full">
@@ -65,8 +70,8 @@
                                     <div class="min-w-0 flex-1">
                                         <h2 class="theme-text-primary text-base md:text-lg font-bold leading-tight truncate"><%= fullName %></h2>
                                         <div data-user-meta class="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs md:text-sm">
-                                            <p class="theme-text-muted">E-mail: <span class="theme-text-primary"><%= email %></span></p>
                                             <p class="theme-text-muted">Stad: <span class="theme-text-primary"><%= city %></span></p>
+                                            <p class="theme-text-muted">E-mail: <span class="theme-text-primary"><%= email %></span></p>
                                             <p class="theme-text-muted">UID: <span class="theme-text-primary font-mono"><%= userId %></span></p>
                                         </div>
                                     </div>
@@ -89,36 +94,42 @@
         </main>
 
         <script>
-            function sortUsers(criteria) {
+            (function initUserSorting() {
                 const userList = document.getElementById('userCollection');
-                const users = Array.from(userList.querySelectorAll('[data-user-item]'));
+                const sortSelect = document.getElementById('sortSelect');
 
-                users.sort((a, b) => {
-                    const aName = a.querySelector('h2').textContent.trim().toLowerCase();
-                    const bName = b.querySelector('h2').textContent.trim().toLowerCase();
-                    const aCity = a.querySelector('[data-user-meta] p:nth-child(2)').textContent.replace('Stad: ', '').trim().toLowerCase();
-                    const bCity = b.querySelector('[data-user-meta] p:nth-child(2)').textContent.replace('Stad: ', '').trim().toLowerCase();
+                if (!userList || !sortSelect) {
+                    return;
+                }
 
-                    switch (criteria) {
-                        case 'name':
-                            return aName.localeCompare(bName);
-                        case 'name_reverse':
-                            return bName.localeCompare(aName);
-                        case 'city':
-                            return aCity.localeCompare(bCity);
-                        case 'city_reverse':
-                            return bCity.localeCompare(aCity);
-                        default:
-                            return 0;
+                const getSortValue = (item, mode) => {
+                    if (mode === 'city' || mode === 'city_reverse') {
+                        return item.dataset.sortCity || '';
                     }
+
+                    return item.dataset.sortName || '';
+                };
+
+                const sortUsers = (criteria) => {
+                    const users = Array.from(userList.querySelectorAll('[data-user-item]'));
+                    const isReverse = criteria.endsWith('_reverse');
+
+                    users.sort((a, b) => {
+                        const first = getSortValue(a, criteria);
+                        const second = getSortValue(b, criteria);
+                        const compareResult = first.localeCompare(second, 'nl-BE');
+                        return isReverse ? -compareResult : compareResult;
+                    });
+
+                    userList.replaceChildren(...users);
+                };
+
+                sortSelect.addEventListener('change', (event) => {
+                    sortUsers(event.target.value);
                 });
 
-                // Clear the current list and re-append sorted items
-                userList.innerHTML = '';
-                users.forEach(user => userList.appendChild(user));
-            }
-
-            sortUsers(document.getElementById('sortSelect').value);
+                sortUsers(sortSelect.value);
+            })();
         </script>
 
         <%- include('partials/footer') %>
