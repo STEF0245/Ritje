@@ -24,7 +24,21 @@
 		const hasCoordinates = Boolean(coords?.latitude && coords?.longitude)
 		const safeAddressLineOne = `${street} ${houseNumber}`.trim() || '-'
 		const safeAddressLineTwo = `${postalCode} ${city}`.trim() || '-'
-		const mapsUrl = hasCoordinates ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(safeAddressLineOne + ', ' + safeAddressLineTwo)}` : null;		const scheduleDays = []
+		const mapsUrl = hasCoordinates ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(safeAddressLineOne + ', ' + safeAddressLineTwo)}` : null;
+		const mapMarkers = hasCoordinates
+			? [
+					{
+						latitude: coords?.latitude,
+						longitude: coords?.longitude,
+						title: fullName,
+						lines: [safeAddressLineOne, safeAddressLineTwo],
+						mapsUrl,
+						openPopup: true
+					}
+			  ]
+			: []
+		const mapMarkersJson = JSON.stringify(mapMarkers)
+		const scheduleDays = []
 	%>
 	<%- include('partials/head', { title }) %>
 
@@ -167,10 +181,7 @@
 											class="w-full h-64"
 											data-latitude="<%= metadata?.coords?.latitude || '' %>"
 											data-longitude="<%= metadata?.coords?.longitude || '' %>"
-											data-full-name="<%= fullName %>"
-											data-address-line-one="<%= safeAddressLineOne %>"
-											data-address-line-two="<%= safeAddressLineTwo %>"
-											data-maps-url="<%= mapsUrl || '' %>"
+											data-markers="<%= mapMarkersJson %>"
 										></div>
 									</div>
 								</details>
@@ -203,26 +214,6 @@
 		<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 		<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 		<script src="/js/map.js"></script>
-		<script>
-			document.addEventListener('DOMContentLoaded', () => {
-				const element = document.querySelector('[data-map], #map')
-				const appMap = new AppMap(element).init()
-				appMap.addMarker(
-					parseFloat(element.dataset.latitude || ''),
-					parseFloat(element.dataset.longitude || ''),
-					{
-						title: element.dataset.fullName || 'Locatie',
-						lines: [
-							element.dataset.addressLineOne || '',
-							element.dataset.addressLineTwo || ''
-						],
-						mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-							`${element.dataset.latitude},${element.dataset.longitude}`
-						)}`
-					}
-				)
-			})
-		</script>
 		<%- include('partials/footer') %>
 	</body>
 </html>

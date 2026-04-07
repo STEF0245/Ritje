@@ -4,26 +4,113 @@ class AppMap {
 		[49.497, 2.5407]
 	]
 
+	static DEFAULT_SELECTOR = '[data-map]'
+
+	static initAll(selector = AppMap.DEFAULT_SELECTOR) {
+		const elements = Array.from(document.querySelectorAll(selector))
+		return elements.map((element) => new AppMap(element).init())
+	}
+
 	constructor(element) {
 		this.element = element
 		this.instance = null
+		this.markers = []
 	}
 
 	init() {
 		if (!this.element) return this
 
-		const latitude = parseFloat(this.element.dataset.latitude || '')
-		const longitude = parseFloat(this.element.dataset.longitude || '')
-		if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+		const center = this.readCenter()
+		if (!center) {
 			this.showNoCoordinatesMessage()
 			return this
 		}
 
-		this.instance = this.createMap(latitude, longitude)
+		this.instance = this.createMap(center.latitude, center.longitude)
 		this.addTileLayer()
+		this.addMarkers(this.readDatasetMarkers(center))
 		this.addAttribution()
 
 		return this
+	}
+
+	readCenter() {
+		const latitude = parseFloat(this.element.dataset.latitude || '')
+		const longitude = parseFloat(this.element.dataset.longitude || '')
+
+		if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+			return null
+		}
+
+		return { latitude, longitude }
+	}
+
+	readDatasetMarkers(center) {
+		const rawMarkers = this.element.dataset.markers
+		if (rawMarkers) {
+			try {
+				const parsed = JSON.parse(rawMarkers)
+				if (Array.isArray(parsed)) {
+					return parsed
+						.map((marker) => this.normalizeMarker(marker, center))
+						.filter(Boolean)
+				}
+			} catch {
+				// Fall back to single marker dataset parsing.
+			}
+		}
+
+		return [
+			{
+				latitude: center.latitude,
+				longitude: center.longitude,
+				title: this.element.dataset.fullName || 'Locatie',
+				lines: [
+					this.element.dataset.addressLineOne || '',
+					this.element.dataset.addressLineTwo || ''
+				],
+				mapsUrl:
+					this.element.dataset.mapsUrl ||
+					this.generateGoogleMapsLink(
+						center.latitude,
+						center.longitude
+					)
+			}
+		]
+	}
+
+	normalizeMarker(marker, fallbackCenter) {
+		if (!marker || typeof marker !== 'object') {
+			return null
+		}
+
+		const latitude = Number(
+			marker.latitude ?? marker.lat ?? fallbackCenter?.latitude
+		)
+		const longitude = Number(
+			marker.longitude ?? marker.lon ?? fallbackCenter?.longitude
+		)
+
+		if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+			return null
+		}
+
+		return {
+			latitude,
+			longitude,
+			title: `${marker.title || marker.fullName || 'Locatie'}`,
+			lines: Array.isArray(marker.lines)
+				? marker.lines
+				: [marker.addressLineOne || '', marker.addressLineTwo || ''],
+			mapsUrl:
+				marker.mapsUrl ||
+				this.generateGoogleMapsLink(latitude, longitude),
+			openPopup: Boolean(marker.openPopup)
+		}
+	}
+
+	generateGoogleMapsLink(latitude, longitude) {
+		return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${latitude},${longitude}`)}`
 	}
 
 	createMap(latitude, longitude) {
@@ -94,25 +181,69 @@ class AppMap {
 	}
 
 	addMarker(latitude, longitude, details) {
-		if (!this.instance) {
-			return
+		return (
+			this.addMarkers([
+				{
+					latitude,
+					longitude,
+					title: details?.title,
+					lines: details?.lines,
+					mapsUrl: details?.mapsUrl,
+					openPopup: details?.openPopup ?? true
+				}
+			])[0] || null
+		)
+	}
+
+	addNormalizedMarker(normalized) {
+		if (!this.instance || !normalized) {
+			return null
 		}
 
-		const marker = L.marker([latitude, longitude], {
-			title: details.title,
+		const marker = L.marker([normalized.latitude, normalized.longitude], {
+			title: normalized.title,
 			icon: this.createMarkerIcon()
 		}).addTo(this.instance)
 
-		const popup = L.popup([latitude, longitude], {
+		const popup = L.popup([normalized.latitude, normalized.longitude], {
 			closeButton: false,
 			autoClose: false,
 			closeOnClick: true,
 			className: 'map-popup',
-			content: this.buildPopupCard(details)
+			content: this.buildPopupCard(normalized)
 		})
 
 		marker.bindPopup(popup)
-		marker.openPopup()
+		if (normalized.openPopup) {
+			marker.openPopup()
+		}
+
+		this.markers.push(marker)
+		return marker
+	}
+
+	addMarkers(markers = []) {
+		if (!this.instance || !Array.isArray(markers) || markers.length === 0) {
+			return []
+		}
+
+		return markers
+			.map((marker, index) => {
+				const normalized = this.normalizeMarker(
+					marker,
+					this.readCenter()
+				)
+				if (!normalized) {
+					return null
+				}
+
+				if (typeof marker.openPopup === 'undefined') {
+					normalized.openPopup = index === 0
+				}
+
+				return this.addNormalizedMarker(normalized)
+			})
+			.filter(Boolean)
 	}
 
 	addAttribution() {
@@ -151,3 +282,4 @@ class AppMap {
 }
 
 window.AppMap = AppMap
+document.addEventListener('DOMContentLoaded', () => AppMap.initAll())
