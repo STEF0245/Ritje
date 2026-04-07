@@ -1,7 +1,7 @@
 /**
  * @file Firebase Admin app bootstrap.
- * @brief Initializes the shared Firebase Admin application instance.
- * @details Creates a singleton Firebase Admin app using service account credentials from runtime configuration.
+ * @brief  Summary: Initializes the shared Firebase Admin application instance.
+ * @details  Details: Creates a singleton Firebase Admin app using service account credentials from runtime configuration.
  */
 
 import { initializeApp, cert } from 'firebase-admin/app'

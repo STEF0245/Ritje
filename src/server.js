@@ -1,7 +1,7 @@
 /**
  * @file HTTP server bootstrap for the Ritje application.
- * @brief Starts the Express app and handles graceful shutdown signals.
- * @details This module imports the configured Express app from `app.js` and starts the HTTP server on the specified port. It also listens for shutdown signals (SIGINT, SIGTERM) to gracefully close the server and handle any uncaught exceptions or unhandled promise rejections by logging the error and shutting down cleanly.
+ * @brief  Summary: Starts the Express app and handles graceful shutdown signals.
+ * @details  Details: This module imports the configured Express app from `app.js` and starts the HTTP server on the specified port. It also listens for shutdown signals (SIGINT, SIGTERM) to gracefully close the server and handle any uncaught exceptions or unhandled promise rejections by logging the error and shutting down cleanly.
  */
 
 import app from './app.js'
@@ -21,8 +21,8 @@ const server = app.listen(config.port, () => {
 // Graceful Shutdown
 // =====================
 /**
- * @brief Close the HTTP server and terminate the process cleanly.
- * @details When a shutdown signal is received, this function attempts to close the HTTP server gracefully, allowing any ongoing requests to complete. It logs the shutdown process and exits with a success code if the server closes without errors, or with an error code if there are issues during shutdown.
+ * @brief  Summary: Close the HTTP server and terminate the process cleanly.
+ * @details  Details: When a shutdown signal is received, this function attempts to close the HTTP server gracefully, allowing any ongoing requests to complete. It logs the shutdown process and exits with a success code if the server closes without errors, or with an error code if there are issues during shutdown.
  * @param {string} signal - Shutdown trigger name.
  * @returns {Promise<void>} Resolves after the server is closed.
  */

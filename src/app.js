@@ -1,7 +1,7 @@
 /**
  * @file Express application bootstrap and shared middleware registration.
- * @brief Configures security, templates, and route mounting for Ritje.
- * @details This module sets up the Express app with global middleware for logging, security headers, JSON parsing, and cookie handling. It also mounts the main route handlers and error handling middleware. The configured app instance is exported for use in the HTTP server bootstrap.
+ * @brief  Summary: Configures security, templates, and route mounting for Ritje.
+ * @details  Details: This module sets up the Express app with global middleware for logging, security headers, JSON parsing, and cookie handling. It also mounts the main route handlers and error handling middleware. The configured app instance is exported for use in the HTTP server bootstrap.
  */
 
 import express from 'express'

@@ -1,7 +1,7 @@
 /**
  * @file Admin routes for dashboard, user management, and settings.
- * @brief Mounts the protected admin area endpoints.
- * @details Defines route-to-controller mappings for all admin pages and user/settings mutations.
+ * @brief  Summary: Mounts the protected admin area endpoints.
+ * @details  Details: Defines route-to-controller mappings for all admin pages and user/settings mutations.
  */
 
 import express from 'express'

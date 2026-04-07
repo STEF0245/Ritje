@@ -1,7 +1,7 @@
 /**
  * @file Profile routes for the authenticated user's account pages.
- * @brief Mounts profile overview and edit endpoints with rate limiting.
- * @details Defines GET and POST profile endpoints and applies request throttling to profile update submissions.
+ * @brief  Summary: Mounts profile overview and edit endpoints with rate limiting.
+ * @details  Details: Defines GET and POST profile endpoints and applies request throttling to profile update submissions.
  */
 
 import express from 'express'

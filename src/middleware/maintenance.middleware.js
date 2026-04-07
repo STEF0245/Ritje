@@ -1,7 +1,7 @@
 /**
  * @file Maintenance mode middleware backed by live Firebase settings.
- * @brief Blocks non-admin traffic while the maintenance flag is enabled.
- * @details Maintains an in-memory snapshot of maintenance settings and uses it to short-circuit requests when maintenance mode is active.
+ * @brief  Summary: Blocks non-admin traffic while the maintenance flag is enabled.
+ * @details  Details: Maintains an in-memory snapshot of maintenance settings and uses it to short-circuit requests when maintenance mode is active.
  */
 
 import db from '../firebase/db.js'
@@ -19,8 +19,8 @@ const settings = {
 }
 
 /**
- * @brief Normalize persisted maintenance settings into the expected shape.
- * @details Supports legacy keys and ensures boolean fields are properly coerced while inheriting defaults.
+ * @brief  Summary: Normalize persisted maintenance settings into the expected shape.
+ * @details  Details: Supports legacy keys and ensures boolean fields are properly coerced while inheriting defaults.
  * @param {object} [data={}] - Raw settings payload from Realtime Database.
  * @returns {{enabled: boolean, message: string, startTime: string|null, endTime: string|null, updatedAt: string|null}} Normalized maintenance settings.
  */
@@ -35,8 +35,8 @@ const normalizeMaintenanceSettings = (data = {}) => {
 }
 
 /**
- * @brief Start the realtime listener that keeps maintenance settings fresh.
- * @details Subscribes to the `settings` path and updates the in-memory settings snapshot whenever values change.
+ * @brief  Summary: Start the realtime listener that keeps maintenance settings fresh.
+ * @details  Details: Subscribes to the `settings` path and updates the in-memory settings snapshot whenever values change.
  * @returns {void}
  */
 const initSettings = () => {
@@ -53,8 +53,8 @@ const initSettings = () => {
 initSettings()
 
 /**
- * @brief Short-circuit requests when maintenance mode is active.
- * @details Allows normal traffic when maintenance is off, optionally allows admin access, and renders the maintenance page for blocked requests.
+ * @brief  Summary: Short-circuit requests when maintenance mode is active.
+ * @details  Details: Allows normal traffic when maintenance is off, optionally allows admin access, and renders the maintenance page for blocked requests.
  * @param {object} req - Express request object.
  * @param {object} res - Express response object.
  * @param {Function} next - Express next middleware callback.

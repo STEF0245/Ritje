@@ -1,7 +1,7 @@
 /**
  * @file Admin controller for dashboard, user management, and settings workflows.
- * @brief Handles admin rendering, CRUD actions, and settings persistence.
- * @details This module defines the controller functions for the admin area, including rendering the dashboard, listing users, creating new users, editing existing users, deleting users, and managing application settings. It interacts with Firebase Realtime Database for user data storage and Firebase Authentication for user management. The controller also integrates with a geocoding service to validate and normalize user addresses during creation and editing. Error handling is implemented to provide user-friendly feedback in case of issues during these operations.
+ * @brief  Summary: Handles admin rendering, CRUD actions, and settings persistence.
+ * @details  Details: This module defines the controller functions for the admin area, including rendering the dashboard, listing users, creating new users, editing existing users, deleting users, and managing application settings. It interacts with Firebase Realtime Database for user data storage and Firebase Authentication for user management. The controller also integrates with a geocoding service to validate and normalize user addresses during creation and editing. Error handling is implemented to provide user-friendly feedback in case of issues during these operations.
  */
 
 import db from '../firebase/db.js'
@@ -29,8 +29,8 @@ const GEOCODE_TIMEOUT_MS = Number(
 )
 
 /**
- * @brief Map incoming edit form data to a normalized user payload.
- * @details Trims all user fields to safe lengths and builds the nested name and address structure used by the admin edit view and update flow.
+ * @brief  Summary: Map incoming edit form data to a normalized user payload.
+ * @details  Details: Trims all user fields to safe lengths and builds the nested name and address structure used by the admin edit view and update flow.
  * @param {object} formData - Raw form body submitted by the client.
  * @returns {{email: string, phoneNumber: string, photoURL: string, name: {first: string, last: string, full: string}, address: {city: string, street: string, houseNumber: string, postalCode: string}}} Normalized user form data.
  */
@@ -64,8 +64,8 @@ const mapFormDataToEditUser = (formData = {}) => {
 }
 
 /**
- * @brief Map incoming create form data to a normalized new-user payload.
- * @details Reuses the edit mapping and appends a sanitized password field required by the create user flow.
+ * @brief  Summary: Map incoming create form data to a normalized new-user payload.
+ * @details  Details: Reuses the edit mapping and appends a sanitized password field required by the create user flow.
  * @param {object} formData - Raw form body submitted by the client.
  * @returns {{email: string, phoneNumber: string, photoURL: string, name: {first: string, last: string, full: string}, address: {city: string, street: string, houseNumber: string, postalCode: string}, password: string}} Normalized new-user form data.
  */
@@ -77,8 +77,8 @@ const mapFormDataToNewUser = (formData = {}) => {
 }
 
 /**
- * @brief Render the new user page with consistent defaults.
- * @details Uses shared defaults for response status, draft user data, and notifications to keep all create-user error paths consistent.
+ * @brief  Summary: Render the new user page with consistent defaults.
+ * @details  Details: Uses shared defaults for response status, draft user data, and notifications to keep all create-user error paths consistent.
  * @param {object} res - Express response object.
  * @param {{status?: number, newUser?: object, notifications?: Array<object>}} options - Page options.
  * @returns {object} Express response.
@@ -92,8 +92,8 @@ const renderUserNewPage = (res, options = {}) => {
 }
 
 /**
- * @brief Render a user detail page with a consistent error fallback.
- * @details Wraps `renderWithErrorNotification` so all admin user detail and edit pages receive the same fallback payload structure.
+ * @brief  Summary: Render a user detail page with a consistent error fallback.
+ * @details  Details: Wraps `renderWithErrorNotification` so all admin user detail and edit pages receive the same fallback payload structure.
  * @param {object} res - Express response object.
  * @param {string} view - View name to render.
  * @param {string} title - Page title.
@@ -113,8 +113,8 @@ const renderUserDetailError = (res, view, title, status, message, extra) => {
 }
 
 /**
- * @brief Render the admin dashboard landing page.
- * @details Responds with the main admin dashboard view container.
+ * @brief  Summary: Render the admin dashboard landing page.
+ * @details  Details: Responds with the main admin dashboard view container.
  * @param {object} req - Express request object.
  * @param {object} res - Express response object.
  * @returns {object} Express response.
@@ -126,8 +126,8 @@ export const getAdminPage = (req, res) => {
 }
 
 /**
- * @brief Render the admin user list.
- * @details Reads all users from Realtime Database and renders them in the admin listing view. If retrieval fails, renders the view with an error notification and an empty collection.
+ * @brief  Summary: Render the admin user list.
+ * @details  Details: Reads all users from Realtime Database and renders them in the admin listing view. If retrieval fails, renders the view with an error notification and an empty collection.
  * @param {object} req - Express request object.
  * @param {object} res - Express response object.
  * @returns {Promise<object>} Express response.
@@ -155,8 +155,8 @@ export const getUsersPage = async (req, res) => {
 }
 
 /**
- * @brief Render the admin new-user page.
- * @details Delegates to the shared page renderer to ensure default locals are always present.
+ * @brief  Summary: Render the admin new-user page.
+ * @details  Details: Delegates to the shared page renderer to ensure default locals are always present.
  * @param {object} req - Express request object.
  * @param {object} res - Express response object.
  * @returns {object} Express response.
@@ -166,8 +166,8 @@ export const getUsersNewPage = (req, res) => {
 }
 
 /**
- * @brief Create a new user in Firebase Auth and Realtime Database.
- * @details Validates and sanitizes incoming form fields, verifies the address via geocoding, creates the auth record, then stores the normalized profile document in Realtime Database with rollback on persistence failure.
+ * @brief  Summary: Create a new user in Firebase Auth and Realtime Database.
+ * @details  Details: Validates and sanitizes incoming form fields, verifies the address via geocoding, creates the auth record, then stores the normalized profile document in Realtime Database with rollback on persistence failure.
  * @param {object} req - Express request object.
  * @param {object} res - Express response object.
  * @returns {Promise<object>} Express response.
@@ -369,8 +369,8 @@ export const postUserNewPage = async (req, res) => {
 }
 
 /**
- * @brief Render the admin user detail page.
- * @details Validates the UID route param, fetches user data from Realtime Database, and renders the detail view with structured fallback errors.
+ * @brief  Summary: Render the admin user detail page.
+ * @details  Details: Validates the UID route param, fetches user data from Realtime Database, and renders the detail view with structured fallback errors.
  * @param {object} req - Express request object.
  * @param {object} res - Express response object.
  * @returns {Promise<object>} Express response.
@@ -422,8 +422,8 @@ export const getUserPage = async (req, res) => {
 }
 
 /**
- * @brief Render the admin user edit page.
- * @details Validates the UID route param, loads existing user data, and renders the edit form with consistent error handling for missing users and database failures.
+ * @brief  Summary: Render the admin user edit page.
+ * @details  Details: Validates the UID route param, loads existing user data, and renders the edit form with consistent error handling for missing users and database failures.
  * @param {object} req - Express request object.
  * @param {object} res - Express response object.
  * @returns {Promise<object>} Express response.
@@ -475,8 +475,8 @@ export const getUserEditPage = async (req, res) => {
 }
 
 /**
- * @brief Update an existing admin user in Firebase Auth and Realtime Database.
- * @details Sanitizes form values, validates address fields, geocodes and normalizes coordinates, then persists the updated user profile document in Realtime Database.
+ * @brief  Summary: Update an existing admin user in Firebase Auth and Realtime Database.
+ * @details  Details: Sanitizes form values, validates address fields, geocodes and normalizes coordinates, then persists the updated user profile document in Realtime Database.
  * @param {object} req - Express request object.
  * @param {object} res - Express response object.
  * @returns {Promise<object>} Express response.
@@ -620,8 +620,8 @@ export const postUserEditPage = async (req, res) => {
 }
 
 /**
- * @brief Delete a user from both Realtime Database and Firebase Auth.
- * @details Validates the UID, removes the profile document from Realtime Database, then removes the corresponding Firebase Auth user.
+ * @brief  Summary: Delete a user from both Realtime Database and Firebase Auth.
+ * @details  Details: Validates the UID, removes the profile document from Realtime Database, then removes the corresponding Firebase Auth user.
  * @param {object} req - Express request object.
  * @param {object} res - Express response object.
  * @returns {Promise<object>} Express response.
@@ -686,8 +686,8 @@ const SETTINGS = {
 const SETTINGS_META_KEYS = new Set(['title', 'description', 'inputTypes'])
 
 /**
- * @brief Resolve the final value from potentially repeated form input.
- * @details Supports form parsers that can provide arrays for duplicate fields by always selecting the last submitted value.
+ * @brief  Summary: Resolve the final value from potentially repeated form input.
+ * @details  Details: Supports form parsers that can provide arrays for duplicate fields by always selecting the last submitted value.
  * @param {unknown|Array<unknown>} value - Raw form field value.
  * @returns {unknown} The resolved scalar value.
  */
@@ -700,8 +700,8 @@ const getLastFormValue = (value) => {
 }
 
 /**
- * @brief Parse a raw form value according to a settings field type.
- * @details Converts booleans, ISO datetime-compatible values, and sanitized strings so settings updates can be persisted safely.
+ * @brief  Summary: Parse a raw form value according to a settings field type.
+ * @details  Details: Converts booleans, ISO datetime-compatible values, and sanitized strings so settings updates can be persisted safely.
  * @param {'boolean'|'datetime'|'string'} type - Expected input type.
  * @param {unknown} rawValue - Raw submitted value.
  * @returns {boolean|string|null} Parsed setting value.
@@ -725,8 +725,8 @@ const parseSettingValueByType = (type, rawValue) => {
 }
 
 /**
- * @brief Merge persisted settings with schema defaults for rendering.
- * @details Ensures each known settings section exists, preserving stored values while backfilling new defaults and input type definitions.
+ * @brief  Summary: Merge persisted settings with schema defaults for rendering.
+ * @details  Details: Ensures each known settings section exists, preserving stored values while backfilling new defaults and input type definitions.
  * @param {object} settingsData - Persisted settings object from the database.
  * @returns {object} Fully merged settings model for the admin view.
  */
@@ -751,8 +751,8 @@ const buildSettingsViewModel = (settingsData = {}) => {
 }
 
 /**
- * @brief Convert settings form data into a persisted settings payload.
- * @details Iterates all schema fields, parses submitted values by type, applies checkbox false defaults, and retains existing values when inputs are absent.
+ * @brief  Summary: Convert settings form data into a persisted settings payload.
+ * @details  Details: Iterates all schema fields, parses submitted values by type, applies checkbox false defaults, and retains existing values when inputs are absent.
  * @param {object} formData - Raw posted settings form data.
  * @param {object} existingSettings - Current persisted settings.
  * @returns {object} Next settings object to save.
@@ -801,8 +801,8 @@ const mapFormDataToSettings = (formData = {}, existingSettings = {}) => {
 }
 
 /**
- * @brief Render the admin settings page.
- * @details Fetches settings from Realtime Database, merges them with defaults for rendering, and falls back to a safe view model on failure.
+ * @brief  Summary: Render the admin settings page.
+ * @details  Details: Fetches settings from Realtime Database, merges them with defaults for rendering, and falls back to a safe view model on failure.
  * @param {object} req - Express request object.
  * @param {object} res - Express response object.
  * @returns {Promise<object>} Express response.
@@ -833,8 +833,8 @@ export const getSettingsPage = async (req, res) => {
 }
 
 /**
- * @brief Persist admin settings using the incoming form payload.
- * @details Loads current settings, maps and parses posted form values into the settings schema, updates Realtime Database, and re-renders the page with success or failure notifications.
+ * @brief  Summary: Persist admin settings using the incoming form payload.
+ * @details  Details: Loads current settings, maps and parses posted form values into the settings schema, updates Realtime Database, and re-renders the page with success or failure notifications.
  * @param {object} req - Express request object.
  * @param {object} res - Express response object.
  * @returns {Promise<object>} Express response.

@@ -1,7 +1,7 @@
 /**
  * @file Profile controller for rendering the profile UI and updating address data.
- * @brief Handles profile page requests and profile edit submissions.
- * @details Provides handlers for showing profile screens and processing address updates with validation, geocoding, and persistence.
+ * @brief  Summary: Handles profile page requests and profile edit submissions.
+ * @details  Details: Provides handlers for showing profile screens and processing address updates with validation, geocoding, and persistence.
  */
 
 import db from '../firebase/db.js'
@@ -25,8 +25,8 @@ const GEOCODE_ERROR_MESSAGE =
 	'Adresverificatie is tijdelijk niet beschikbaar. Probeer later opnieuw.'
 
 /**
- * @brief Render the profile edit page with normalized form feedback.
- * @details Centralizes profile edit re-rendering so error branches can supply consistent status codes, form state, and notifications.
+ * @brief  Summary: Render the profile edit page with normalized form feedback.
+ * @details  Details: Centralizes profile edit re-rendering so error branches can supply consistent status codes, form state, and notifications.
  * @param {object} res - Express response object.
  * @param {number} statusCode - HTTP status code to send.
  * @param {object} formData - Current form values.
@@ -42,8 +42,8 @@ const renderProfileEditPage = (res, statusCode, formData, notifications) => {
 }
 
 /**
- * @brief Render the profile overview page.
- * @details Responds with the profile page for the currently authenticated user.
+ * @brief  Summary: Render the profile overview page.
+ * @details  Details: Responds with the profile page for the currently authenticated user.
  * @param {object} req - Express request object.
  * @param {object} res - Express response object.
  * @returns {object} Express response.
@@ -55,8 +55,8 @@ export const getProfilePage = (req, res) => {
 }
 
 /**
- * @brief Render the profile edit page.
- * @details Responds with the profile edit form for the currently authenticated user.
+ * @brief  Summary: Render the profile edit page.
+ * @details  Details: Responds with the profile edit form for the currently authenticated user.
  * @param {object} req - Express request object.
  * @param {object} res - Express response object.
  * @returns {object} Express response.
@@ -68,8 +68,8 @@ export const getProfileEditPage = (req, res) => {
 }
 
 /**
- * @brief Update the authenticated user's address and coordinates.
- * @details Validates the address payload, geocodes it, and persists the normalized result.
+ * @brief  Summary: Update the authenticated user's address and coordinates.
+ * @details  Details: Validates the address payload, geocodes it, and persists the normalized result.
  * @param {object} req - Express request object.
  * @param {object} res - Express response object.
  * @returns {Promise<object>} Express response.
