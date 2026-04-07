@@ -1,0 +1,66 @@
+<%
+	const notifications = Array.isArray(locals.notifications)
+		? locals.notifications
+		: []
+%>
+
+<% if (notifications.length > 0) { %>
+	<section
+		data-notification-root
+		class="fixed top-24 right-4 md:right-6 z-60 w-[calc(100vw-2rem)] max-w-md space-y-2 pointer-events-none"
+		role="status"
+		aria-live="polite"
+	>
+		<% for (const item of notifications) { %>
+			<%
+				const type = item?.type || 'info'
+				const message = item?.message || ''
+				const tones = {
+					success: {
+						label: 'Succes',
+						classes:
+							'border-emerald-500/40 bg-emerald-500/10 text-emerald-100 uppercase tracking-[0.12em]'
+					},
+					warning: {
+						label: 'Waarschuwing',
+						classes:
+							'border-amber-500/40 bg-amber-500/10 text-amber-100 uppercase tracking-[0.12em]'
+					},
+					error: {
+						label: 'Fout',
+						classes:
+							'border-rose-500/40 bg-rose-500/10 text-rose-100 uppercase tracking-[0.12em]'
+					},
+					info: {
+						label: 'Info',
+						classes:
+							'border-sky-500/40 bg-sky-500/10 text-sky-100 uppercase tracking-[0.12em]'
+					}
+				}
+				const tone = tones[type] || tones.info
+			%>
+
+			<article class="theme-pill border px-4 py-3 pointer-events-auto shadow-lg z-50 <%= tone.classes %>">
+                <div class="flex items-center justify-between gap-4">
+                    <p class="text-xs"><%= tone.label %></p>
+					<button type="button" aria-label="Melding sluiten" class="cursor-pointer"><i class="fas fa-times"></i></button>
+                </div>
+				<% if (message) { %>
+					<p class="mt-1 text-sm normal-case tracking-normal"><%= message %></p>
+				<% } %>
+                <script>
+                    const btn = document.currentScript.parentElement.querySelector('button')
+                    btn.addEventListener('click', () => {
+                        btn.parentElement.parentElement.remove()
+
+						const root = document.querySelector('[data-notification-root]')
+						const remaining = root ? root.querySelectorAll(':scope > article') : []
+                        if (remaining.length === 0) {
+							root.remove()
+                        }
+                    })
+                </script>
+            </article>
+		<% } %>
+	</section>
+<% } %>

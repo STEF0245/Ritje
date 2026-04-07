@@ -351,8 +351,7 @@ export const getSettingsPage = (req, res) => {
 			const settingsData = snapshot.val() || {}
 			res.render('admin_settings', {
 				title: 'Instellingen | Admin',
-				settings: buildSettingsViewModel(settingsData),
-				saved: false
+				settings: buildSettingsViewModel(settingsData)
 			})
 		})
 		.catch((error) => {
@@ -383,7 +382,12 @@ export const postSettingsPage = (req, res) => {
 			return res.render('admin_settings', {
 				title: 'Instellingen | Admin',
 				settings: buildSettingsViewModel(nextSettings || {}),
-				saved: true
+				notifications: [
+					{
+						type: 'success',
+						message: 'Instellingen succesvol opgeslagen.'
+					}
+				]
 			})
 		})
 		.catch((error) => {
