@@ -613,6 +613,45 @@ export const postUserEditPage = (req, res) => {
 		})
 }
 
+export const deleteUserController = (req, res) => {
+	const { uid } = req.params
+	if (!isValidFirebaseUid(uid)) {
+		return renderWithErrorNotification(res, {
+			status: 400,
+			view: 'admin_user',
+			title: 'Gebruiker | Admin',
+			message: 'Ongeldige gebruikers-ID opgegeven.',
+			extra: {
+				userUid: uid,
+				viewUser: {}
+			}
+		})
+	}
+
+	db.ref(`users/${uid}`)
+		.remove()
+		.then(() => {
+			return auth.deleteUser(uid)
+		})
+		.then(() => {
+			return res.redirect('/admin/users')
+		})
+		.catch((error) => {
+			console.error('Error deleting user:', error)
+			return renderWithErrorNotification(res, {
+				status: 500,
+				view: 'admin_user',
+				title: 'Gebruiker | Admin',
+				message:
+					'Gebruiker kon niet worden verwijderd. Probeer het opnieuw.',
+				extra: {
+					userUid: uid,
+					viewUser: {}
+				}
+			})
+		})
+}
+
 const SETTINGS = {
 	maintenance: {
 		title: 'Onderhoudsmodus',

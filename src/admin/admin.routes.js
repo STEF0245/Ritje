@@ -7,6 +7,7 @@ import {
 	getUserPage,
 	getUserEditPage,
 	postUserEditPage,
+	deleteUserController,
 	getSettingsPage,
 	postSettingsPage
 } from './admin.controller.js'
@@ -20,6 +21,7 @@ router.post('/users/new', postUserNewPage)
 router.get('/users/:uid', getUserPage)
 router.get('/users/:uid/edit', getUserEditPage)
 router.post('/users/:uid/edit', postUserEditPage)
+router.get('/users/:uid/delete', deleteUserController)
 router.get('/settings', getSettingsPage)
 router.post('/settings', postSettingsPage)
 
