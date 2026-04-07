@@ -15,10 +15,10 @@ import notFoundHandler from './middleware/notFound.middleware.js'
 import errorHandler from './middleware/error.middleware.js'
 import { requireAuth, requireAdmin } from './middleware/auth.middleware.js'
 import checkMaintenanceMode from './middleware/maintenance.middleware.js'
-import authRoutes from './routes/auth.routes.js'
-import profileRoutes from './routes/profile.routes.js'
-import adminRoutes from './routes/admin.routes.js'
-import locationRoutes from './routes/location.routes.js'
+import authRoutes from './auth/auth.routes.js'
+import profileRoutes from './profile/profile.routes.js'
+import adminRoutes from './admin/admin.routes.js'
+import locationRoutes from './location/location.routes.js'
 
 // =====================
 // Initializing the app

@@ -9,7 +9,7 @@ import {
 	postUserEditPage,
 	getSettingsPage,
 	postSettingsPage
-} from '../controllers/admin.controller.js'
+} from './admin.controller.js'
 
 const router = express.Router()
 

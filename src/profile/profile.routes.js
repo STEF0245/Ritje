@@ -4,7 +4,7 @@ import {
 	getProfilePage,
 	getProfileEditPage,
 	profileEditController
-} from '../controllers/profile.controller.js'
+} from './profile.controller.js'
 
 const router = express.Router()
 
