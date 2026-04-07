@@ -152,6 +152,37 @@ const humanizeTag = (tag) => {
 const summarizeTagLines = (content) => {
 	if (!content) return ''
 
+	const stripLeadingTypeExpression = (value) => {
+		const text = String(value || '').trim()
+		if (!text.startsWith('{')) {
+			return { type: '', rest: text }
+		}
+
+		let depth = 0
+		let endIndex = -1
+
+		for (let index = 0; index < text.length; index += 1) {
+			const char = text[index]
+			if (char === '{') depth += 1
+			if (char === '}') {
+				depth -= 1
+				if (depth === 0) {
+					endIndex = index
+					break
+				}
+			}
+		}
+
+		if (endIndex === -1) {
+			return { type: '', rest: text }
+		}
+
+		return {
+			type: text.slice(1, endIndex).trim(),
+			rest: text.slice(endIndex + 1).trim()
+		}
+	}
+
 	const lines = content
 		.split(/\r?\n/)
 		.map((line) => line.trim())
@@ -175,27 +206,46 @@ const summarizeTagLines = (content) => {
 		const rest = restRaw.trim()
 
 		if (tag === 'param') {
-			const paramMatch = rest.match(/^\{[^}]*\}\s*([^\s]+)\s*(.*)$/)
+			const { type, rest: withoutType } = stripLeadingTypeExpression(rest)
+			const paramMatch = withoutType.match(/^([^\s]+)\s*(.*)$/)
+
 			if (paramMatch) {
-				const [, name, description] = paramMatch
+				const [, rawName, description] = paramMatch
+				const cleanName = rawName.replace(/^\[|\]$/g, '')
+				const suffix = type ? ` (${type})` : ''
 				params.push(
 					description
-						? `- \`${name}\`: ${description}`
-						: `- \`${name}\``
+						? `- \`${cleanName}\`${suffix}: ${description}`
+						: `- \`${cleanName}\`${suffix}`
 				)
-			} else if (rest) {
-				params.push(`- ${rest}`)
+			} else if (withoutType || type) {
+				const fallbackLabel = withoutType || 'parameter'
+				params.push(
+					type
+						? `- \`${fallbackLabel}\` (${type})`
+						: `- ${fallbackLabel}`
+				)
 			}
 			continue
 		}
 
 		if (tag === 'returns' || tag === 'return') {
-			returnsLine = rest.replace(/^\{[^}]*\}\s*/, '').trim()
+			const { type, rest: withoutType } = stripLeadingTypeExpression(rest)
+			returnsLine = withoutType
+				? type
+					? `${withoutType} (${type})`
+					: withoutType
+				: type
 			continue
 		}
 
 		if (tag === 'throws' || tag === 'throw') {
-			throwsLine = rest.replace(/^\{[^}]*\}\s*/, '').trim()
+			const { type, rest: withoutType } = stripLeadingTypeExpression(rest)
+			throwsLine = withoutType
+				? type
+					? `${withoutType} (${type})`
+					: withoutType
+				: type
 			continue
 		}
 
