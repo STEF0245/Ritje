@@ -1,5 +1,10 @@
 import db from '../firebase/db.js'
-import { safeTrim, isValidHttpsUrl, isValidEmail } from '../utils/input.util.js'
+import {
+	safeTrim,
+	sanitizeText,
+	isValidHttpsUrl,
+	isValidEmail
+} from '../utils/input.util.js'
 import { isValidFirebaseUid } from '../utils/firebase.util.js'
 import { renderWithPageError } from '../utils/page-error.util.js'
 
@@ -248,6 +253,97 @@ const SETTINGS = {
 	}
 }
 
+const SETTINGS_META_KEYS = new Set(['title', 'description', 'inputTypes'])
+
+const getLastFormValue = (value) => {
+	if (Array.isArray(value)) {
+		return value[value.length - 1]
+	}
+
+	return value
+}
+
+const parseSettingValueByType = (type, rawValue) => {
+	if (type === 'boolean') {
+		return String(getLastFormValue(rawValue)) === 'true'
+	}
+
+	if (type === 'datetime') {
+		const raw = safeTrim(getLastFormValue(rawValue), 40)
+		if (!raw) return null
+
+		const parsed = new Date(raw)
+		if (Number.isNaN(parsed.getTime())) return null
+
+		return parsed.toISOString()
+	}
+
+	return sanitizeText(getLastFormValue(rawValue), 1024)
+}
+
+const buildSettingsViewModel = (settingsData = {}) => {
+	const mergedSettings = {}
+
+	for (const [sectionKey, sectionDefaults] of Object.entries(SETTINGS)) {
+		const sourceSection = settingsData?.[sectionKey] || {}
+		const mergedSection = {
+			...sectionDefaults,
+			...sourceSection,
+			inputTypes: {
+				...(sectionDefaults.inputTypes || {}),
+				...(sourceSection.inputTypes || {})
+			}
+		}
+
+		mergedSettings[sectionKey] = mergedSection
+	}
+
+	return mergedSettings
+}
+
+const mapFormDataToSettings = (formData = {}, existingSettings = {}) => {
+	const normalizedExistingSettings = existingSettings || {}
+	const nextSettings = {}
+
+	for (const [sectionKey, sectionDefaults] of Object.entries(SETTINGS)) {
+		const sectionInputTypes = sectionDefaults.inputTypes || {}
+		const existingSection = normalizedExistingSettings[sectionKey] || {}
+		const parsedSection = {
+			...existingSection
+		}
+
+		for (const [propKey, defaultValue] of Object.entries(sectionDefaults)) {
+			if (SETTINGS_META_KEYS.has(propKey)) continue
+
+			const formFieldName = `${sectionKey}__${propKey}`
+			const inputType = sectionInputTypes[propKey] || 'string'
+			const hasValue = Object.prototype.hasOwnProperty.call(
+				formData,
+				formFieldName
+			)
+
+			if (hasValue) {
+				parsedSection[propKey] = parseSettingValueByType(
+					inputType,
+					formData[formFieldName]
+				)
+				continue
+			}
+
+			if (inputType === 'boolean') {
+				parsedSection[propKey] = false
+				continue
+			}
+
+			parsedSection[propKey] = existingSection[propKey] ?? defaultValue
+		}
+
+		nextSettings[sectionKey] = parsedSection
+	}
+
+	return nextSettings
+}
+
 export const getSettingsPage = (req, res) => {
 	db.ref('settings')
 		.once('value')
@@ -255,7 +351,8 @@ export const getSettingsPage = (req, res) => {
 			const settingsData = snapshot.val() || {}
 			res.render('admin_settings', {
 				title: 'Instellingen | Admin',
-				settings: { ...SETTINGS, ...settingsData }
+				settings: buildSettingsViewModel(settingsData),
+				saved: false
 			})
 		})
 		.catch((error) => {
@@ -266,7 +363,42 @@ export const getSettingsPage = (req, res) => {
 				title: 'Instellingen | Admin',
 				message:
 					'Instellingen konden niet worden geladen. Probeer het opnieuw.',
-				extra: { settings: { ...SETTINGS } }
+				extra: { settings: buildSettingsViewModel() }
+			})
+		})
+}
+
+export const postSettingsPage = (req, res) => {
+	let nextSettings = null
+
+	db.ref('settings')
+		.once('value')
+		.then((snapshot) => {
+			const currentSettings = snapshot.val() || {}
+			nextSettings = mapFormDataToSettings(req.body, currentSettings)
+
+			return db.ref('settings').update(nextSettings)
+		})
+		.then(() => {
+			return res.render('admin_settings', {
+				title: 'Instellingen | Admin',
+				settings: buildSettingsViewModel(nextSettings || {}),
+				saved: true
+			})
+		})
+		.catch((error) => {
+			console.error('Error saving settings:', error)
+			return renderWithPageError(res, {
+				status: 500,
+				view: 'admin_settings',
+				title: 'Instellingen | Admin',
+				message:
+					'Instellingen konden niet worden opgeslagen. Probeer het opnieuw.',
+				extra: {
+					settings: buildSettingsViewModel(
+						mapFormDataToSettings(req.body, {})
+					)
+				}
 			})
 		})
 }

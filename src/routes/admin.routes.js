@@ -7,7 +7,8 @@ import {
 	getUserPage,
 	getUserEditPage,
 	postUserEditPage,
-	getSettingsPage
+	getSettingsPage,
+	postSettingsPage
 } from '../controllers/admin.controller.js'
 
 const router = express.Router()
@@ -20,5 +21,6 @@ router.get('/users/:uid', getUserPage)
 router.get('/users/:uid/edit', getUserEditPage)
 router.post('/users/:uid/edit', postUserEditPage)
 router.get('/settings', getSettingsPage)
+router.post('/settings', postSettingsPage)
 
 export default router

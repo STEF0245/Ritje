@@ -1,4 +1,27 @@
-<% const settings = locals.settings || [] %>
+<%
+    const settings = locals.settings || {}
+    const settingsEntries = Object.entries(settings)
+    const totalSections = settingsEntries.length
+
+    const toLabel = (key = '') => {
+        return String(key)
+            .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+            .replace(/[_-]+/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .replace(/^./, (char) => char.toUpperCase())
+    }
+
+    const toDateTimeLocalValue = (value) => {
+        if (!value) return ''
+
+        const date = new Date(value)
+        if (Number.isNaN(date.getTime())) return ''
+
+        const localOffsetMs = date.getTimezoneOffset() * 60000
+        return new Date(date.getTime() - localOffsetMs).toISOString().slice(0, 16)
+    }
+%>
 
 <!DOCTYPE html>
 <html lang="nl" class="text-slate-200">
@@ -9,31 +32,112 @@
         <main class="theme-main flex-1 pt-0!">
             <%- include('partials/admin_nav', { selected: { settings: true } }) %>
 
-            <article >
-                <h1 class="text-2xl font-bold mb-4">Instellingen</h1>
-                <p class="text-lg">Beheer de instellingen van het platform.</p>
+            <section class="max-w-6xl mx-auto px-4 md:px-6 py-8 md:py-10">
+                <div class="mb-8 md:mb-10 text-center">
+                    <p class="theme-kicker">Ritje Admin</p>
+                    <h1 class="theme-heading theme-accent-text">Instellingen</h1>
+                    <p class="theme-subtext">Beheer platforminstellingen in een duidelijk overzicht per module.</p>
+                </div>
 
-                <% for (const [key, value] of Object.entries(settings)) { %>
-                    <%
-                        const title = value.title || key
-                        const description = value.description || ''
-                        const properties = value || {}
-                    %>
-                    <div class="mb-4">
-                        <h3 class="text-lg font-semibold"><%= title %></h3>
-                        <p class="text-sm text-gray-400 mb-2"><%= description %></p>
-                        <% for (const [propKey, propValue] of Object.entries(properties)) { %>
-                            <% if (propKey === 'title' || propKey === 'description' || propKey === 'inputTypes') continue %>
-                            <% const type = value.inputTypes && value.inputTypes[propKey] ? value.inputTypes[propKey] : 'text' %>
-                            <% const inputType = type === 'boolean' ? 'checkbox' : type === 'datetime' ? 'datetime-local' : 'text' %>
-                            <div class="mb-2">
-                                <label for="<%= propKey %>" class="block text-sm font-medium mb-1"><%= propKey %></label>
-                                <input type="<%= inputType %>" id="<%= propKey %>" name="<%= propKey %>" value="<%= propValue %>" class="theme-input w-full" />
-                            </div>
-                        <% } %>
+                <div class="mb-8 md:mb-10 flex flex-wrap items-stretch justify-center gap-3">
+                    <div class="theme-surface theme-pill border theme-border px-4 py-2 min-w-40">
+                        <p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Modules</p>
+                        <p class="text-xl font-black theme-text-primary"><%= totalSections %></p>
                     </div>
+                    <div class="theme-surface theme-pill border theme-border px-4 py-2 min-w-40">
+                        <p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Bron</p>
+                        <p class="text-sm font-semibold theme-text-primary mt-1">Live databasewaarden</p>
+                    </div>
+                </div>
+
+                <% if (locals.saved) { %>
+                    <article class="theme-panel p-4 mb-6 border-emerald-400/50">
+                        <p class="text-sm font-semibold text-emerald-300">Instellingen succesvol opgeslagen.</p>
+                    </article>
                 <% } %>
-            </article>
+
+                <% if (totalSections === 0) { %>
+                    <article class="theme-panel p-8 md:p-10 text-center">
+                        <h2 class="text-xl font-extrabold theme-text-primary">Geen instellingen gevonden</h2>
+                        <p class="theme-subtext">Er zijn momenteel geen instellingen beschikbaar om weer te geven.</p>
+                    </article>
+                <% } else { %>
+                    <form method="post" action="/admin/settings" class="space-y-6">
+                        <div class="grid gap-6">
+                        <% for (const [key, value] of settingsEntries) { %>
+                            <%
+                                const section = value || {}
+                                const sectionTitle = section.title || toLabel(key)
+                                const sectionDescription = section.description || ''
+                            %>
+
+                            <article class="theme-panel p-5 md:p-6">
+                                <header class="mb-5 pb-4 border-b theme-border-soft">
+                                    <div class="flex flex-wrap items-center justify-between gap-3">
+                                        <div>
+                                            <h2 class="text-xl font-extrabold theme-text-primary"><%= sectionTitle %></h2>
+                                            <% if (sectionDescription) { %>
+                                                <p class="theme-subtext mt-2"><%= sectionDescription %></p>
+                                            <% } %>
+                                        </div>
+                                        <span class="theme-surface border theme-border theme-pill px-3 py-1 text-xs uppercase tracking-[0.12em] theme-text-muted"><%= toLabel(key) %></span>
+                                    </div>
+                                </header>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <% for (const [propKey, propValue] of Object.entries(section)) { %>
+                                        <% if (propKey === 'title' || propKey === 'description' || propKey === 'inputTypes') continue %>
+
+                                        <%
+                                            const type = section.inputTypes && section.inputTypes[propKey] ? section.inputTypes[propKey] : 'text'
+                                            const inputType = type === 'boolean' ? 'checkbox' : type === 'datetime' ? 'datetime-local' : 'text'
+                                            const fieldId = `${key}_${propKey}`
+                                            const label = toLabel(propKey)
+                                            const safeValue = propValue == null ? '' : String(propValue)
+                                            const displayValue = type === 'datetime' ? toDateTimeLocalValue(propValue) : safeValue
+                                        %>
+
+                                        <% if (inputType === 'checkbox') { %>
+                                            <label for="<%= fieldId %>" class="theme-surface border theme-border-soft rounded-lg p-4 flex items-center justify-between gap-3 cursor-pointer">
+                                                <div>
+                                                    <p class="text-sm font-semibold theme-text-primary"><%= label %></p>
+                                                    <p class="text-xs theme-text-muted mt-1">In- of uitschakelen</p>
+                                                </div>
+                                                <input
+                                                    type="checkbox"
+                                                    id="<%= fieldId %>"
+                                                    name="<%= `${key}__${propKey}` %>"
+                                                    value="true"
+                                                    class="h-5 w-5 accent-blue-500 cursor-pointer"
+                                                    <%= propValue ? 'checked' : '' %>
+                                                />
+                                            </label>
+                                        <% } else { %>
+                                            <div class="theme-surface border theme-border-soft rounded-lg p-4">
+                                                <label for="<%= fieldId %>" class="block mb-2 text-sm font-medium theme-text-primary"><%= label %></label>
+                                                <input
+                                                    type="<%= inputType %>"
+                                                    id="<%= fieldId %>"
+                                                    name="<%= `${key}__${propKey}` %>"
+                                                    value="<%= displayValue %>"
+                                                    class="theme-input w-full"
+                                                    <%= type === 'datetime' ? 'step="60"' : '' %>
+                                                />
+                                            </div>
+                                        <% } %>
+                                    <% } %>
+                                </div>
+                            </article>
+                        <% } %>
+
+                        </div>
+
+                        <div class="flex justify-end pt-2">
+                            <button type="submit" class="theme-btn-primary px-5 py-2.5">Opslaan</button>
+                        </div>
+                    </form>
+                <% } %>
+            </section>
         </main>
         <%- include('partials/footer') %>
     </body>

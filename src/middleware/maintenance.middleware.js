@@ -37,7 +37,12 @@ initSettings()
 
 const checkMaintenanceMode = async (req, res, next) => {
 	try {
-		if (!settings?.maintenance?.enabled) {
+		if (
+			!settings?.maintenance?.enabled ||
+			(req?.user?.isAdmin &&
+				(settings?.maintenance?.allowAdminAccess ||
+					req?.url?.startsWith('/admin')))
+		) {
 			return next()
 		}
 

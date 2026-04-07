@@ -140,7 +140,6 @@ if (!config.isProduction) {
 // =====================
 // Global Middleware
 // =====================
-app.use(checkMaintenanceMode) // Check if the site is in maintenance mode
 app.use(requireAuth) // Add user to all requests if authenticated
 app.use((req, res, next) => {
 	res.locals.user = req.user || null // Make user available in all views
@@ -148,6 +147,7 @@ app.use((req, res, next) => {
 	res.locals.notifications = [] // Placeholder for future notifications
 	next()
 })
+app.use(checkMaintenanceMode) // Check if the site is in maintenance mode
 
 // =====================
 // Routes setup
