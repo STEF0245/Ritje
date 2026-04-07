@@ -281,7 +281,7 @@
 }
 
 /* Map popup styling - matches site theme */
-#map {
+[data-map] {
 	background-color: var(--ride-bg-800);
 	border-radius: 0.625rem;
 }

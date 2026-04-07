@@ -14,7 +14,6 @@ class AppMap {
 	constructor(element) {
 		this.element = element
 		this.instance = null
-		this.markers = []
 	}
 
 	init() {
@@ -56,27 +55,11 @@ class AppMap {
 						.filter(Boolean)
 				}
 			} catch {
-				// Fall back to single marker dataset parsing.
+				return []
 			}
 		}
 
-		return [
-			{
-				latitude: center.latitude,
-				longitude: center.longitude,
-				title: this.element.dataset.fullName || 'Locatie',
-				lines: [
-					this.element.dataset.addressLineOne || '',
-					this.element.dataset.addressLineTwo || ''
-				],
-				mapsUrl:
-					this.element.dataset.mapsUrl ||
-					this.generateGoogleMapsLink(
-						center.latitude,
-						center.longitude
-					)
-			}
-		]
+		return []
 	}
 
 	normalizeMarker(marker, fallbackCenter) {
@@ -180,21 +163,6 @@ class AppMap {
 		return card
 	}
 
-	addMarker(latitude, longitude, details) {
-		return (
-			this.addMarkers([
-				{
-					latitude,
-					longitude,
-					title: details?.title,
-					lines: details?.lines,
-					mapsUrl: details?.mapsUrl,
-					openPopup: details?.openPopup ?? true
-				}
-			])[0] || null
-		)
-	}
-
 	addNormalizedMarker(normalized) {
 		if (!this.instance || !normalized) {
 			return null
@@ -217,8 +185,6 @@ class AppMap {
 		if (normalized.openPopup) {
 			marker.openPopup()
 		}
-
-		this.markers.push(marker)
 		return marker
 	}
 
@@ -280,6 +246,4 @@ class AppMap {
 			'Geen geldige coördinaten beschikbaar om de kaart te tonen.'
 	}
 }
-
-window.AppMap = AppMap
 document.addEventListener('DOMContentLoaded', () => AppMap.initAll())
