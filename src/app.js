@@ -143,8 +143,7 @@ if (!config.isProduction) {
 app.use(requireAuth) // Add user to all requests if authenticated
 app.use((req, res, next) => {
 	res.locals.user = req.user || null // Make user available in all views
-	res.locals.pageError = null
-	res.locals.notifications = [] // Placeholder for future notifications
+	res.locals.notifications = []
 	next()
 })
 app.use(checkMaintenanceMode) // Check if the site is in maintenance mode

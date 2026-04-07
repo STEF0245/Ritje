@@ -1,6 +1,6 @@
 import { verifyIdToken } from '../firebase/auth.js'
 import config from '../config.js'
-import { renderWithPageError } from '../utils/page-error.util.js'
+import { renderWithErrorNotification } from '../utils/notification.util.js'
 
 export const getLoginPage = (req, res) => {
 	res.render('login', {
@@ -12,7 +12,7 @@ export const loginController = async (req, res) => {
 	const { idToken } = req.body
 	try {
 		if (!idToken) {
-			return renderWithPageError(res, {
+			return renderWithErrorNotification(res, {
 				status: 400,
 				view: 'login',
 				title: 'Login',
@@ -31,7 +31,7 @@ export const loginController = async (req, res) => {
 		res.redirect('/profile')
 	} catch (err) {
 		console.error('Login error:', err.message)
-		return renderWithPageError(res, {
+		return renderWithErrorNotification(res, {
 			status: 401,
 			view: 'login',
 			title: 'Login',

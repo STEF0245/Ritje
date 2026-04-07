@@ -1,22 +1,15 @@
-import { renderInlinePageError } from './pageErrorRenderer.middleware.js'
+import { sendErrorResponse } from './error.middleware.js'
 
 const notFoundHandler = (req, res) => {
 	const message = 'De pagina die je zoekt bestaat niet.'
 
-	if (renderInlinePageError({ req, res, status: 404, message })) {
-		return
-	}
-
-	if (req.accepts('json')) {
-		return res.status(404).json({
-			error: {
-				status: 404,
-				message
-			}
-		})
-	}
-
-	return res.status(404).type('text/plain').send(message)
+	return sendErrorResponse({
+		req,
+		res,
+		status: 404,
+		message,
+		title: '404 | Niet gevonden'
+	})
 }
 
 export default notFoundHandler

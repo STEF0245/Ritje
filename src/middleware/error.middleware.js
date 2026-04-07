@@ -1,5 +1,38 @@
 import config from '../config.js'
-import { renderInlinePageError } from './pageErrorRenderer.middleware.js'
+import {
+	addNotifications,
+	createNotification
+} from '../utils/notification.util.js'
+
+export const sendErrorResponse = ({
+	req,
+	res,
+	status,
+	message,
+	title = 'Er ging iets mis'
+}) => {
+	if (req.accepts('html')) {
+		addNotifications(res, [createNotification('error', 'Fout', message)])
+		return res.status(status).render('error', {
+			title,
+			error: {
+				status,
+				message
+			}
+		})
+	}
+
+	if (req.accepts('json')) {
+		return res.status(status).json({
+			error: {
+				status,
+				message
+			}
+		})
+	}
+
+	return res.status(status).type('text/plain').send(message)
+}
 
 const errorHandler = (err, req, res, next) => {
 	err.statusCode = err.statusCode || 500
@@ -17,27 +50,13 @@ const errorHandler = (err, req, res, next) => {
 			? 'Er is een onverwachte fout opgetreden. Probeer het later opnieuw.'
 			: err.message
 
-	if (
-		renderInlinePageError({
-			req,
-			res,
-			status: err.statusCode,
-			message: safeMessage
-		})
-	) {
-		return
-	}
-
-	if (req.accepts('json')) {
-		return res.status(err.statusCode).json({
-			error: {
-				status: err.statusCode,
-				message: safeMessage
-			}
-		})
-	}
-
-	return res.status(err.statusCode).type('text/plain').send(safeMessage)
+	return sendErrorResponse({
+		req,
+		res,
+		status: err.statusCode,
+		message: safeMessage,
+		title: `${err.statusCode} | Fout`
+	})
 }
 
 export default errorHandler

@@ -6,8 +6,10 @@ import {
 	isValidEmail
 } from '../utils/input.util.js'
 import { isValidFirebaseUid } from '../utils/firebase.util.js'
-import { renderWithPageError } from '../utils/page-error.util.js'
-import { createNotification } from '../utils/notification.util.js'
+import {
+	createNotification,
+	renderWithErrorNotification
+} from '../utils/notification.util.js'
 
 const mapFormDataToEditUser = (formData = {}) => {
 	const safeFirstName = safeTrim(formData.firstName, 100)
@@ -54,7 +56,7 @@ export const getUsersPage = (req, res) => {
 		})
 		.catch((error) => {
 			console.error('Error fetching users:', error)
-			return renderWithPageError(res, {
+			return renderWithErrorNotification(res, {
 				status: 500,
 				view: 'admin_users',
 				title: 'Gebruikers | Admin',
@@ -78,7 +80,7 @@ export const getUserPage = (req, res) => {}
 export const getUserEditPage = (req, res) => {
 	const { uid } = req.params
 	if (!isValidFirebaseUid(uid)) {
-		return renderWithPageError(res, {
+		return renderWithErrorNotification(res, {
 			status: 400,
 			view: 'admin_user_edit',
 			title: 'Bewerk | Gebruikers | Admin',
@@ -96,7 +98,7 @@ export const getUserEditPage = (req, res) => {
 			const userData = snapshot.val()
 
 			if (!userData) {
-				return renderWithPageError(res, {
+				return renderWithErrorNotification(res, {
 					status: 404,
 					view: 'admin_user_edit',
 					title: 'Bewerk | Gebruikers | Admin',
@@ -116,7 +118,7 @@ export const getUserEditPage = (req, res) => {
 		})
 		.catch((error) => {
 			console.error('Error fetching user for edit page:', error)
-			return renderWithPageError(res, {
+			return renderWithErrorNotification(res, {
 				status: 500,
 				view: 'admin_user_edit',
 				title: 'Bewerk | Gebruikers | Admin',
@@ -133,7 +135,7 @@ export const getUserEditPage = (req, res) => {
 export const postUserEditPage = (req, res) => {
 	const { uid } = req.params
 	if (!isValidFirebaseUid(uid)) {
-		return renderWithPageError(res, {
+		return renderWithErrorNotification(res, {
 			status: 400,
 			view: 'admin_user_edit',
 			title: 'Bewerk | Gebruikers | Admin',
@@ -169,7 +171,7 @@ export const postUserEditPage = (req, res) => {
 	const fullName = `${safeFirstName} ${safeLastName}`.trim()
 
 	if (safeEmail && !isValidEmail(safeEmail)) {
-		return renderWithPageError(res, {
+		return renderWithErrorNotification(res, {
 			status: 400,
 			view: 'admin_user_edit',
 			title: 'Bewerk | Gebruikers | Admin',
@@ -182,7 +184,7 @@ export const postUserEditPage = (req, res) => {
 	}
 
 	if (!isValidHttpsUrl(safePhotoURL)) {
-		return renderWithPageError(res, {
+		return renderWithErrorNotification(res, {
 			status: 400,
 			view: 'admin_user_edit',
 			title: 'Bewerk | Gebruikers | Admin',
@@ -218,7 +220,7 @@ export const postUserEditPage = (req, res) => {
 		})
 		.catch((error) => {
 			console.error('Error updating user:', error)
-			return renderWithPageError(res, {
+			return renderWithErrorNotification(res, {
 				status: 500,
 				view: 'admin_user_edit',
 				title: 'Bewerk | Gebruikers | Admin',

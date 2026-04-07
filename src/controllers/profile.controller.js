@@ -2,8 +2,10 @@ import db from '../firebase/db.js'
 import { forwardGeocode } from '../location/location.service.js'
 import { sanitizeText, validateLength } from '../utils/input.util.js'
 import { isValidFirebaseUid } from '../utils/firebase.util.js'
-import { renderWithPageError } from '../utils/page-error.util.js'
-import { createNotification } from '../utils/notification.util.js'
+import {
+	createNotification,
+	renderWithErrorNotification
+} from '../utils/notification.util.js'
 
 const GEOCODE_TIMEOUT_MS = Number(
 	process.env.PROFILE_GEOCODE_TIMEOUT_MS || 7000
@@ -76,7 +78,7 @@ export const profileEditController = async (req, res) => {
 	const userId = req.user?.uid
 
 	if (!isValidFirebaseUid(userId)) {
-		return renderWithPageError(res, {
+		return renderWithErrorNotification(res, {
 			status: 403,
 			view: 'profile_edit',
 			title: 'Bewerk Profiel',

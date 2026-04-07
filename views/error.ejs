@@ -1,20 +1,36 @@
 <!DOCTYPE html>
 <html lang="nl" class="text-slate-200">
+    <% 
+        const statusCode = error?.status || 500
+        const isNotFound = Number(statusCode) === 404
+        const heading = isNotFound ? 'Pagina <span class="theme-accent-text">niet gevonden</span>' : 'Er ging iets mis'
+        const subcopy = isNotFound
+            ? 'De link is ongeldig, verlopen of de pagina bestaat niet meer.'
+            : 'Er is een fout opgetreden tijdens het verwerken van je aanvraag.'
+    %>
     <%- include('partials/head', { title }) %>
 
     <body class="theme-body min-h-screen flex flex-col">
 		<%- include('partials/header', { user }) %>
         <main class="theme-main flex-1">
-            <section class="max-w-3xl mx-auto">
-                <div class="theme-panel p-8 md:p-10">
-                    <p class="theme-kicker">Foutmelding</p>
-                    <h1 class="theme-heading">Er ging iets mis</h1>
-                    <p class="mt-5 text-sm uppercase tracking-[0.14em] text-slate-400">Status</p>
-                    <p class="text-2xl font-black theme-accent-text mt-1"><%= error.status || 500 %></p>
-                    <p class="theme-subtext mt-5"><%= error.message || 'Er is iets misgegaan' %></p>
-                    <a href="/" class="inline-block mt-8 theme-btn-primary px-5 py-3">
-                        Terug naar home
-                    </a>
+            <section class="max-w-xl mx-auto">
+                <div class="text-center mb-8">
+                    <p class="theme-kicker"><%= isNotFound ? '404 Pagina' : 'Systeemfout' %></p>
+                    <h1 class="theme-heading"><%- heading %></h1>
+                    <p class="theme-subtext"><%= subcopy %></p>
+                </div>
+
+                <div class="theme-panel p-6 md:p-8">
+                    <div class="theme-surface theme-pill border theme-border p-4">
+                        <p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Statuscode</p>
+                        <p class="text-2xl font-black theme-accent-text mt-1"><%= statusCode %></p>
+                        <p class="theme-subtext mt-2"><%= error?.message || 'Er is iets misgegaan' %></p>
+                    </div>
+
+                    <div class="mt-6 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+                        <a href="/" class="theme-btn-primary px-5 py-3">Terug naar home</a>
+                        <a href="/profile" class="theme-btn-secondary px-5 py-3">Naar profiel</a>
+                    </div>
                 </div>
             </section>
         </main>
