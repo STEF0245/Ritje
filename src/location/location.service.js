@@ -259,7 +259,11 @@ const forwardWithGeoapify = async (address, signal) => {
 		return null
 	}
 
-	if (!properties?.category?.includes('building')) {
+	console.log(properties.category, properties.type)
+	if (
+		properties.category === 'boundary' &&
+		properties.type === 'administrative'
+	) {
 		return null
 	}
 
@@ -267,6 +271,10 @@ const forwardWithGeoapify = async (address, signal) => {
 		properties.lat ?? firstFeature?.geometry?.coordinates?.[1]
 	const lonCandidate =
 		properties.lon ?? firstFeature?.geometry?.coordinates?.[0]
+
+	if (latCandidate == null || lonCandidate == null) {
+		return null
+	}
 
 	return {
 		lat: parseResultCoordinate(latCandidate, 'latitude'),

@@ -371,6 +371,20 @@ export const postUserEditPage = (req, res) => {
 				.then(() => {
 					res.redirect(`/admin/users/${encodeURIComponent(uid)}`)
 				})
+				.catch((error) => {
+					console.error('Error updating admin user:', error)
+					return renderWithErrorNotification(res, {
+						status: 500,
+						view: 'admin_user_edit',
+						title: 'Bewerk | Gebruikers | Admin',
+						message:
+							'Gebruiker kon niet worden opgeslagen. Probeer het opnieuw.',
+						extra: {
+							userUid: uid,
+							editUser: mapFormDataToEditUser(req.body)
+						}
+					})
+				})
 		})
 		.catch((error) => {
 			console.error('Admin user update geocoding error:', error?.message)
