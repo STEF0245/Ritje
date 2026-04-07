@@ -143,6 +143,7 @@ export const postUserEditPage = (req, res) => {
 		firstName = '',
 		lastName = '',
 		email = '',
+		phoneNumber = '',
 		city = '',
 		street = '',
 		houseNumber = '',
@@ -152,6 +153,7 @@ export const postUserEditPage = (req, res) => {
 
 	const safeFirstName = safeTrim(firstName, 100)
 	const safeLastName = safeTrim(lastName, 100)
+	const safePhoneNumber = safeTrim(phoneNumber, 20)
 	const safeEmail = safeTrim(email, 254)
 	const safeCity = safeTrim(city, 100)
 	const safeStreet = safeTrim(street, 120)
@@ -189,6 +191,7 @@ export const postUserEditPage = (req, res) => {
 	const updates = {
 		email: safeEmail,
 		photoURL: safePhotoURL,
+		phoneNumber: safePhoneNumber,
 		name: {
 			first: safeFirstName,
 			last: safeLastName,
