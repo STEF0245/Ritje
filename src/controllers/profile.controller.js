@@ -66,7 +66,7 @@ export const getProfilePage = (req, res) => {
 }
 
 export const getProfileEditPage = (req, res) => {
-	res.render('profile-edit', {
+	res.render('profile_edit', {
 		title: 'Bewerk Profiel'
 	})
 }
@@ -77,7 +77,7 @@ export const profileEditController = async (req, res) => {
 	if (!isValidFirebaseUid(userId)) {
 		return renderWithPageError(res, {
 			status: 403,
-			view: 'profile-edit',
+			view: 'profile_edit',
 			title: 'Bewerk Profiel',
 			message: 'Je sessie is ongeldig. Log opnieuw in.'
 		})
@@ -87,12 +87,16 @@ export const profileEditController = async (req, res) => {
 	try {
 		address = parseAndValidateProfileAddress(req.body)
 	} catch {
-		return renderWithPageError(res, {
-			status: 400,
-			view: 'profile-edit',
+		return res.status(400).render('profile_edit', {
 			title: 'Bewerk Profiel',
-			message: 'Controleer straat, huisnummer, postcode en stad.',
-			extra: { formData: req.body }
+			formData: req.body,
+			notifications: [
+				{
+					type: 'error',
+					label: 'Fout',
+					message: 'Controleer straat, huisnummer, postcode en stad.'
+				}
+			]
 		})
 	}
 
@@ -105,13 +109,17 @@ export const profileEditController = async (req, res) => {
 		)
 
 		if (!result?.lat || !result?.lon || !result?.raw) {
-			return renderWithPageError(res, {
-				status: 422,
-				view: 'profile-edit',
+			return res.status(422).render('profile_edit', {
 				title: 'Bewerk Profiel',
-				message:
-					'Het adres kon niet geverifieerd worden. Controleer je gegevens en probeer opnieuw.',
-				extra: { formData: req.body }
+				formData: req.body,
+				notifications: [
+					{
+						type: 'error',
+						label: 'Fout',
+						message:
+							'Het adres kon niet geverifieerd worden. Controleer je gegevens en probeer opnieuw.'
+					}
+				]
 			})
 		}
 
@@ -137,13 +145,17 @@ export const profileEditController = async (req, res) => {
 		return res.redirect('/profile')
 	} catch (error) {
 		console.error('Profile update geocoding error:', error?.message)
-		return renderWithPageError(res, {
-			status: 502,
-			view: 'profile-edit',
+		return res.status(502).render('profile_edit', {
 			title: 'Bewerk Profiel',
-			message:
-				'Adresverificatie is tijdelijk niet beschikbaar. Probeer later opnieuw.',
-			extra: { formData: req.body }
+			formData: req.body,
+			notifications: [
+				{
+					type: 'error',
+					label: 'Fout',
+					message:
+						'Adresverificatie is tijdelijk niet beschikbaar. Probeer later opnieuw.'
+				}
+			]
 		})
 	}
 }

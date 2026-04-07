@@ -10,7 +10,7 @@ const inferViewFromPath = (path) => {
 	}
 
 	if (path === '/profile/edit') {
-		return { view: 'profile-edit', title: 'Bewerk Profiel' }
+		return { view: 'profile_edit', title: 'Bewerk Profiel' }
 	}
 
 	if (path === '/profile') {
