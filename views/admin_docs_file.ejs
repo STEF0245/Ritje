@@ -33,38 +33,41 @@
 						</div>
 					</article>
 
-					<div class="grid gap-6 xl:grid-cols-[380px_1fr] items-start">
-						<aside class="theme-panel p-4 md:p-5 xl:sticky xl:top-24 max-h-[70vh] overflow-y-auto">
-							<h3 class="text-xs font-bold uppercase tracking-[0.16em] theme-text-muted mb-4">Documentatieblokken</h3>
-							<% if ((file.documentationSections || []).length === 0) { %>
-								<p class="theme-text-muted text-sm">Geen documentatieblokken gevonden.</p>
-							<% } else { %>
-								<ul class="space-y-2">
-									<% file.documentationSections.forEach((section, index) => { %>
-										<li class="theme-surface border theme-border rounded-md p-3">
-											<p class="theme-text-primary text-sm font-semibold"><%= section.title %></p>
-											<div class="mt-2 flex items-center justify-between gap-2 text-xs">
-												<span class="theme-text-muted">Regel <%= section.lineNumber %></span>
-												<a href="#L<%= section.lineNumber %>" class="theme-link">Ga naar bron</a>
-											</div>
-											<details class="mt-2">
-												<summary class="theme-link text-xs cursor-pointer">Toon tekst</summary>
-												<pre class="theme-code text-xs mt-2"><code><%- section.content %></code></pre>
-											</details>
-										</li>
-									<% }) %>
-								</ul>
-							<% } %>
-						</aside>
-
-						<article class="theme-panel p-4 md:p-5 max-h-[70vh] overflow-auto">
-							<div class="flex items-center justify-between gap-3 mb-3">
-								<h3 class="text-xs font-bold uppercase tracking-[0.16em] theme-text-muted">Broncode</h3>
-								<span class="theme-text-muted text-xs">Klik op regelnummers voor links</span>
+					<article class="theme-panel p-5 md:p-6">
+						<div class="flex items-center justify-between gap-3 mb-4">
+							<h3 class="text-sm font-bold uppercase tracking-[0.16em] theme-text-muted">Documentatie</h3>
+							<span class="theme-text-muted text-xs">Bovenaan samengevat, met links naar bronregels</span>
+						</div>
+						<% if ((file.documentationSections || []).length === 0) { %>
+							<p class="theme-text-muted text-sm">Geen documentatieblokken gevonden.</p>
+						<% } else { %>
+							<div class="space-y-3">
+								<% file.documentationSections.forEach((section) => { %>
+									<section class="theme-surface border theme-border rounded-md p-4">
+										<div class="flex items-center justify-between gap-3">
+											<h4 class="theme-text-primary font-semibold text-sm"><%= section.title %></h4>
+											<a href="#L<%= section.lineNumber %>" class="theme-link text-xs">Regel <%= section.lineNumber %></a>
+										</div>
+										<div class="mt-2 docs-doc-body text-sm theme-text-muted">
+											<% section.content.split(/\r?\n/).forEach((line) => { %>
+												<% if (line && line.trim()) { %>
+													<p><%= line %></p>
+												<% } %>
+											<% }) %>
+										</div>
+									</section>
+								<% }) %>
 							</div>
-							<pre class="theme-code docs-source-block text-xs"><code><%- sourceWithLineAnchors %></code></pre>
-						</article>
-					</div>
+						<% } %>
+					</article>
+
+					<article class="theme-panel p-4 md:p-5 max-h-[75vh] overflow-auto">
+						<div class="flex items-center justify-between gap-3 mb-3">
+							<h3 class="text-xs font-bold uppercase tracking-[0.16em] theme-text-muted">Broncode</h3>
+							<span class="theme-text-muted text-xs">Onderaan volledige bron met klikbare regelnummers</span>
+						</div>
+						<pre class="theme-code docs-source-block text-xs"><code><%- sourceWithLineAnchors %></code></pre>
+					</article>
 				<% } %>
 			</section>
 		</main>

@@ -292,6 +292,15 @@
 	padding: 0.6rem 0.7rem;
 }
 
+.docs-doc-body {
+	display: grid;
+	gap: 0.4rem;
+}
+
+.docs-doc-body p {
+	margin: 0;
+}
+
 .docs-doc-section-summary {
 	list-style: none;
 	cursor: pointer;
@@ -323,7 +332,7 @@
 
 .docs-source-block {
 	white-space: pre;
-	line-height: 1.55;
+	line-height: 1;
 }
 
 .docs-source-line {

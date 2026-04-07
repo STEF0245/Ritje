@@ -58,7 +58,7 @@
 
 				<% groups.forEach((group) => { %>
 					<section class="space-y-4" data-doc-group data-group-key="<%= group.key %>">
-						<div>
+						<div class="theme-panel p-4 md:p-5">
 							<p class="theme-kicker"><%= group.rootPath %></p>
 							<h2 class="text-2xl font-black theme-text-primary mt-1">
 								<i class="<%= groupIconByType[group.type] || 'fa-solid fa-folder' %> mr-2 theme-accent-text"></i>

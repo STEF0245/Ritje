@@ -77,13 +77,6 @@ const getLineNumberAtIndex = (content, index) => {
 const normalizeDocBlock = (rawBlock, extension) => {
 	if (!rawBlock) return ''
 
-	if (extension === '.ejs') {
-		return rawBlock
-			.replace(/<%#\s*/g, '')
-			.replace(/%>/g, '')
-			.trim()
-	}
-
 	return rawBlock
 		.replace(/^\/\*\*?\s*/, '')
 		.replace(/\s*\*\/$/, '')
@@ -196,34 +189,6 @@ const summarizeTagLines = (content) => {
 const extractDocumentationSections = (filePath, content) => {
 	const extension = path.extname(filePath).toLowerCase()
 	const sections = []
-
-	if (extension === '.ejs') {
-		const matches = content.matchAll(/<%#[\s\S]*?%>/g)
-		let index = 1
-		for (const match of matches) {
-			const raw = match[0]
-			const startIndex = match.index || 0
-			const lineNumber = getLineNumberAtIndex(content, startIndex)
-			const rawSectionContent = normalizeDocBlock(raw, extension)
-			const sectionContent = stripTagLines(rawSectionContent)
-
-			if (!rawSectionContent) continue
-
-			sections.push({
-				id: `doc-${index}`,
-				lineNumber,
-				title: deriveDocTitle(rawSectionContent, index, lineNumber),
-				content:
-					sectionContent ||
-					summarizeTagLines(rawSectionContent) ||
-					'Geen beschrijvende documentatietekst in dit blok.'
-			})
-
-			index += 1
-		}
-
-		return sections
-	}
 
 	const matches = content.matchAll(/\/\*\*?[\s\S]*?\*\//g)
 	let index = 1
