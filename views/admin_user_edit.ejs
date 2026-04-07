@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="nl" class="text-slate-200">
-<%- include('partials/head', { title }) %>
+    <%- include('partials/head', { title }) %>
 
     <%
         const profile = editUser || {}
-        const fullName = profile?.name?.full || profile?.displayName || 'Onbekende gebruiker'
+        const fullName =
+            profile?.name?.full || profile?.displayName || 'Onbekende gebruiker'
         const firstName = profile?.name?.first || fullName.split(' ')[0] || ''
-        const lastName = profile?.name?.last || fullName.split(' ').slice(1).join(' ') || ''
+        const lastName =
+            profile?.name?.last || fullName.split(' ').slice(1).join(' ') || ''
         const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || 'OG'
         const email = profile?.email || ''
         const phoneNumber = profile?.phoneNumber || ''
@@ -16,12 +18,24 @@
         const postalCode = profile?.address?.postalCode || ''
         const photoURL = profile?.photoURL || ''
         const targetUid = userUid || '-'
-        const createdAt = profile?.createdAt ? new Date(profile.createdAt).toLocaleString('nl-BE', {
-            year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
-        }) : 'Onbekend'
-        const lastSignIn = profile?.lastSignInTime ? new Date(profile.lastSignInTime).toLocaleString('nl-BE', {
-            year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
-        }) : 'Onbekend'
+        const createdAt = profile?.createdAt
+            ? new Date(profile.createdAt).toLocaleString('nl-BE', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+              })
+            : 'Onbekend'
+        const lastSignIn = profile?.lastSignInTime
+            ? new Date(profile.lastSignInTime).toLocaleString('nl-BE', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+              })
+            : 'Onbekend'
         const isEmailVerified = Boolean(profile?.emailVerified)
     %>
 
@@ -32,119 +46,124 @@
 
             <section class="max-w-5xl mx-auto px-4 md:px-6 py-8 md:py-10">
                 <div class="mb-8 md:mb-10 text-center">
-                    <p class="theme-kicker">Admin Gebruiker</p>
-                    <h1 class="theme-heading">Gebruiker bewerken</h1>
-                    <p class="theme-subtext">Werk profiel- en adresgegevens bij voor UID <span class="font-mono theme-text-primary"><%= targetUid %></span>.</p>
+                    <p class="theme-kicker">Ritje Profiel</p>
+                    <h1 class="theme-heading">
+                        Bewerk <span class="theme-accent-text"><%= fullName %></span>
+                    </h1>
+                    <p class="theme-subtext">
+                        Werk account- en adresgegevens bij voor UID
+                        <span class="font-mono theme-text-primary"><%= targetUid %></span>.
+                    </p>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <article class="theme-panel p-6 lg:col-span-1 h-full flex flex-col max-h-110">
-                        <div class="flex items-center gap-4">
-                            <% if (photoURL) { %>
-                                <img src="<%= photoURL %>" alt="Profielfoto van <%= fullName %>" class="theme-avatar h-16 w-16 object-cover rounded-full">
-                            <% } else { %>
-                                <div class="theme-avatar h-16 w-16 flex items-center justify-center text-xl font-black">
-                                    <%= initials %>
-                                </div>
-                            <% } %>
-                            <div class="min-w-0">
-                                <p class="theme-text-primary text-lg font-bold leading-tight truncate"><%= fullName %></p>
-                                <p class="theme-text-muted text-sm truncate"><%= email || 'Geen e-mail gevonden' %></p>
-                                <% if (phoneNumber) { %>
-                                    <p class="theme-text-muted text-sm truncate"><%= phoneNumber %></p>
-                                <% } %>
-                            </div>
-                        </div>
+				<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+					<article class="theme-panel p-6 lg:col-span-1 h-full flex flex-col max-h-110">
+						<div class="flex items-center gap-4">
+							<% if (photoURL) { %>
+								<img src="<%= photoURL %>" alt="Profielfoto van <%= fullName %>" class="theme-avatar h-16 w-16 object-cover rounded-full">
+							<% } else { %>
+								<div class="theme-avatar h-16 w-16 flex items-center justify-center text-xl font-black">
+									<%= initials %>
+								</div>
+							<% } %>
+							<div class="min-w-0">
+								<p class="theme-text-primary text-lg font-bold leading-tight truncate"><%= fullName %></p>
+								<p class="theme-text-muted text-sm truncate"><%= email || 'Geen e-mail gevonden' %></p>
+								<% if (phoneNumber) { %>
+									<p class="theme-text-muted text-sm truncate"><%= phoneNumber %></p>
+								<% } %>
+							</div>
+						</div>
 
-                        <div class="mt-6 border-t theme-border pt-5 space-y-3 text-sm flex-1">
-                            <div class="flex items-center justify-between gap-4">
-                                <span class="theme-text-muted">Gebruiker ID</span>
-                                <span class="theme-text-primary font-mono text-xs break-all text-right"><%= targetUid %></span>
-                            </div>
-                            <div class="flex items-center justify-between gap-4">
-                                <span class="theme-text-muted">Aangemaakt op</span>
-                                <span class="theme-text-primary"><%= createdAt %></span>
-                            </div>
-                            <div class="flex items-center justify-between gap-4">
-                                <span class="theme-text-muted">Laatst ingelogd</span>
-                                <span class="theme-text-primary"><%= lastSignIn %></span>
-                            </div>
-                            <div class="flex items-center justify-between gap-4">
-                                <span class="theme-text-muted">E-mail bevestigd</span>
-                                <span class="<%= isEmailVerified ? 'text-emerald-300' : 'text-amber-300' %>">
-                                    <%= isEmailVerified ? 'Ja' : 'Nee' %>
-                                </span>
-                            </div>
-                        </div>
+						<div class="mt-6 border-t theme-border pt-5 space-y-3 text-sm flex-1">
+							<div class="flex items-center justify-between gap-4">
+								<span class="theme-text-muted">Gebruiker ID</span>
+								<span class="theme-text-primary font-mono text-xs break-all text-right"><%= targetUid %></span>
+							</div>
+							<div class="flex items-center justify-between gap-4">
+								<span class="theme-text-muted">Aangemaakt op</span>
+								<span class="theme-text-primary"><%= createdAt %></span>
+							</div>
+							<div class="flex items-center justify-between gap-4">
+								<span class="theme-text-muted">Laatst ingelogd</span>
+								<span class="theme-text-primary"><%= lastSignIn %></span>
+							</div>
+							<div class="flex items-center justify-between gap-4">
+								<span class="theme-text-muted">E-mail bevestigd</span>
+								<span class="<%= isEmailVerified ? 'text-emerald-300' : 'text-amber-300' %>">
+									<%= isEmailVerified ? 'Ja' : 'Nee' %>
+								</span>
+							</div>
+						</div>
 
-                        <div class="mt-4 pt-3 grid grid-cols-1 gap-3">
-                            <a href="/admin/users" class="theme-pill border theme-border theme-surface w-full px-3 py-2 theme-text-primary theme-hover-accent-border text-center">Terug naar overzicht</a>
+                        <div class="mt-4 pt-3 grid grid-cols-2 gap-3">
+                            <a href="/admin/users/<%= encodeURIComponent(targetUid) %>" class="theme-pill border theme-border theme-surface w-full px-3 py-2 theme-text-primary theme-hover-accent-border text-center">Annuleer</a>
+                            <a href="/admin/users" class="theme-pill border theme-border theme-surface w-full px-3 py-2 theme-text-primary theme-hover-accent-border text-center">Overzicht</a>
                         </div>
                     </article>
 
-                    <article class="theme-panel p-6 lg:col-span-2">
-                        <h2 class="text-xl font-extrabold theme-text-primary">Profielgegevens</h2>
-                        <p class="theme-text-muted text-sm mt-1">Werk account- en adresgegevens van deze gebruiker bij.</p>
+					<article class="theme-panel p-6 lg:col-span-2">
+						<h2 class="text-xl font-extrabold theme-text-primary">Profielgegevens</h2>
+						<p class="theme-text-muted text-sm mt-1">Werk account- en adresgegevens van deze gebruiker bij.</p>
 
-                        <form method="post" action="/admin/users/<%= encodeURIComponent(targetUid) %>/edit" class="mt-6 space-y-5">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label for="firstName" class="block mb-2 text-sm font-medium theme-text-primary">Voornaam</label>
-                                    <input id="firstName" name="firstName" class="theme-input" value="<%= firstName %>" placeholder="Voornaam">
-                                </div>
-                                <div>
-                                    <label for="lastName" class="block mb-2 text-sm font-medium theme-text-primary">Achternaam</label>
-                                    <input id="lastName" name="lastName" class="theme-input" value="<%= lastName %>" placeholder="Achternaam">
-                                </div>
-                            </div>
+						<form method="post" action="/admin/users/<%= encodeURIComponent(targetUid) %>/edit" class="mt-6 space-y-4">
+							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<div class="theme-surface theme-pill border theme-border p-4 pt-3">
+									<label for="firstName" class="text-xs uppercase tracking-[0.12em] theme-text-muted">Voornaam</label>
+									<input id="firstName" name="firstName" class="mt-2 theme-input w-full" value="<%= firstName %>" placeholder="Voornaam">
+								</div>
+								<div class="theme-surface theme-pill border theme-border p-4 pt-3">
+									<label for="lastName" class="text-xs uppercase tracking-[0.12em] theme-text-muted">Achternaam</label>
+									<input id="lastName" name="lastName" class="mt-2 theme-input w-full" value="<%= lastName %>" placeholder="Achternaam">
+								</div>
+							</div>
 
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label for="email" class="block mb-2 text-sm font-medium theme-text-primary">E-mail</label>
-                                    <input id="email" name="email" type="email" class="theme-input" value="<%= email %>" placeholder="naam@domein.be">
-                                </div>
-                                <div>
-                                    <label for="phoneNumber" class="block mb-2 text-sm font-medium theme-text-primary">Telefoonnummer</label>
-                                    <input id="phoneNumber" name="phoneNumber" type="tel" class="theme-input" value="<%= phoneNumber %>" placeholder="0412345678">
-                                </div>
-                            </div>
+							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<div class="theme-surface theme-pill border theme-border p-4 pt-3">
+									<label for="email" class="text-xs uppercase tracking-[0.12em] theme-text-muted">E-mail</label>
+									<input id="email" name="email" type="email" class="mt-2 theme-input w-full" value="<%= email %>" placeholder="naam@domein.be">
+								</div>
+								<div class="theme-surface theme-pill border theme-border p-4 pt-3">
+									<label for="phoneNumber" class="text-xs uppercase tracking-[0.12em] theme-text-muted">Telefoonnummer</label>
+									<input id="phoneNumber" name="phoneNumber" type="tel" class="mt-2 theme-input w-full" value="<%= phoneNumber %>" placeholder="0412345678">
+								</div>
+							</div>
 
-                            <div>
-                                <label for="photoURL" class="block mb-2 text-sm font-medium theme-text-primary">Profielfoto URL</label>
-                                <input id="photoURL" name="photoURL" class="theme-input" value="<%= photoURL %>" placeholder="https://...">
-                            </div>
+							<div class="theme-surface theme-pill border theme-border p-4 pt-3">
+								<label for="photoURL" class="text-xs uppercase tracking-[0.12em] theme-text-muted">Profielfoto URL</label>
+								<input id="photoURL" name="photoURL" class="mt-2 theme-input w-full" value="<%= photoURL %>" placeholder="https://...">
+							</div>
 
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div class="md:col-span-2">
-                                    <label for="street" class="block mb-2 text-sm font-medium theme-text-primary">Straat</label>
-                                    <input id="street" name="street" class="theme-input" value="<%= street %>" placeholder="Straatnaam">
-                                </div>
-                                <div>
-                                    <label for="houseNumber" class="block mb-2 text-sm font-medium theme-text-primary">Huisnummer</label>
-                                    <input id="houseNumber" name="houseNumber" class="theme-input" value="<%= houseNumber %>" placeholder="12A">
-                                </div>
-                            </div>
+							<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+								<div class="theme-surface theme-pill border theme-border p-4 pt-3 md:col-span-2">
+									<label for="street" class="text-xs uppercase tracking-[0.12em] theme-text-muted">Straat</label>
+									<input id="street" name="street" class="mt-2 theme-input w-full" value="<%= street %>" placeholder="Straatnaam">
+								</div>
+								<div class="theme-surface theme-pill border theme-border p-4 pt-3 md:col-span-1">
+									<label for="houseNumber" class="text-xs uppercase tracking-[0.12em] theme-text-muted">Huisnummer</label>
+									<input id="houseNumber" name="houseNumber" class="mt-2 theme-input w-full" value="<%= houseNumber %>" placeholder="12A">
+								</div>
+							</div>
 
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label for="postalCode" class="block mb-2 text-sm font-medium theme-text-primary">Postcode</label>
-                                    <input id="postalCode" name="postalCode" class="theme-input" value="<%= postalCode %>" placeholder="1000">
-                                </div>
-                                <div>
-                                    <label for="city" class="block mb-2 text-sm font-medium theme-text-primary">Stad</label>
-                                    <input id="city" name="city" class="theme-input" value="<%= city %>" placeholder="Brussel">
-                                </div>
-                            </div>
+							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<div class="theme-surface theme-pill border theme-border p-4 pt-3">
+									<label for="postalCode" class="text-xs uppercase tracking-[0.12em] theme-text-muted">Postcode</label>
+									<input id="postalCode" name="postalCode" class="mt-2 theme-input w-full" value="<%= postalCode %>" placeholder="1000">
+								</div>
+								<div class="theme-surface theme-pill border theme-border p-4 pt-3">
+									<label for="city" class="text-xs uppercase tracking-[0.12em] theme-text-muted">Stad</label>
+									<input id="city" name="city" class="mt-2 theme-input w-full" value="<%= city %>" placeholder="Brussel">
+								</div>
+							</div>
 
-                            <div class="pt-2 flex flex-wrap gap-3">
-                                <button type="submit" class="theme-btn-primary px-5 py-2.5">Opslaan</button>
-                                <a href="/admin/users" class="theme-btn-secondary px-5 py-2.5">Annuleer</a>
-                            </div>
-                        </form>
-                    </article>
-                </div>
-            </section>
-        </main>
-        <%- include('partials/footer') %>
-    </body>
+							<div class="justify-self-end pt-2">
+								<button type="submit" class="theme-btn-primary px-5 py-3 cursor-pointer">Opslaan</button>
+							</div>
+						</form>
+					</article>
+				</div>
+			</section>
+		</main>
+		<%- include('partials/footer') %>
+	</body>
 </html>
