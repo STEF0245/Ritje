@@ -91,6 +91,7 @@ export const profileEditController = async (req, res) => {
 		const notifications = [
 			createNotification(
 				'error',
+				'Ongeldige adresgegevens',
 				'Controleer straat, huisnummer, postcode en stad.'
 			)
 		]
@@ -113,6 +114,7 @@ export const profileEditController = async (req, res) => {
 			const notifications = [
 				createNotification(
 					'error',
+					'Adresverificatie mislukt',
 					'Het adres kon niet geverifieerd worden. Controleer je gegevens en probeer opnieuw.'
 				)
 			]
@@ -142,12 +144,22 @@ export const profileEditController = async (req, res) => {
 
 		await db.ref(`users/${userId}`).update(updates)
 
-		return res.redirect('/profile')
+		return res.render('profile', {
+			title: 'Profiel',
+			notifications: [
+				createNotification(
+					'success',
+					'Succes',
+					'Adresgegevens succesvol opgeslagen.'
+				)
+			]
+		})
 	} catch (error) {
 		console.error('Profile update geocoding error:', error?.message)
 		const notifications = [
 			createNotification(
 				'error',
+				'Adresverificatie mislukt',
 				'Adresverificatie is tijdelijk niet beschikbaar. Probeer later opnieuw.'
 			)
 		]

@@ -7,8 +7,7 @@ import {
 } from '../utils/input.util.js'
 import { isValidFirebaseUid } from '../utils/firebase.util.js'
 import { renderWithPageError } from '../utils/page-error.util.js'
-import {
-	createNotification} from '../utils/notification.util.js'
+import { createNotification } from '../utils/notification.util.js'
 
 const mapFormDataToEditUser = (formData = {}) => {
 	const safeFirstName = safeTrim(formData.firstName, 100)
@@ -358,13 +357,16 @@ export const getSettingsPage = (req, res) => {
 		})
 		.catch((error) => {
 			console.error('Error fetching settings:', error)
-			return renderWithPageError(res, {
-				status: 500,
-				view: 'admin_settings',
+			return res.status(500).render('admin_settings', {
 				title: 'Instellingen | Admin',
-				message:
-					'Instellingen konden niet worden geladen. Probeer het opnieuw.',
-				extra: { settings: buildSettingsViewModel() }
+				settings: buildSettingsViewModel(),
+				notifications: [
+					createNotification(
+						'error',
+						'Fout',
+						'Instellingen konden niet worden geladen. Probeer het opnieuw.'
+					)
+				]
 			})
 		})
 }
@@ -387,6 +389,7 @@ export const postSettingsPage = (req, res) => {
 				notifications: [
 					createNotification(
 						'success',
+						'Succes',
 						'Instellingen succesvol opgeslagen.'
 					)
 				]
@@ -394,17 +397,18 @@ export const postSettingsPage = (req, res) => {
 		})
 		.catch((error) => {
 			console.error('Error saving settings:', error)
-			return renderWithPageError(res, {
-				status: 500,
-				view: 'admin_settings',
+			return res.status(500).render('admin_settings', {
 				title: 'Instellingen | Admin',
-				message:
-					'Instellingen konden niet worden opgeslagen. Probeer het opnieuw.',
-				extra: {
-					settings: buildSettingsViewModel(
-						mapFormDataToSettings(req.body, {})
+				settings: buildSettingsViewModel(
+					mapFormDataToSettings(req.body, {})
+				),
+				notifications: [
+					createNotification(
+						'error',
+						'Fout',
+						'Instellingen konden niet worden opgeslagen. Probeer het opnieuw.'
 					)
-				}
+				]
 			})
 		})
 }
