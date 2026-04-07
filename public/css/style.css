@@ -258,6 +258,69 @@
 	color: var(--ride-accent-soft);
 }
 
+.docs-file-card {
+	border-radius: 0.625rem;
+}
+
+.docs-doc-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem;
+}
+
+.docs-doc-count {
+	font-size: 0.7rem;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	padding: 0.2rem 0.45rem;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--ride-bg-800) 82%, transparent);
+	border: 1px solid color-mix(in srgb, var(--ride-border) 80%, transparent);
+	color: var(--ride-muted);
+}
+
+.docs-doc-sections {
+	display: grid;
+	gap: 0.5rem;
+}
+
+.docs-doc-section {
+	border: 1px solid color-mix(in srgb, var(--ride-border) 70%, transparent);
+	border-radius: 0.5rem;
+	background: color-mix(in srgb, var(--ride-bg-800) 74%, transparent);
+	padding: 0.6rem 0.7rem;
+}
+
+.docs-doc-section-summary {
+	list-style: none;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.65rem;
+}
+
+.docs-doc-section-summary::-webkit-details-marker {
+	display: none;
+}
+
+.docs-doc-title {
+	font-size: 0.8rem;
+	font-weight: 700;
+	color: var(--ride-text);
+	line-height: 1.35;
+}
+
+.docs-doc-line {
+	font-size: 0.7rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: var(--ride-muted);
+	white-space: nowrap;
+}
+
 .theme-border {
 	border-color: color-mix(in srgb, var(--ride-border) 85%, transparent);
 }

@@ -1,7 +1,7 @@
 /**
  * @file Admin users list sorting behavior.
- * @brief  Summary: Sorts the admin user collection by name or city on the client side.
- * @details  Details: This script adds an event listener to the sort select dropdown and sorts the user list accordingly when the selection changes. It uses localeCompare for proper alphabetical sorting based on the Dutch locale.
+ * @brief  Sorts the admin user collection by name or city on the client side.
+ * @details  This script adds an event listener to the sort select dropdown and sorts the user list accordingly when the selection changes. It uses localeCompare for proper alphabetical sorting based on the Dutch locale.
  */
 
 ;(function initAdminUserSorting() {
@@ -13,8 +13,8 @@
 	}
 
 	/**
-	 * @brief  Summary: Resolve the sortable value for a user row.
-	 * @details  Details: Selects either city or name based on the active sort mode and falls back to an empty string.
+	 * @brief  Resolve the sortable value for a user row.
+	 * @details  Selects either city or name based on the active sort mode and falls back to an empty string.
 	 * @param {HTMLElement} item - User list item element.
 	 * @param {string} mode - Sort mode identifier.
 	 * @returns {string} Comparable value for sorting.
@@ -28,8 +28,8 @@
 	}
 
 	/**
-	 * @brief  Summary: Sort all user rows by the selected criteria.
-	 * @details  Details: Reorders DOM nodes in-place using locale-aware comparison and optional reverse order.
+	 * @brief  Sort all user rows by the selected criteria.
+	 * @details  Reorders DOM nodes in-place using locale-aware comparison and optional reverse order.
 	 * @param {string} criteria - Selected sort mode.
 	 * @returns {void}
 	 */

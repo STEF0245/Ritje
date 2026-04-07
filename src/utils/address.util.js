@@ -1,7 +1,7 @@
 /**
  * @file Shared address validation and geocoding helpers.
- * @brief  Summary: Normalizes address input, geocoding timeouts, and provider results.
- * @details  Details: Contains reusable helpers used by both profile and admin flows to validate address input and normalize geocoding output.
+ * @brief  Normalizes address input, geocoding timeouts, and provider results.
+ * @details  Contains reusable helpers used by both profile and admin flows to validate address input and normalize geocoding output.
  */
 
 import { sanitizeText, validateLength } from './input.util.js'
@@ -14,8 +14,8 @@ const ADDRESS_PATTERNS = {
 }
 
 /**
- * @brief  Summary: Validate and normalize address fields from a form payload.
- * @details  Details: Trims and constrains the street, house number, postal code, and city fields.
+ * @brief  Validate and normalize address fields from a form payload.
+ * @details  Trims and constrains the street, house number, postal code, and city fields.
  * @param {object} body - Incoming request body or partial address object.
  * @returns {{street: string, houseNumber: string, postalCode: string, city: string}} Normalized address fields.
  * @throws {Error} Throws when a field is missing, too short, or contains invalid characters.
@@ -56,8 +56,8 @@ export const parseAndValidateAddress = (body = {}) => {
 }
 
 /**
- * @brief  Summary: Run an async geocoding operation with an abort timeout.
- * @details  Details: Creates an AbortController, aborts after the timeout, and clears the timer in all cases.
+ * @brief  Run an async geocoding operation with an abort timeout.
+ * @details  Creates an AbortController, aborts after the timeout, and clears the timer in all cases.
  * @param {(signal: AbortSignal) => Promise<unknown>} promiseFactory - Factory that receives the abort signal.
  * @param {number} timeoutMs - Timeout in milliseconds.
  * @returns {Promise<unknown>} Resolves with the promiseFactory result.
@@ -75,8 +75,8 @@ export const withTimeout = async (promiseFactory, timeoutMs) => {
 }
 
 /**
- * @brief  Summary: Normalize geocoder output into the address shape used by the app.
- * @details  Details: Falls back to the original user-supplied values when the provider does not return a field.
+ * @brief  Normalize geocoder output into the address shape used by the app.
+ * @details  Falls back to the original user-supplied values when the provider does not return a field.
  * @param {object} rawAddress - Raw provider address object.
  * @param {{street: string, houseNumber: string, postalCode: string, city: string}} fallbackAddress - User-provided address fields.
  * @returns {{street: string, houseNumber: string, postalCode: string, city: string}} Normalized address object.

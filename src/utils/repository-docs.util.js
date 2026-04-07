@@ -73,32 +73,193 @@ const formatBytes = (size) => {
 	return `${(size / (1024 * 1024)).toFixed(1)} MB`
 }
 
-const extractDocumentation = (filePath, content) => {
-	const extension = path.extname(filePath).toLowerCase()
-	const trimmedContent = content.trimStart()
+const getLineNumberAtIndex = (content, index) => {
+	if (!content || index <= 0) return 1
+	return content.slice(0, index).split(/\r?\n/).length
+}
+
+const normalizeDocBlock = (rawBlock, extension) => {
+	if (!rawBlock) return ''
 
 	if (extension === '.ejs') {
-		const match = trimmedContent.match(/^(<%#.*?%>\s*)+/s)
-		if (!match) return ''
-
-		return match[0]
+		return rawBlock
 			.replace(/<%#\s*/g, '')
 			.replace(/%>/g, '')
 			.trim()
 	}
 
-	const blockMatch = trimmedContent.match(/^\/\*[\s\S]*?\*\//)
-	if (blockMatch) {
-		return blockMatch[0]
-			.replace(/^\/\*\*?\s*/, '')
-			.replace(/\s*\*\/$/, '')
-			.split(/\r?\n/)
-			.map((line) => line.replace(/^\s*\* ?/, '').trimEnd())
-			.join('\n')
-			.trim()
+	return rawBlock
+		.replace(/^\/\*\*?\s*/, '')
+		.replace(/\s*\*\/$/, '')
+		.split(/\r?\n/)
+		.map((line) => line.replace(/^\s*\* ?/, '').trimEnd())
+		.join('\n')
+		.trim()
+}
+
+const deriveDocTitle = (content, sectionIndex, lineNumber) => {
+	if (!content) return `Documentatie ${sectionIndex}`
+
+	const lines = content
+		.split(/\r?\n/)
+		.map((line) => line.trim())
+		.filter(Boolean)
+
+	const taggedLine = lines.find((line) => /^@(brief|summary)\b/i.test(line))
+	if (taggedLine) {
+		return taggedLine.replace(/^@(brief|summary)\s*/i, '').trim()
 	}
 
-	return ''
+	const firstMeaningful = lines.find((line) => !line.startsWith('@'))
+	if (firstMeaningful) {
+		return firstMeaningful.length > 96
+			? `${firstMeaningful.slice(0, 93)}...`
+			: firstMeaningful
+	}
+
+	return `Documentatie ${sectionIndex} (regel ${lineNumber})`
+}
+
+const stripTagLines = (content) => {
+	if (!content) return ''
+
+	const filteredLines = content
+		.split(/\r?\n/)
+		.filter((line) => !/^\s*@\w+/i.test(line.trim()))
+		.map((line) => line.replace(/\s+$/g, ''))
+
+	const cleaned = filteredLines
+		.join('\n')
+		.replace(/\n{3,}/g, '\n\n')
+		.trim()
+	return cleaned
+}
+
+const humanizeTag = (tag) => {
+	const normalized = String(tag || '').toLowerCase()
+	if (normalized === 'param') return 'Parameter'
+	if (normalized === 'returns' || normalized === 'return')
+		return 'Retourneert'
+	if (normalized === 'throws' || normalized === 'throw') return 'Fout'
+	if (normalized === 'deprecated') return 'Verouderd'
+	if (normalized === 'example') return 'Voorbeeld'
+	if (normalized === 'since') return 'Sinds'
+	if (normalized === 'author') return 'Auteur'
+	if (normalized === 'brief') return 'Samenvatting'
+	if (normalized === 'details' || normalized === 'description')
+		return 'Beschrijving'
+	return normalized.charAt(0).toUpperCase() + normalized.slice(1)
+}
+
+const summarizeTagLines = (content) => {
+	if (!content) return ''
+
+	const lines = content
+		.split(/\r?\n/)
+		.map((line) => line.trim())
+		.filter((line) => /^@\w+/i.test(line))
+
+	if (!lines.length) return ''
+
+	const mapped = lines
+		.map((line) => {
+			const tagMatch = line.match(/^@(\w+)\s*(.*)$/)
+			if (!tagMatch) return ''
+
+			const [, tag, restRaw] = tagMatch
+			const rest = restRaw.trim()
+
+			if (/^(param)$/i.test(tag)) {
+				const paramMatch = rest.match(/^\{[^}]*\}\s*([^\s]+)\s*(.*)$/)
+				if (paramMatch) {
+					const [, name, description] = paramMatch
+					return description
+						? `Parameter ${name}: ${description}`
+						: `Parameter ${name}`
+				}
+			}
+
+			if (/^(returns?|throws?)$/i.test(tag)) {
+				const cleanedRest = rest.replace(/^\{[^}]*\}\s*/, '').trim()
+				const label = humanizeTag(tag)
+				return cleanedRest ? `${label}: ${cleanedRest}` : label
+			}
+
+			if (/^(brief|summary|description)$/i.test(tag)) {
+				return rest
+			}
+
+			const label = humanizeTag(tag)
+			return rest ? `${label}: ${rest}` : label
+		})
+		.filter(Boolean)
+
+	return mapped.join('\n')
+}
+
+const extractDocumentationSections = (filePath, content) => {
+	const extension = path.extname(filePath).toLowerCase()
+	const sections = []
+
+	if (extension === '.ejs') {
+		const matches = content.matchAll(/<%#[\s\S]*?%>/g)
+		let index = 1
+		for (const match of matches) {
+			const raw = match[0]
+			const startIndex = match.index || 0
+			const lineNumber = getLineNumberAtIndex(content, startIndex)
+			const rawSectionContent = normalizeDocBlock(raw, extension)
+			const sectionContent = stripTagLines(rawSectionContent)
+
+			if (!rawSectionContent) continue
+
+			sections.push({
+				id: `doc-${index}`,
+				lineNumber,
+				title: deriveDocTitle(rawSectionContent, index, lineNumber),
+				content:
+					sectionContent ||
+					summarizeTagLines(rawSectionContent) ||
+					'Geen beschrijvende documentatietekst in dit blok.'
+			})
+
+			index += 1
+		}
+
+		return sections
+	}
+
+	const matches = content.matchAll(/\/\*\*?[\s\S]*?\*\//g)
+	let index = 1
+	for (const match of matches) {
+		const raw = match[0]
+		const startIndex = match.index || 0
+		const lineNumber = getLineNumberAtIndex(content, startIndex)
+		const rawSectionContent = normalizeDocBlock(raw, extension)
+		const sectionContent = stripTagLines(rawSectionContent)
+
+		if (!rawSectionContent) continue
+
+		sections.push({
+			id: `doc-${index}`,
+			lineNumber,
+			title: deriveDocTitle(rawSectionContent, index, lineNumber),
+			content:
+				sectionContent ||
+				summarizeTagLines(rawSectionContent) ||
+				'Geen beschrijvende documentatietekst in dit blok.'
+		})
+
+		index += 1
+	}
+
+	return sections
+}
+
+const extractDocumentation = (filePath, content) => {
+	const sections = extractDocumentationSections(filePath, content)
+	if (!sections.length) return ''
+	return sections.map((section) => section.content).join('\n\n-----\n\n')
 }
 
 const readDirectoryEntries = async (directoryPath) => {
@@ -163,6 +324,10 @@ const scanDirectory = async (
 		const fileContent = await fs.readFile(entryPath, 'utf8')
 		const fileStat = await fs.stat(entryPath)
 		const documentation = extractDocumentation(entryPath, fileContent)
+		const documentationSections = extractDocumentationSections(
+			entryPath,
+			fileContent
+		)
 
 		nodes.push({
 			type: 'file',
@@ -172,6 +337,7 @@ const scanDirectory = async (
 			depth,
 			content: fileContent,
 			documentation,
+			documentationSections,
 			lineCount: countLines(fileContent),
 			sizeLabel: formatBytes(fileStat.size),
 			extension,
@@ -235,7 +401,14 @@ export const buildRepositoryDocumentation = async () => {
 				groupType: group.type,
 				...file,
 				source: escapeHtml(file.content),
-				documentation: escapeHtml(file.documentation)
+				documentation: escapeHtml(file.documentation),
+				documentationSections: (file.documentationSections || []).map(
+					(section) => ({
+						...section,
+						title: escapeHtml(section.title),
+						content: escapeHtml(section.content)
+					})
+				)
 			})
 			totalLines += file.lineCount
 		}
@@ -255,7 +428,14 @@ export const buildRepositoryDocumentation = async () => {
 			files: files.map((file) => ({
 				...file,
 				source: escapeHtml(file.content),
-				documentation: escapeHtml(file.documentation)
+				documentation: escapeHtml(file.documentation),
+				documentationSections: (file.documentationSections || []).map(
+					(section) => ({
+						...section,
+						title: escapeHtml(section.title),
+						content: escapeHtml(section.content)
+					})
+				)
 			}))
 		})
 	}

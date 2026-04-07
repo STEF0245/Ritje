@@ -1,14 +1,14 @@
 /**
  * @file Firebase identifier validation helpers.
- * @brief  Summary: Validates UID shapes used by the app's admin and profile flows.
- * @details  Details: Contains shared regex-based validation utilities for Firebase-style user identifiers.
+ * @brief  Validates UID shapes used by the app's admin and profile flows.
+ * @details  Contains shared regex-based validation utilities for Firebase-style user identifiers.
  */
 
 export const FIREBASE_UID_PATTERN = /^[A-Za-z0-9_-]{8,28}$/
 
 /**
- * @brief  Summary: Validate a Firebase UID against the app's expected pattern.
- * @details  Details: Ensures route and form UIDs match the allowed character set and length constraints before database/auth operations.
+ * @brief  Validate a Firebase UID against the app's expected pattern.
+ * @details  Ensures route and form UIDs match the allowed character set and length constraints before database/auth operations.
  * @param {unknown} uid - UID candidate value.
  * @returns {boolean} True when the UID is a valid string matching the pattern.
  */
