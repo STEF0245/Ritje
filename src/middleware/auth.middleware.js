@@ -55,7 +55,7 @@ export const requireAuth = async (req, res, next) => {
 
 		req.user = mapUserData(user, userData, admin)
 
-		if (req.path === '/login') return res.redirect('/')
+		if (req.path === '/login') return res.redirect('/profile')
 		next()
 	} catch (err) {
 		console.error('Authentication error:', err.message)
