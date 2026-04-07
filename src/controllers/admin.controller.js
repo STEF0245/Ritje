@@ -226,8 +226,47 @@ export const postUserEditPage = (req, res) => {
 		})
 }
 
+const SETTINGS = {
+	maintenance: {
+		title: 'Onderhoudsmodus',
+		description:
+			'Schakel deze modus in om het platform tijdelijk onbereikbaar te maken voor gebruikers. Handig voor updates of onderhoud.',
+		enabled: false,
+		message:
+			'Het platform is tijdelijk in onderhoud. Probeer het later opnieuw.',
+		startTime: null,
+		endTime: null,
+		allowAdminAccess: true,
+
+		inputTypes: {
+			enabled: 'boolean',
+			message: 'string',
+			startTime: 'datetime',
+			endTime: 'datetime',
+			allowAdminAccess: 'boolean'
+		}
+	}
+}
+
 export const getSettingsPage = (req, res) => {
-	res.render('admin_settings', {
-		title: 'Instellingen | Admin'
-	})
+	db.ref('settings')
+		.once('value')
+		.then((snapshot) => {
+			const settingsData = snapshot.val() || {}
+			res.render('admin_settings', {
+				title: 'Instellingen | Admin',
+				settings: { ...SETTINGS, ...settingsData }
+			})
+		})
+		.catch((error) => {
+			console.error('Error fetching settings:', error)
+			return renderWithPageError(res, {
+				status: 500,
+				view: 'admin_settings',
+				title: 'Instellingen | Admin',
+				message:
+					'Instellingen konden niet worden geladen. Probeer het opnieuw.',
+				extra: { settings: { ...SETTINGS } }
+			})
+		})
 }

@@ -1,3 +1,5 @@
+<% const settings = locals.settings || [] %>
+
 <!DOCTYPE html>
 <html lang="nl" class="text-slate-200">
     <%- include('partials/head', { title }) %>
@@ -6,6 +8,32 @@
 		<%- include('partials/header', { user }) %>
         <main class="theme-main flex-1 pt-0!">
             <%- include('partials/admin_nav', { selected: { settings: true } }) %>
+
+            <article >
+                <h1 class="text-2xl font-bold mb-4">Instellingen</h1>
+                <p class="text-lg">Beheer de instellingen van het platform.</p>
+
+                <% for (const [key, value] of Object.entries(settings)) { %>
+                    <%
+                        const title = value.title || key
+                        const description = value.description || ''
+                        const properties = value || {}
+                    %>
+                    <div class="mb-4">
+                        <h3 class="text-lg font-semibold"><%= title %></h3>
+                        <p class="text-sm text-gray-400 mb-2"><%= description %></p>
+                        <% for (const [propKey, propValue] of Object.entries(properties)) { %>
+                            <% if (propKey === 'title' || propKey === 'description' || propKey === 'inputTypes') continue %>
+                            <% const type = value.inputTypes && value.inputTypes[propKey] ? value.inputTypes[propKey] : 'text' %>
+                            <% const inputType = type === 'boolean' ? 'checkbox' : type === 'datetime' ? 'datetime-local' : 'text' %>
+                            <div class="mb-2">
+                                <label for="<%= propKey %>" class="block text-sm font-medium mb-1"><%= propKey %></label>
+                                <input type="<%= inputType %>" id="<%= propKey %>" name="<%= propKey %>" value="<%= propValue %>" class="theme-input w-full" />
+                            </div>
+                        <% } %>
+                    </div>
+                <% } %>
+            </article>
         </main>
         <%- include('partials/footer') %>
     </body>
