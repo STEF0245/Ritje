@@ -3,6 +3,7 @@ import { forwardGeocode } from '../location/location.service.js'
 import { sanitizeText, validateLength } from '../utils/input.util.js'
 import { isValidFirebaseUid } from '../utils/firebase.util.js'
 import { renderWithPageError } from '../utils/page-error.util.js'
+import { createNotification } from '../utils/notification.util.js'
 
 const GEOCODE_TIMEOUT_MS = Number(
 	process.env.PROFILE_GEOCODE_TIMEOUT_MS || 7000
@@ -87,16 +88,16 @@ export const profileEditController = async (req, res) => {
 	try {
 		address = parseAndValidateProfileAddress(req.body)
 	} catch {
+		const notifications = [
+			createNotification(
+				'error',
+				'Controleer straat, huisnummer, postcode en stad.'
+			)
+		]
 		return res.status(400).render('profile_edit', {
 			title: 'Bewerk Profiel',
 			formData: req.body,
-			notifications: [
-				{
-					type: 'error',
-					label: 'Fout',
-					message: 'Controleer straat, huisnummer, postcode en stad.'
-				}
-			]
+			notifications
 		})
 	}
 
@@ -109,17 +110,16 @@ export const profileEditController = async (req, res) => {
 		)
 
 		if (!result?.lat || !result?.lon || !result?.raw) {
+			const notifications = [
+				createNotification(
+					'error',
+					'Het adres kon niet geverifieerd worden. Controleer je gegevens en probeer opnieuw.'
+				)
+			]
 			return res.status(422).render('profile_edit', {
 				title: 'Bewerk Profiel',
 				formData: req.body,
-				notifications: [
-					{
-						type: 'error',
-						label: 'Fout',
-						message:
-							'Het adres kon niet geverifieerd worden. Controleer je gegevens en probeer opnieuw.'
-					}
-				]
+				notifications
 			})
 		}
 
@@ -145,17 +145,16 @@ export const profileEditController = async (req, res) => {
 		return res.redirect('/profile')
 	} catch (error) {
 		console.error('Profile update geocoding error:', error?.message)
+		const notifications = [
+			createNotification(
+				'error',
+				'Adresverificatie is tijdelijk niet beschikbaar. Probeer later opnieuw.'
+			)
+		]
 		return res.status(502).render('profile_edit', {
 			title: 'Bewerk Profiel',
 			formData: req.body,
-			notifications: [
-				{
-					type: 'error',
-					label: 'Fout',
-					message:
-						'Adresverificatie is tijdelijk niet beschikbaar. Probeer later opnieuw.'
-				}
-			]
+			notifications
 		})
 	}
 }

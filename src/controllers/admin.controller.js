@@ -7,6 +7,8 @@ import {
 } from '../utils/input.util.js'
 import { isValidFirebaseUid } from '../utils/firebase.util.js'
 import { renderWithPageError } from '../utils/page-error.util.js'
+import {
+	createNotification} from '../utils/notification.util.js'
 
 const mapFormDataToEditUser = (formData = {}) => {
 	const safeFirstName = safeTrim(formData.firstName, 100)
@@ -383,10 +385,10 @@ export const postSettingsPage = (req, res) => {
 				title: 'Instellingen | Admin',
 				settings: buildSettingsViewModel(nextSettings || {}),
 				notifications: [
-					{
-						type: 'success',
-						message: 'Instellingen succesvol opgeslagen.'
-					}
+					createNotification(
+						'success',
+						'Instellingen succesvol opgeslagen.'
+					)
 				]
 			})
 		})
