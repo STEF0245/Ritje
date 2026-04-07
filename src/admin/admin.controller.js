@@ -1,7 +1,9 @@
 import db from '../firebase/db.js'
+import { forwardGeocode } from '../location/location.service.js'
 import {
 	safeTrim,
 	sanitizeText,
+	validateLength,
 	isValidHttpsUrl,
 	isValidEmail
 } from '../utils/input.util.js'
@@ -11,10 +13,66 @@ import {
 	renderWithErrorNotification
 } from '../utils/notification.util.js'
 
+const GEOCODE_TIMEOUT_MS = Number(
+	process.env.PROFILE_GEOCODE_TIMEOUT_MS || 7000
+)
+
+const parseAndValidateProfileAddress = (body = {}) => {
+	const street = sanitizeText(body.street, 120)
+	const houseNumber = sanitizeText(body.houseNumber, 20)
+	const postalCode = sanitizeText(body.postalCode, 20)
+	const city = sanitizeText(body.city, 100)
+
+	validateLength(street, 'Street', 2, 120)
+	validateLength(houseNumber, 'House number', 1, 20)
+	validateLength(postalCode, 'Postal code', 2, 20)
+	validateLength(city, 'City', 2, 100)
+
+	const streetPattern = /^(?=.{2,120}$)[\p{L}\p{N} .,'\-\/]+$/u
+	const houseNumberPattern = /^(?=.{1,20}$)[\p{L}\p{N} .\-\/]+$/u
+	const postalCodePattern = /^(?=.{2,20}$)[\p{L}\p{N} \-]+$/u
+	const cityPattern = /^(?=.{2,100}$)[\p{L}\p{N} .,'\-]+$/u
+
+	if (!streetPattern.test(street)) {
+		throw new Error('Street contains invalid characters')
+	}
+
+	if (!houseNumberPattern.test(houseNumber)) {
+		throw new Error('House number contains invalid characters')
+	}
+
+	if (!postalCodePattern.test(postalCode)) {
+		throw new Error('Postal code contains invalid characters')
+	}
+
+	if (!cityPattern.test(city)) {
+		throw new Error('City contains invalid characters')
+	}
+
+	return {
+		street,
+		houseNumber,
+		postalCode,
+		city
+	}
+}
+
+const withTimeout = async (promiseFactory, timeoutMs) => {
+	const controller = new AbortController()
+	const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+
+	try {
+		return await promiseFactory(controller.signal)
+	} finally {
+		clearTimeout(timeoutId)
+	}
+}
+
 const mapFormDataToEditUser = (formData = {}) => {
 	const safeFirstName = safeTrim(formData.firstName, 100)
 	const safeLastName = safeTrim(formData.lastName, 100)
 	const safeEmail = safeTrim(formData.email, 254)
+	const safePhoneNumber = safeTrim(formData.phoneNumber, 20)
 	const safeCity = safeTrim(formData.city, 100)
 	const safeStreet = safeTrim(formData.street, 120)
 	const safeHouseNumber = safeTrim(formData.houseNumber, 20)
@@ -23,6 +81,7 @@ const mapFormDataToEditUser = (formData = {}) => {
 
 	return {
 		email: safeEmail,
+		phoneNumber: safePhoneNumber,
 		photoURL: safePhotoURL,
 		name: {
 			first: safeFirstName,
@@ -75,7 +134,60 @@ export const getUsersNewPage = (req, res) => {
 
 export const postUserNewPage = (req, res) => {}
 
-export const getUserPage = (req, res) => {}
+export const getUserPage = (req, res) => {
+	const { uid } = req.params
+	if (!isValidFirebaseUid(uid)) {
+		return renderWithErrorNotification(res, {
+			status: 400,
+			view: 'admin_user',
+			title: 'Gebruiker | Admin',
+			message: 'Ongeldige gebruikers-ID opgegeven.',
+			extra: {
+				userUid: uid,
+				viewUser: {}
+			}
+		})
+	}
+
+	db.ref(`users/${uid}`)
+		.once('value')
+		.then((snapshot) => {
+			const userData = snapshot.val()
+
+			if (!userData) {
+				return renderWithErrorNotification(res, {
+					status: 404,
+					view: 'admin_user',
+					title: 'Gebruiker | Admin',
+					message: 'Deze gebruiker bestaat niet of is verwijderd.',
+					extra: {
+						userUid: uid,
+						viewUser: {}
+					}
+				})
+			}
+
+			return res.render('admin_user', {
+				title: 'Gebruiker | Admin',
+				userUid: uid,
+				viewUser: userData
+			})
+		})
+		.catch((error) => {
+			console.error('Error fetching user detail page:', error)
+			return renderWithErrorNotification(res, {
+				status: 500,
+				view: 'admin_user',
+				title: 'Gebruiker | Admin',
+				message:
+					'Gebruiker kon niet worden geladen. Probeer het opnieuw.',
+				extra: {
+					userUid: uid,
+					viewUser: {}
+				}
+			})
+		})
+}
 
 export const getUserEditPage = (req, res) => {
 	const { uid } = req.params
@@ -152,10 +264,6 @@ export const postUserEditPage = (req, res) => {
 		lastName = '',
 		email = '',
 		phoneNumber = '',
-		city = '',
-		street = '',
-		houseNumber = '',
-		postalCode = '',
 		photoURL = ''
 	} = req.body
 
@@ -163,10 +271,6 @@ export const postUserEditPage = (req, res) => {
 	const safeLastName = safeTrim(lastName, 100)
 	const safePhoneNumber = safeTrim(phoneNumber, 20)
 	const safeEmail = safeTrim(email, 254)
-	const safeCity = safeTrim(city, 100)
-	const safeStreet = safeTrim(street, 120)
-	const safeHouseNumber = safeTrim(houseNumber, 20)
-	const safePostalCode = safeTrim(postalCode, 20)
 	const safePhotoURL = safeTrim(photoURL, 2048)
 	const fullName = `${safeFirstName} ${safeLastName}`.trim()
 
@@ -196,40 +300,91 @@ export const postUserEditPage = (req, res) => {
 		})
 	}
 
-	const updates = {
-		email: safeEmail,
-		photoURL: safePhotoURL,
-		phoneNumber: safePhoneNumber,
-		name: {
-			first: safeFirstName,
-			last: safeLastName,
-			full: fullName
-		},
-		address: {
-			city: safeCity,
-			street: safeStreet,
-			houseNumber: safeHouseNumber,
-			postalCode: safePostalCode
-		}
+	let address
+	try {
+		address = parseAndValidateProfileAddress(req.body)
+	} catch {
+		return res.status(400).render('admin_user_edit', {
+			title: 'Bewerk | Gebruikers | Admin',
+			userUid: uid,
+			editUser: mapFormDataToEditUser(req.body),
+			notifications: [
+				createNotification(
+					'error',
+					'Ongeldige adresgegevens',
+					'Controleer straat, huisnummer, postcode en stad.'
+				)
+			]
+		})
 	}
 
-	db.ref(`users/${uid}`)
-		.update(updates)
-		.then(() => {
-			res.redirect(`/admin/users/${encodeURIComponent(uid)}`)
+	const query = `${address.street} ${address.houseNumber}, ${address.postalCode} ${address.city}`
+
+	return withTimeout(
+		(signal) => forwardGeocode(query, signal),
+		GEOCODE_TIMEOUT_MS
+	)
+		.then(({ result }) => {
+			if (!result?.lat || !result?.lon || !result?.raw) {
+				return res.status(422).render('admin_user_edit', {
+					title: 'Bewerk | Gebruikers | Admin',
+					userUid: uid,
+					editUser: mapFormDataToEditUser(req.body),
+					notifications: [
+						createNotification(
+							'error',
+							'Adresverificatie mislukt',
+							'Het adres kon niet geverifieerd worden. Controleer je gegevens en probeer opnieuw.'
+						)
+					]
+				})
+			}
+
+			const raw = result.raw
+			const normalizedAddress = {
+				street: raw.street || address.street,
+				houseNumber: raw.housenumber || address.houseNumber,
+				postalCode: raw.postcode || address.postalCode,
+				city: raw.village || raw.city || raw.town || address.city
+			}
+
+			const updates = {
+				email: safeEmail,
+				photoURL: safePhotoURL,
+				phoneNumber: safePhoneNumber,
+				name: {
+					first: safeFirstName,
+					last: safeLastName,
+					full: fullName
+				},
+				address: normalizedAddress,
+				coords: {
+					latitude: result.lat,
+					longitude: result.lon
+				},
+				updatedAt: new Date()
+			}
+
+			return db
+				.ref(`users/${uid}`)
+				.update(updates)
+				.then(() => {
+					res.redirect(`/admin/users/${encodeURIComponent(uid)}`)
+				})
 		})
 		.catch((error) => {
-			console.error('Error updating user:', error)
-			return renderWithErrorNotification(res, {
-				status: 500,
-				view: 'admin_user_edit',
+			console.error('Admin user update geocoding error:', error?.message)
+			return res.status(502).render('admin_user_edit', {
 				title: 'Bewerk | Gebruikers | Admin',
-				message:
-					'Gebruiker kon niet worden opgeslagen. Probeer het opnieuw.',
-				extra: {
-					userUid: uid,
-					editUser: mapFormDataToEditUser(req.body)
-				}
+				userUid: uid,
+				editUser: mapFormDataToEditUser(req.body),
+				notifications: [
+					createNotification(
+						'error',
+						'Adresverificatie mislukt',
+						'Adresverificatie is tijdelijk niet beschikbaar. Probeer later opnieuw.'
+					)
+				]
 			})
 		})
 }
