@@ -1,6 +1,7 @@
 /**
  * @file Authentication routes for login, logout, and Firebase config access.
  * @brief Mounts auth endpoints with rate limiting where appropriate.
+ * @details Configures login and logout throttling and exposes the Firebase web config endpoint required by the browser login module.
  */
 
 import express from 'express'

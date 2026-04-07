@@ -1,12 +1,14 @@
 /**
  * @file Location controller for reverse geocoding requests.
  * @brief Validates coordinates and proxies the geocoding response.
+ * @details Parses request coordinates, delegates lookup to the location service, and returns provider metadata with normalized payloads.
  */
 
 import { parseCoordinate, reverseGeocode } from './location.service.js'
 
 /**
  * @brief Reverse geocode the provided latitude and longitude.
+ * @details Returns HTTP 404 when no address can be resolved, HTTP 400 for validation errors, and HTTP 502 for provider failures.
  * @param {object} req - Express request object.
  * @param {object} res - Express response object.
  * @returns {Promise<object>} Express response.

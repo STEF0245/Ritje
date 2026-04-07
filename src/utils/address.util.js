@@ -1,6 +1,7 @@
 /**
  * @file Shared address validation and geocoding helpers.
  * @brief Normalizes address input, geocoding timeouts, and provider results.
+ * @details Contains reusable helpers used by both profile and admin flows to validate address input and normalize geocoding output.
  */
 
 import { sanitizeText, validateLength } from './input.util.js'

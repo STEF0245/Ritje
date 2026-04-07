@@ -1,6 +1,7 @@
 /**
  * @file Client-side Firebase login exchange helper.
  * @brief Handles the login form submission and token retrieval.
+ * @details This script initializes the Firebase app with configuration fetched from the server, listens for the login form submission, and uses Firebase Authentication to sign in the user with email and password. Upon successful login, it retrieves the ID token and submits it to the server for session cookie creation. It also provides user feedback on the login status.
  */
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js'
@@ -28,6 +29,13 @@ if (!form || !emailInput || !passwordInput || !idTokenInput) {
 	throw new Error('Login formulier is niet correct geladen.')
 }
 
+/**
+ * @brief Update the login status message.
+ * @details Sets message text and color tone classes based on the provided status type.
+ * @param {string} message - Status message to display.
+ * @param {'info'|'danger'} type - Status tone.
+ * @returns {void}
+ */
 const setStatus = (message, type) => {
 	if (statusNode) {
 		statusNode.textContent = message

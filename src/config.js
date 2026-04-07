@@ -1,6 +1,7 @@
 /**
  * @file Runtime configuration and environment validation.
  * @brief Loads dotenv values and exposes normalized app configuration.
+ * @details This module ensures that all required environment variables are set before the application starts. It organizes configuration values into a structured object that can be imported throughout the app, providing a single source of truth for configuration data. Optional environment variables are also checked, with warnings logged if they are not set, but they do not prevent the app from starting.
  */
 
 import 'dotenv/config'
@@ -38,6 +39,7 @@ const optionalEnvVars = [
 
 /**
  * @brief Fail fast when required environment variables are missing.
+ * @details Checks for the presence of all required environment variables and logs an error with the missing variables if any are not set. The process exits with a non-zero code to prevent the application from starting in an invalid state. It also logs warnings for optional environment variables that are not set, but does not exit in that case.
  * @returns {void}
  */
 function validateEnvVars() {

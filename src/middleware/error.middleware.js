@@ -1,6 +1,7 @@
 /**
  * @file Error middleware for API, HTML, and plain-text responses.
  * @brief Normalizes runtime and 404 responses across content types.
+ * @details Formats errors according to request content negotiation and protects operational details in production.
  */
 
 import config from '../config.js'
@@ -11,6 +12,7 @@ import {
 
 /**
  * @brief Send an error response formatted for the requested content type.
+ * @details Renders HTML error pages when appropriate, returns JSON for API clients, and falls back to plain text for other accept headers.
  * @param {object} params - Error response parameters.
  * @param {object} params.req - Express request object.
  * @param {object} params.res - Express response object.
@@ -51,6 +53,7 @@ export const sendErrorResponse = ({
 
 /**
  * @brief Express error handling middleware.
+ * @details Normalizes unknown errors to HTTP 500, logs request context, and sends a safe message in production for non-operational errors.
  * @param {Error & {statusCode?: number, isOperational?: boolean}} err - Error instance.
  * @param {object} req - Express request object.
  * @param {object} res - Express response object.

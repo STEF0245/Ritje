@@ -1,6 +1,7 @@
 /**
  * @file Leaflet map bootstrap for profile and admin location views.
  * @brief Renders map markers and popup content from server-provided data.
+ * @details This script defines the AppMap class which initializes Leaflet maps on elements with the `data-map` attribute. It reads center coordinates and marker data from the element's dataset, creates a map instance, adds tile layers, and renders markers with custom icons and popups. The map is constrained to Belgian boundaries and includes proper attribution. If no valid coordinates are provided, it shows a user-friendly message instead of the map.
  */
 
 class AppMap {
@@ -11,16 +12,32 @@ class AppMap {
 
 	static DEFAULT_SELECTOR = '[data-map]'
 
+	/**
+	 * @brief Initialize all map elements matching the selector.
+	 * @details Creates one `AppMap` instance per matching element and initializes each instance.
+	 * @param {string} [selector=AppMap.DEFAULT_SELECTOR] - CSS selector for map elements.
+	 * @returns {Array<AppMap>} Initialized map instances.
+	 */
 	static initAll(selector = AppMap.DEFAULT_SELECTOR) {
 		const elements = Array.from(document.querySelectorAll(selector))
 		return elements.map((element) => new AppMap(element).init())
 	}
 
+	/**
+	 * @brief Construct a new map wrapper for a single DOM element.
+	 * @details Stores the element reference and prepares an instance slot for the Leaflet map.
+	 * @param {HTMLElement} element - Target map container element.
+	 */
 	constructor(element) {
 		this.element = element
 		this.instance = null
 	}
 
+	/**
+	 * @brief Initialize a Leaflet map for the current element.
+	 * @details Reads center coordinates from dataset attributes, configures tiles, markers, and attribution, and returns the current instance.
+	 * @returns {AppMap} Current AppMap instance.
+	 */
 	init() {
 		if (!this.element) return this
 
@@ -38,6 +55,11 @@ class AppMap {
 		return this
 	}
 
+	/**
+	 * @brief Read the center coordinates from element dataset values.
+	 * @details Parses latitude and longitude from data attributes and returns null when values are invalid.
+	 * @returns {{latitude: number, longitude: number}|null} Parsed center coordinates.
+	 */
 	readCenter() {
 		const latitude = parseFloat(this.element.dataset.latitude || '')
 		const longitude = parseFloat(this.element.dataset.longitude || '')
@@ -49,6 +71,12 @@ class AppMap {
 		return { latitude, longitude }
 	}
 
+	/**
+	 * @brief Parse marker data from the element dataset.
+	 * @details Reads JSON marker payloads, normalizes each marker, and filters out invalid entries.
+	 * @param {{latitude: number, longitude: number}} center - Fallback center coordinates.
+	 * @returns {Array<object>} Normalized marker objects.
+	 */
 	readDatasetMarkers(center) {
 		const rawMarkers = this.element.dataset.markers
 		if (rawMarkers) {
@@ -67,6 +95,13 @@ class AppMap {
 		return []
 	}
 
+	/**
+	 * @brief Normalize a marker object into the expected internal shape.
+	 * @details Resolves coordinates, titles, address lines, map links, and popup behavior with safe defaults.
+	 * @param {object} marker - Raw marker object.
+	 * @param {{latitude: number, longitude: number}} fallbackCenter - Fallback coordinates.
+	 * @returns {{latitude: number, longitude: number, title: string, lines: Array<string>, mapsUrl: string, openPopup: boolean}|null} Normalized marker or null when invalid.
+	 */
 	normalizeMarker(marker, fallbackCenter) {
 		if (!marker || typeof marker !== 'object') {
 			return null
@@ -97,10 +132,24 @@ class AppMap {
 		}
 	}
 
+	/**
+	 * @brief Build a Google Maps search URL for coordinates.
+	 * @details Encodes latitude and longitude so users can open the same location in Google Maps.
+	 * @param {number} latitude - Marker latitude.
+	 * @param {number} longitude - Marker longitude.
+	 * @returns {string} Google Maps search URL.
+	 */
 	generateGoogleMapsLink(latitude, longitude) {
 		return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${latitude},${longitude}`)}`
 	}
 
+	/**
+	 * @brief Create and configure the Leaflet map instance.
+	 * @details Applies zoom constraints, Belgian bounds, and interaction defaults.
+	 * @param {number} latitude - Initial center latitude.
+	 * @param {number} longitude - Initial center longitude.
+	 * @returns {object} Leaflet map instance.
+	 */
 	createMap(latitude, longitude) {
 		return L.map(this.element, {
 			minZoom: 8,
@@ -114,6 +163,11 @@ class AppMap {
 		})
 	}
 
+	/**
+	 * @brief Add the OpenStreetMap tile layer to the active map.
+	 * @details No-op when the map instance has not been initialized.
+	 * @returns {void}
+	 */
 	addTileLayer() {
 		if (!this.instance) return
 		L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(
@@ -121,6 +175,11 @@ class AppMap {
 		)
 	}
 
+	/**
+	 * @brief Create the custom icon used for map markers.
+	 * @details Uses a Font Awesome house icon inside a Leaflet div icon wrapper.
+	 * @returns {object} Leaflet div icon instance.
+	 */
 	createMarkerIcon() {
 		return L.divIcon({
 			className: 'custom-div-icon',
@@ -131,6 +190,12 @@ class AppMap {
 		})
 	}
 
+	/**
+	 * @brief Build popup card content for a marker.
+	 * @details Creates a DOM fragment with title, address lines, and optional external Google Maps link.
+	 * @param {{title: string, lines: Array<string>, mapsUrl?: string}} details - Marker display details.
+	 * @returns {HTMLDivElement} Popup content element.
+	 */
 	buildPopupCard(details) {
 		const card = document.createElement('div')
 		card.className =
@@ -168,6 +233,12 @@ class AppMap {
 		return card
 	}
 
+	/**
+	 * @brief Add a single normalized marker to the map.
+	 * @details Creates marker and popup instances and optionally opens the popup immediately.
+	 * @param {{latitude: number, longitude: number, title: string, lines: Array<string>, mapsUrl?: string, openPopup?: boolean}} normalized - Normalized marker payload.
+	 * @returns {object|null} Leaflet marker or null when prerequisites are missing.
+	 */
 	addNormalizedMarker(normalized) {
 		if (!this.instance || !normalized) {
 			return null
@@ -193,6 +264,12 @@ class AppMap {
 		return marker
 	}
 
+	/**
+	 * @brief Add all markers to the map.
+	 * @details Normalizes each marker, applies default popup behavior, and returns successfully rendered markers.
+	 * @param {Array<object>} [markers=[]] - Marker list.
+	 * @returns {Array<object>} Rendered Leaflet markers.
+	 */
 	addMarkers(markers = []) {
 		if (!this.instance || !Array.isArray(markers) || markers.length === 0) {
 			return []
@@ -217,6 +294,11 @@ class AppMap {
 			.filter(Boolean)
 	}
 
+	/**
+	 * @brief Add attribution controls to the map.
+	 * @details Appends required attribution entries for map tiles and data providers.
+	 * @returns {void}
+	 */
 	addAttribution() {
 		if (!this.instance) return
 
@@ -237,6 +319,11 @@ class AppMap {
 		)
 	}
 
+	/**
+	 * @brief Show a fallback message when no valid coordinates are available.
+	 * @details Replaces map content with a styled explanatory message.
+	 * @returns {void}
+	 */
 	showNoCoordinatesMessage() {
 		this.element.classList.add(
 			'flex',

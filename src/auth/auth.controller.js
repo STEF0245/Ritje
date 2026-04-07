@@ -1,6 +1,7 @@
 /**
  * @file Authentication controller for login and logout flows.
  * @brief Verifies Firebase tokens and manages the session cookie.
+ * @details Provides handlers for rendering login, verifying ID tokens, issuing secure session cookies, and clearing sessions on logout.
  */
 
 import { verifyIdToken } from '../firebase/auth.js'
@@ -9,6 +10,7 @@ import { renderWithErrorNotification } from '../utils/notification.util.js'
 
 /**
  * @brief Render the login page.
+ * @details Returns the login template for unauthenticated users.
  * @param {object} req - Express request object.
  * @param {object} res - Express response object.
  * @returns {object} Express response.
@@ -21,6 +23,7 @@ export const getLoginPage = (req, res) => {
 
 /**
  * @brief Verify the Firebase token and establish the session cookie.
+ * @details Validates the posted ID token, stores it in an HTTP-only cookie, and redirects the user to their profile.
  * @param {object} req - Express request object.
  * @param {object} res - Express response object.
  * @returns {Promise<object>} Express response.
@@ -61,6 +64,7 @@ export const loginController = async (req, res) => {
 
 /**
  * @brief Clear the session cookie and redirect to the login page.
+ * @details Removes the authentication cookie using the same security attributes that were used during creation.
  * @param {object} req - Express request object.
  * @param {object} res - Express response object.
  * @returns {object} Express response.

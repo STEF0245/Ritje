@@ -1,16 +1,31 @@
 /**
  * @file Authentication middleware for session hydration and admin checks.
  * @brief Resolves the current Firebase user and attaches a normalized user object.
+ * @details Reads session tokens from cookies, validates Firebase identity, enriches request state, and enforces admin access where needed.
  */
 
 import { verifyIdToken, auth } from '../firebase/auth.js'
 import db from '../firebase/db.js'
 import config from '../config.js'
 
+/**
+ * @brief Determine whether a request path can bypass authentication.
+ * @details Matches the request path against configured auth-free endpoints.
+ * @param {string} path - Request path.
+ * @returns {boolean} True when the path is explicitly auth-free.
+ */
 const isPathAuthFree = (path) => {
 	return config.authFreeEndpoints && config.authFreeEndpoints.includes(path)
 }
 
+/**
+ * @brief Map Firebase and database user records into a single request user object.
+ * @details Combines authentication fields and profile metadata while providing safe defaults for missing data.
+ * @param {object} firebaseUser - Firebase Auth user record.
+ * @param {object} dbUser - User metadata from Realtime Database.
+ * @param {boolean} admin - Whether the user has admin access.
+ * @returns {object} Normalized authenticated user object.
+ */
 const mapUserData = (firebaseUser, dbUser, admin) => {
 	return {
 		uid: firebaseUser?.uid,
@@ -75,6 +90,7 @@ export const requireAuth = async (req, res, next) => {
 
 /**
  * @brief Require the current user to have admin privileges.
+ * @details Expects `requireAuth` to have already populated `req.user` and rejects non-admin requests.
  * @param {object} req - Express request object.
  * @param {object} res - Express response object.
  * @param {Function} next - Express next middleware callback.
