@@ -130,7 +130,7 @@ export const profileEditController = async (req, res) => {
 			street: raw.street || address.street,
 			houseNumber: raw.housenumber || address.houseNumber,
 			postalCode: raw.postcode || address.postalCode,
-			city: raw.city || raw.town || raw.village || address.city
+			city: raw.village || raw.city || raw.town || address.city
 		}
 
 		const updates = {
@@ -144,16 +144,7 @@ export const profileEditController = async (req, res) => {
 
 		await db.ref(`users/${userId}`).update(updates)
 
-		return res.render('profile', {
-			title: 'Profiel',
-			notifications: [
-				createNotification(
-					'success',
-					'Succes',
-					'Adresgegevens succesvol opgeslagen.'
-				)
-			]
-		})
+		return res.redirect('/profile')
 	} catch (error) {
 		console.error('Profile update geocoding error:', error?.message)
 		const notifications = [
