@@ -4,8 +4,7 @@
 	"main": "src/server.js",
 	"scripts": {
 		"start": "node src/server.js",
-		"dev": "nodemon src/server.js --watch src",
-		"docs": "node scripts/build-docs.js"
+		"dev": "nodemon src/server.js --watch src"
 	},
 	"keywords": [],
 	"author": "STEF0245",
