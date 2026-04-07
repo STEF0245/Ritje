@@ -1,6 +1,8 @@
-// =====================
-// Importing dependencies
-// =====================
+/**
+ * @file Express application bootstrap and shared middleware registration.
+ * @brief Configures security, templates, and route mounting for Ritje.
+ */
+
 import express from 'express'
 import cookieParser from 'cookie-parser'
 import path from 'node:path'
@@ -20,9 +22,6 @@ import profileRoutes from './profile/profile.routes.js'
 import adminRoutes from './admin/admin.routes.js'
 import locationRoutes from './location/location.routes.js'
 
-// =====================
-// Initializing the app
-// =====================
 const app = express()
 
 // =====================
@@ -140,13 +139,13 @@ if (!config.isProduction) {
 // =====================
 // Global Middleware
 // =====================
-app.use(requireAuth) // Add user to all requests if authenticated
+app.use(requireAuth)
 app.use((req, res, next) => {
-	res.locals.user = req.user || null // Make user available in all views
+	res.locals.user = req.user || null
 	res.locals.notifications = []
 	next()
 })
-app.use(checkMaintenanceMode) // Check if the site is in maintenance mode
+app.use(checkMaintenanceMode)
 
 // =====================
 // Routes setup

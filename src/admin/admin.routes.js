@@ -1,3 +1,8 @@
+/**
+ * @file Admin routes for dashboard, user management, and settings.
+ * @brief Mounts the protected admin area endpoints.
+ */
+
 import express from 'express'
 import {
 	getAdminPage,

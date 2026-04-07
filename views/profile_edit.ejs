@@ -1,3 +1,5 @@
+<%# @file Profile edit form for updating the authenticated user's address data. %>
+
 <!DOCTYPE html>
 <html lang="nl" class="text-slate-200">
 	<% 
@@ -29,7 +31,7 @@
 		<%- include('partials/header', { user }) %>
 
 		<main class="theme-main flex-1">
-			<section class="max-w-5xl mx-auto">
+			<section class="max-w-6xl mx-auto">
 				<div class="mb-8 md:mb-10 text-center">
 					<p class="theme-kicker">Ritje Profiel</p>
 					<h1 class="theme-heading">Welkom, <span class="theme-accent-text"><%= fullName %></span></h1>
@@ -37,44 +39,19 @@
 				</div>
 
 				<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-					<article class="theme-panel p-6 lg:col-span-1 h-full flex flex-col max-h-110">
-						<div class="flex items-center gap-4">
-							<% if (photoURL) { %>
-								<img src="<%= photoURL %>" alt="Profielfoto van <%= fullName %>" class="theme-avatar h-16 w-16 object-cover rounded-full">
-							<% } else { %>
-								<div class="theme-avatar h-16 w-16 flex items-center justify-center text-xl font-black">
-									<%= initials %>
-								</div>
-							<% } %>
-							<div>
-								<p class="theme-text-primary text-lg font-bold leading-tight"><%= fullName %></p>
-								<p class="theme-text-muted text-sm"><%= user?.email || 'Geen e-mail gevonden' %></p>
-								<% if (phoneNumber) { %>
-									<p class="theme-text-muted text-sm"><%= phoneNumber %></p>
-								<% } %>
-							</div>
-						</div>
-
-						<div class="mt-6 border-t theme-border pt-5 space-y-3 text-sm flex-1">
-							<div class="flex items-center justify-between gap-4">
-								<span class="theme-text-muted">Gebruiker ID</span>
-								<span class="theme-text-primary font-mono text-xs break-all text-right"><%= user?.uid || '-' %></span>
-							</div>
-							<div class="flex items-center justify-between gap-4">
-								<span class="theme-text-muted">Aangemaakt op</span>
-								<span class="theme-text-primary"><%= joinedDate %></span>
-							</div>
-							<div class="flex items-center justify-between gap-4">
-								<span class="theme-text-muted">Laatst ingelogd</span>
-								<span class="theme-text-primary"><%= lastSignInDate %></span>
-							</div>
-							<div class="flex items-center justify-between gap-4">
-								<span class="theme-text-muted">E-mail bevestigd</span>
-								<span class="<%= user?.email_verified ? 'text-emerald-300' : 'text-amber-300' %>">
-									<%= user?.email_verified ? 'Ja' : 'Nee' %>
-								</span>
-							</div>
-						</div>
+					<article class="theme-panel p-6 lg:col-span-1 h-full flex flex-col max-h-fit">
+						<%- include('partials/user_summary_card', {
+							avatarUrl: photoURL,
+							initials,
+							userName: fullName,
+							email: user?.email || 'Geen e-mail gevonden',
+							phoneNumber,
+							uid: user?.uid || '-',
+							createdAt: joinedDate,
+							lastSignIn: lastSignInDate,
+							emailVerified: user?.email_verified,
+							verifiedLabel: user?.email_verified ? 'Ja' : 'Nee'
+						}) %>
 
 						<div class="mt-4 pt-3 grid grid-cols-2 gap-3">
 							<% if (user?.isAdmin) { %>

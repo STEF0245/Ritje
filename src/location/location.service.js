@@ -1,3 +1,8 @@
+/**
+ * @file Geocoding provider orchestration and response normalization.
+ * @brief Supports forward and reverse geocoding through Nominatim and Geoapify.
+ */
+
 const NOMINATIM_ENDPOINT = 'https://nominatim.openstreetmap.org/reverse'
 const GEOAPIFY_ENDPOINT = 'https://api.geoapify.com/v1/geocode/reverse'
 const NOMINATIM_FORWARD_ENDPOINT = 'https://nominatim.openstreetmap.org/search'
@@ -85,6 +90,13 @@ const mapAddress = (address = {}) => ({
 	country: address.country || null
 })
 
+/**
+ * @brief Convert a provider coordinate to a consistent 6-decimal representation.
+ * @param {unknown} value - Raw coordinate value from the provider.
+ * @param {string} label - Coordinate label used in error messages.
+ * @returns {string} Normalized coordinate string.
+ * @throws {Error} Throws when the provider returns an invalid coordinate.
+ */
 const parseResultCoordinate = (value, label) => {
 	const parsed = Number(value)
 
@@ -92,7 +104,7 @@ const parseResultCoordinate = (value, label) => {
 		throw new Error(`Provider returned invalid ${label}`)
 	}
 
-	return parsed.toFixed(6) // Round to 6 decimal places for consistency
+	return parsed.toFixed(6)
 }
 
 // ========== Reverse geocoding ==========
@@ -259,7 +271,6 @@ const forwardWithGeoapify = async (address, signal) => {
 		return null
 	}
 
-	console.log(properties.category, properties.type)
 	if (
 		properties.category === 'boundary' &&
 		properties.type === 'administrative'

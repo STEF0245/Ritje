@@ -1,3 +1,8 @@
+/**
+ * @file Firebase Admin app bootstrap.
+ * @brief Initializes the shared Firebase Admin application instance.
+ */
+
 import { initializeApp, cert } from 'firebase-admin/app'
 
 import config from '../config.js'

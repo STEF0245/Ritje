@@ -1,3 +1,8 @@
+/**
+ * @file Authentication routes for login, logout, and Firebase config access.
+ * @brief Mounts auth endpoints with rate limiting where appropriate.
+ */
+
 import express from 'express'
 import rateLimit from 'express-rate-limit'
 import config from '../config.js'

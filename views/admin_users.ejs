@@ -1,3 +1,5 @@
+<%# @file Admin user list view with client-side sorting and quick access actions. %>
+
 <!DOCTYPE html>
 <html lang="nl" class="text-slate-200">
     <%- include('partials/head', { title }) %>
@@ -92,45 +94,7 @@
                 <% } %>
             </section>
         </main>
-
-        <script>
-            (function initUserSorting() {
-                const userList = document.getElementById('userCollection');
-                const sortSelect = document.getElementById('sortSelect');
-
-                if (!userList || !sortSelect) {
-                    return;
-                }
-
-                const getSortValue = (item, mode) => {
-                    if (mode === 'city' || mode === 'city_reverse') {
-                        return item.dataset.sortCity || '';
-                    }
-
-                    return item.dataset.sortName || '';
-                };
-
-                const sortUsers = (criteria) => {
-                    const users = Array.from(userList.querySelectorAll('[data-user-item]'));
-                    const isReverse = criteria.endsWith('_reverse');
-
-                    users.sort((a, b) => {
-                        const first = getSortValue(a, criteria);
-                        const second = getSortValue(b, criteria);
-                        const compareResult = first.localeCompare(second, 'nl-BE');
-                        return isReverse ? -compareResult : compareResult;
-                    });
-
-                    userList.replaceChildren(...users);
-                };
-
-                sortSelect.addEventListener('change', (event) => {
-                    sortUsers(event.target.value);
-                });
-
-                sortUsers(sortSelect.value);
-            })();
-        </script>
+        <script src="/js/admin_users_sort.js"></script>
 
         <%- include('partials/footer') %>
     </body>

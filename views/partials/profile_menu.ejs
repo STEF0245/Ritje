@@ -1,6 +1,10 @@
+<%# @file Profile menu partial for desktop and mobile account actions. %>
+
 <%
 	const displayName = user?.displayName || user?.email || 'Account'
-	const initials = user?.name?.first.charAt(0)?.toUpperCase() + user?.name?.last?.charAt(0)?.toUpperCase() || 'A'
+	const firstInitial = user?.name?.first?.charAt(0)?.toUpperCase() || ''
+	const lastInitial = user?.name?.last?.charAt(0)?.toUpperCase() || ''
+	const initials = `${firstInitial}${lastInitial}` || 'A'
 %>
 
 <div class="flex items-center gap-3 text-sm font-medium justify-end">

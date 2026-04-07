@@ -1,3 +1,8 @@
+/**
+ * @file Input normalization and validation helpers.
+ * @brief Sanitizes text, validates lengths, and checks common formats.
+ */
+
 export const safeTrim = (value, maxLength = 255) => {
 	return `${value ?? ''}`.trim().slice(0, maxLength)
 }

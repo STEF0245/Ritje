@@ -1,3 +1,8 @@
+/**
+ * @file Runtime configuration and environment validation.
+ * @brief Loads dotenv values and exposes normalized app configuration.
+ */
+
 import 'dotenv/config'
 
 const requiredEnvVars = [
@@ -31,6 +36,10 @@ const optionalEnvVars = [
 	'GEOAPIFY_RATE_LIMIT_MAX'
 ]
 
+/**
+ * @brief Fail fast when required environment variables are missing.
+ * @returns {void}
+ */
 function validateEnvVars() {
 	const unsetRequiredEnvVars = requiredEnvVars.filter(
 		(varName) => !process.env[varName]
@@ -93,9 +102,11 @@ const config = {
 		apiKey: process.env.GEOAPIFY_API_KEY,
 		userAgent: process.env.GEOAPIFY_USER_AGENT,
 		rateLimit: {
-			windowMs:
-				parseInt(process.env.GEOAPIFY_RATE_LIMIT_WINDOW_MS) || 5000,
-			max: parseInt(process.env.GEOAPIFY_RATE_LIMIT_MAX) || 1
+			windowMs: Number.parseInt(
+				process.env.GEOAPIFY_RATE_LIMIT_WINDOW_MS || '5000',
+				10
+			),
+			max: Number.parseInt(process.env.GEOAPIFY_RATE_LIMIT_MAX || '1', 10)
 		}
 	},
 

@@ -1,3 +1,8 @@
+/**
+ * @file Maintenance mode middleware backed by live Firebase settings.
+ * @brief Blocks non-admin traffic while the maintenance flag is enabled.
+ */
+
 import db from '../firebase/db.js'
 
 const DEFAULT_MAINTENANCE = {
@@ -22,6 +27,10 @@ const normalizeMaintenanceSettings = (data = {}) => {
 	}
 }
 
+/**
+ * @brief Start the realtime listener that keeps maintenance settings fresh.
+ * @returns {void}
+ */
 const initSettings = () => {
 	try {
 		db.ref('settings').on('value', (snapshot) => {
@@ -35,6 +44,13 @@ const initSettings = () => {
 
 initSettings()
 
+/**
+ * @brief Short-circuit requests when maintenance mode is active.
+ * @param {object} req - Express request object.
+ * @param {object} res - Express response object.
+ * @param {Function} next - Express next middleware callback.
+ * @returns {Promise<void>} Resolves when the request can continue.
+ */
 const checkMaintenanceMode = async (req, res, next) => {
 	try {
 		if (

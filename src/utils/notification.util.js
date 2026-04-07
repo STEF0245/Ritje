@@ -1,3 +1,8 @@
+/**
+ * @file Notification rendering helpers.
+ * @brief Creates and injects notification payloads into Express views.
+ */
+
 export const createNotification = (type, label, message = null) => {
 	return {
 		type,

@@ -1,21 +1,14 @@
+/**
+ * @file Authentication middleware for session hydration and admin checks.
+ * @brief Resolves the current Firebase user and attaches a normalized user object.
+ */
+
 import { verifyIdToken, auth } from '../firebase/auth.js'
 import db from '../firebase/db.js'
 import config from '../config.js'
 
 const isPathAuthFree = (path) => {
 	return config.authFreeEndpoints && config.authFreeEndpoints.includes(path)
-}
-
-const getUserData = async (uid) => {
-	const userRef = db.ref(`users/${uid}`)
-	const snapshot = await userRef.once('value')
-	return snapshot.val() || {}
-}
-
-const isAdmin = async (uid) => {
-	const permsRef = db.ref(`admins/${uid}`)
-	const snapshot = await permsRef.once('value')
-	return snapshot.val() === true
 }
 
 const mapUserData = (firebaseUser, dbUser, admin) => {
@@ -39,6 +32,15 @@ const mapUserData = (firebaseUser, dbUser, admin) => {
 	}
 }
 
+/**
+ * @brief Hydrate the authenticated user from the session cookie.
+ * @details Redirects unauthenticated requests to login unless the endpoint is explicitly public.
+ * @param {object} req - Express request object.
+ * @param {object} res - Express response object.
+ * @param {Function} next - Express next middleware callback.
+ * @returns {Promise<void>} Resolves when authentication has been processed.
+ * @throws {Error} Throws if token verification or data lookup fails unexpectedly.
+ */
 export const requireAuth = async (req, res, next) => {
 	try {
 		const idToken = req.cookies.token
@@ -48,10 +50,17 @@ export const requireAuth = async (req, res, next) => {
 		}
 		const decodedToken = await verifyIdToken(idToken, true) // Pass true to check if token is revoked
 		const user = await auth.getUser(decodedToken.uid) // Fetch user details to check if account is disabled
-		if (user.disabled)
+		if (user.disabled) {
 			return res.status(403).json({ message: 'Account is disabled' })
-		const userData = await getUserData(user.uid)
-		const admin = await isAdmin(user.uid)
+		}
+
+		const [userSnapshot, adminSnapshot] = await Promise.all([
+			db.ref(`users/${user.uid}`).once('value'),
+			db.ref(`admins/${user.uid}`).once('value')
+		])
+
+		const userData = userSnapshot.val() || {}
+		const admin = adminSnapshot.val() === true
 
 		req.user = mapUserData(user, userData, admin)
 
@@ -64,6 +73,13 @@ export const requireAuth = async (req, res, next) => {
 	}
 }
 
+/**
+ * @brief Require the current user to have admin privileges.
+ * @param {object} req - Express request object.
+ * @param {object} res - Express response object.
+ * @param {Function} next - Express next middleware callback.
+ * @returns {object|void} Calls next on success or sends a 403 response.
+ */
 export const requireAdmin = (req, res, next) => {
 	if (req.user?.isAdmin) {
 		return next()

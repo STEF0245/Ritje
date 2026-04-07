@@ -1,3 +1,8 @@
+/**
+ * @file Profile routes for the authenticated user's account pages.
+ * @brief Mounts profile overview and edit endpoints with rate limiting.
+ */
+
 import express from 'express'
 import rateLimit from 'express-rate-limit'
 import {

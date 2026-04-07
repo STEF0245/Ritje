@@ -1,0 +1,54 @@
+<%# @file Shared account summary fragment for profile and admin views. %>
+
+<%
+	const avatarUrl = locals.avatarUrl || ''
+	const initials = locals.initials || 'A'
+	const userName = locals.userName || 'Onbekende gebruiker'
+	const email = locals.email || 'Geen e-mail gevonden'
+	const phoneNumber = locals.phoneNumber || ''
+	const uid = locals.uid || '-'
+	const createdAt = locals.createdAt || 'Onbekend'
+	const lastSignIn = locals.lastSignIn || 'Onbekend'
+	const emailVerified = Boolean(locals.emailVerified)
+	const verifiedLabel = locals.verifiedLabel || (emailVerified ? 'Ja' : 'Nee')
+	const verifiedTone = locals.verifiedTone || (emailVerified ? 'text-emerald-300' : 'text-amber-300')
+	const cardClass = locals.cardClass || 'theme-panel p-6 lg:col-span-1 h-full flex flex-col max-h-fit'
+%>
+
+<div class="<%= cardClass %>">
+	<div class="flex items-center gap-4">
+		<% if (avatarUrl) { %>
+			<img src="<%= avatarUrl %>" alt="Profielfoto van <%= userName %>" class="theme-avatar h-16 w-16 object-cover rounded-full" />
+		<% } else { %>
+			<div class="theme-avatar h-16 w-16 flex items-center justify-center text-xl font-black">
+				<%= initials %>
+			</div>
+		<% } %>
+		<div class="min-w-0">
+			<p class="theme-text-primary text-lg font-bold leading-tight truncate"><%= userName %></p>
+			<p class="theme-text-muted text-sm truncate"><%= email %></p>
+			<% if (phoneNumber) { %>
+				<p class="theme-text-muted text-sm truncate"><%= phoneNumber %></p>
+			<% } %>
+		</div>
+	</div>
+
+	<div class="mt-6 border-t theme-border pt-5 space-y-3 text-sm flex-1">
+		<div class="flex items-center justify-between gap-4">
+			<span class="theme-text-muted">Gebruiker ID</span>
+			<span class="theme-text-primary font-mono text-xs break-all text-right"><%= uid %></span>
+		</div>
+		<div class="flex items-center justify-between gap-4">
+			<span class="theme-text-muted">Aangemaakt op</span>
+			<span class="theme-text-primary"><%= createdAt %></span>
+		</div>
+		<div class="flex items-center justify-between gap-4">
+			<span class="theme-text-muted">Laatst ingelogd</span>
+			<span class="theme-text-primary"><%= lastSignIn %></span>
+		</div>
+		<div class="flex items-center justify-between gap-4">
+			<span class="theme-text-muted">E-mail bevestigd</span>
+			<span class="<%= verifiedTone %>"><%= verifiedLabel %></span>
+		</div>
+	</div>
+</div>

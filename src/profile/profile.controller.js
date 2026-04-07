@@ -1,6 +1,15 @@
+/**
+ * @file Profile controller for rendering the profile UI and updating address data.
+ * @brief Handles profile page requests and profile edit submissions.
+ */
+
 import db from '../firebase/db.js'
 import { forwardGeocode } from '../location/location.service.js'
-import { sanitizeText, validateLength } from '../utils/input.util.js'
+import {
+	normalizeGeocodedAddress,
+	parseAndValidateAddress,
+	withTimeout
+} from '../utils/address.util.js'
 import { isValidFirebaseUid } from '../utils/firebase.util.js'
 import {
 	createNotification,
@@ -11,69 +20,57 @@ const GEOCODE_TIMEOUT_MS = Number(
 	process.env.PROFILE_GEOCODE_TIMEOUT_MS || 7000
 )
 
-const parseAndValidateProfileAddress = (body = {}) => {
-	const street = sanitizeText(body.street, 120)
-	const houseNumber = sanitizeText(body.houseNumber, 20)
-	const postalCode = sanitizeText(body.postalCode, 20)
-	const city = sanitizeText(body.city, 100)
+const GEOCODE_ERROR_MESSAGE =
+	'Adresverificatie is tijdelijk niet beschikbaar. Probeer later opnieuw.'
 
-	validateLength(street, 'Street', 2, 120)
-	validateLength(houseNumber, 'House number', 1, 20)
-	validateLength(postalCode, 'Postal code', 2, 20)
-	validateLength(city, 'City', 2, 100)
-
-	const streetPattern = /^(?=.{2,120}$)[\p{L}\p{N} .,'\-\/]+$/u
-	const houseNumberPattern = /^(?=.{1,20}$)[\p{L}\p{N} .\-\/]+$/u
-	const postalCodePattern = /^(?=.{2,20}$)[\p{L}\p{N} \-]+$/u
-	const cityPattern = /^(?=.{2,100}$)[\p{L}\p{N} .,'\-]+$/u
-
-	if (!streetPattern.test(street)) {
-		throw new Error('Street contains invalid characters')
-	}
-
-	if (!houseNumberPattern.test(houseNumber)) {
-		throw new Error('House number contains invalid characters')
-	}
-
-	if (!postalCodePattern.test(postalCode)) {
-		throw new Error('Postal code contains invalid characters')
-	}
-
-	if (!cityPattern.test(city)) {
-		throw new Error('City contains invalid characters')
-	}
-
-	return {
-		street,
-		houseNumber,
-		postalCode,
-		city
-	}
+/**
+ * @brief Render the profile edit page with normalized form feedback.
+ * @param {object} res - Express response object.
+ * @param {number} statusCode - HTTP status code to send.
+ * @param {object} formData - Current form values.
+ * @param {Array<object>} notifications - Notifications to display.
+ * @returns {object} Express response.
+ */
+const renderProfileEditPage = (res, statusCode, formData, notifications) => {
+	return res.status(statusCode).render('profile_edit', {
+		title: 'Bewerk Profiel',
+		formData,
+		notifications
+	})
 }
 
-const withTimeout = async (promiseFactory, timeoutMs) => {
-	const controller = new AbortController()
-	const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
-
-	try {
-		return await promiseFactory(controller.signal)
-	} finally {
-		clearTimeout(timeoutId)
-	}
-}
-
+/**
+ * @brief Render the profile overview page.
+ * @param {object} req - Express request object.
+ * @param {object} res - Express response object.
+ * @returns {object} Express response.
+ */
 export const getProfilePage = (req, res) => {
 	res.render('profile', {
 		title: 'Profiel'
 	})
 }
 
+/**
+ * @brief Render the profile edit page.
+ * @param {object} req - Express request object.
+ * @param {object} res - Express response object.
+ * @returns {object} Express response.
+ */
 export const getProfileEditPage = (req, res) => {
 	res.render('profile_edit', {
 		title: 'Bewerk Profiel'
 	})
 }
 
+/**
+ * @brief Update the authenticated user's address and coordinates.
+ * @details Validates the address payload, geocodes it, and persists the normalized result.
+ * @param {object} req - Express request object.
+ * @param {object} res - Express response object.
+ * @returns {Promise<object>} Express response.
+ * @throws {Error} Throws when geocoding or persistence fails.
+ */
 export const profileEditController = async (req, res) => {
 	const userId = req.user?.uid
 
@@ -86,57 +83,45 @@ export const profileEditController = async (req, res) => {
 		})
 	}
 
-	let address
+	let addressFields
 	try {
-		address = parseAndValidateProfileAddress(req.body)
+		addressFields = parseAndValidateAddress(req.body)
 	} catch {
-		const notifications = [
+		return renderProfileEditPage(res, 400, req.body, [
 			createNotification(
 				'error',
 				'Ongeldige adresgegevens',
 				'Controleer straat, huisnummer, postcode en stad.'
 			)
-		]
-		return res.status(400).render('profile_edit', {
-			title: 'Bewerk Profiel',
-			formData: req.body,
-			notifications
-		})
+		])
 	}
 
-	const query = `${address.street} ${address.houseNumber}, ${address.postalCode} ${address.city}`
+	const query = `${addressFields.street} ${addressFields.houseNumber}, ${addressFields.postalCode} ${addressFields.city}`
 
 	try {
-		const { provider, result } = await withTimeout(
+		const geocodeResult = await withTimeout(
 			(signal) => forwardGeocode(query, signal),
 			GEOCODE_TIMEOUT_MS
 		)
+		const { result } = geocodeResult
 
 		if (!result?.lat || !result?.lon || !result?.raw) {
-			const notifications = [
+			return renderProfileEditPage(res, 422, req.body, [
 				createNotification(
 					'error',
 					'Adresverificatie mislukt',
 					'Het adres kon niet geverifieerd worden. Controleer je gegevens en probeer opnieuw.'
 				)
-			]
-			return res.status(422).render('profile_edit', {
-				title: 'Bewerk Profiel',
-				formData: req.body,
-				notifications
-			})
+			])
 		}
 
-		const raw = result.raw
-		const address = {
-			street: raw.street || address.street,
-			houseNumber: raw.housenumber || address.houseNumber,
-			postalCode: raw.postcode || address.postalCode,
-			city: raw.village || raw.city || raw.town || address.city
-		}
+		const normalizedAddress = normalizeGeocodedAddress(
+			result.raw,
+			addressFields
+		)
 
 		const updates = {
-			address,
+			address: normalizedAddress,
 			coords: {
 				latitude: result.lat,
 				longitude: result.lon
@@ -149,17 +134,12 @@ export const profileEditController = async (req, res) => {
 		return res.redirect('/profile')
 	} catch (error) {
 		console.error('Profile update geocoding error:', error?.message)
-		const notifications = [
+		return renderProfileEditPage(res, 502, req.body, [
 			createNotification(
 				'error',
 				'Adresverificatie mislukt',
-				'Adresverificatie is tijdelijk niet beschikbaar. Probeer later opnieuw.'
+				GEOCODE_ERROR_MESSAGE
 			)
-		]
-		return res.status(502).render('profile_edit', {
-			title: 'Bewerk Profiel',
-			formData: req.body,
-			notifications
-		})
+		])
 	}
 }

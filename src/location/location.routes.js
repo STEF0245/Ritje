@@ -1,3 +1,8 @@
+/**
+ * @file Location routes for reverse geocoding endpoints.
+ * @brief Applies provider-specific rate limits to the API route.
+ */
+
 import express from 'express'
 import rateLimit from 'express-rate-limit'
 import { reverseGeocodeController } from '../location/location.controller.js'

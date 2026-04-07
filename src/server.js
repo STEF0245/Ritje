@@ -1,3 +1,8 @@
+/**
+ * @file HTTP server bootstrap for the Ritje application.
+ * @brief Starts the Express app and handles graceful shutdown signals.
+ */
+
 import app from './app.js'
 import config from './config.js'
 
@@ -14,14 +19,27 @@ const server = app.listen(config.port, () => {
 // =====================
 // Graceful Shutdown
 // =====================
+/**
+ * @brief Close the HTTP server and terminate the process cleanly.
+ * @param {string} signal - Shutdown trigger name.
+ * @returns {Promise<void>} Resolves after the server is closed.
+ */
 const shutdown = async (signal) => {
 	console.log(`\n⚠️  Received ${signal}. Shutting down gracefully...`)
 
 	try {
-		// Stop accepting new connections
-		server.close(() => {
-			console.log('✓ HTTP server closed.')
+		await new Promise((resolve, reject) => {
+			server.close((error) => {
+				if (error) {
+					reject(error)
+					return
+				}
+
+				resolve()
+			})
 		})
+
+		console.log('✓ HTTP server closed.')
 
 		console.log('✓ Graceful shutdown complete.')
 		process.exit(0)
@@ -31,7 +49,6 @@ const shutdown = async (signal) => {
 	}
 }
 
-// Handle shutdown signals
 process.on('SIGINT', () => shutdown('SIGINT')) // Ctrl+C
 process.on('SIGTERM', () => shutdown('SIGTERM')) // Docker / hosting platforms
 

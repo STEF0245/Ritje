@@ -1,3 +1,8 @@
+/**
+ * @file Leaflet map bootstrap for profile and admin location views.
+ * @brief Renders map markers and popup content from server-provided data.
+ */
+
 class AppMap {
 	static MAP_BOUNDS_BELGIUM = [
 		[51.5051, 6.4081],

@@ -1,3 +1,8 @@
+/**
+ * @file Client-side Firebase login exchange helper.
+ * @brief Handles the login form submission and token retrieval.
+ */
+
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js'
 import {
 	getAuth,

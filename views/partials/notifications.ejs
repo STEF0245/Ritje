@@ -1,3 +1,5 @@
+<%# @file Notification stack partial for transient success, info, warning, and error messages. %>
+
 <%
 	const notifications = Array.isArray(locals.notifications)
 		? locals.notifications
@@ -43,28 +45,28 @@
 			%>
 
 			<article class="theme-pill border px-4 py-3 pointer-events-auto shadow-2xl z-50 backdrop-blur-md bg-linear-to-br from-slate-900/80 to-slate-800/75 <%= tone.classes %>">
-                <div class="flex items-center justify-between gap-4">
+				<div class="flex items-center justify-between gap-4">
 					<p class="text-xs uppercase tracking-[0.14em] font-bold"><%= resolvedLabel %></p>
 					<button type="button" aria-label="Melding sluiten" class="cursor-pointer text-current/80 hover:text-current transition-colors">
 						<i class="fas fa-times"></i>
 					</button>
-                </div>
+				</div>
 				<% if (message) { %>
 					<p class="mt-2 text-sm normal-case tracking-normal leading-5 text-slate-100/95"><%= message %></p>
 				<% } %>
-                <script>
-                    const btn = document.currentScript.parentElement.querySelector('button')
-                    btn.addEventListener('click', () => {
-                        btn.parentElement.parentElement.remove()
+				<script>
+					const btn = document.currentScript.parentElement.querySelector('button')
+					btn.addEventListener('click', () => {
+						btn.parentElement.parentElement.remove()
 
 						const root = document.querySelector('[data-notification-root]')
 						const remaining = root ? root.querySelectorAll(':scope > article') : []
-                        if (remaining.length === 0) {
+						if (remaining.length === 0) {
 							root.remove()
-                        }
-                    })
-                </script>
-            </article>
+						}
+					})
+				</script>
+			</article>
 		<% } %>
 	</section>
 <% } %>

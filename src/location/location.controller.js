@@ -1,5 +1,17 @@
+/**
+ * @file Location controller for reverse geocoding requests.
+ * @brief Validates coordinates and proxies the geocoding response.
+ */
+
 import { parseCoordinate, reverseGeocode } from './location.service.js'
 
+/**
+ * @brief Reverse geocode the provided latitude and longitude.
+ * @param {object} req - Express request object.
+ * @param {object} res - Express response object.
+ * @returns {Promise<object>} Express response.
+ * @throws {Error} Throws when coordinate parsing or geocoding fails.
+ */
 export const reverseGeocodeController = async (req, res) => {
 	try {
 		const lat = parseCoordinate(req.body?.lat, 'lat', -90, 90)
