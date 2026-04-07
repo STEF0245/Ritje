@@ -23,6 +23,7 @@ import {
 	createNotification,
 	renderWithErrorNotification
 } from '../utils/notification.util.js'
+import { buildRepositoryDocumentation } from '../utils/repository-docs.util.js'
 
 const GEOCODE_TIMEOUT_MS = Number(
 	process.env.PROFILE_GEOCODE_TIMEOUT_MS || 7000
@@ -826,6 +827,45 @@ export const getSettingsPage = async (req, res) => {
 					'error',
 					'Fout',
 					'Instellingen konden niet worden geladen. Probeer het opnieuw.'
+				)
+			]
+		})
+	}
+}
+
+/**
+ * @brief  Summary: Render the repository documentation browser.
+ * @details  Details: Scans the application folders that contain pages, source code, and static documentation, then renders a protected admin overview with folder structure, file metadata, and source previews.
+ * @param {object} req - Express request object.
+ * @param {object} res - Express response object.
+ * @returns {Promise<object>} Express response.
+ */
+export const getDocumentationPage = async (req, res) => {
+	try {
+		const documentation = await buildRepositoryDocumentation()
+
+		return res.render('admin_docs', {
+			title: 'Documentatie | Admin',
+			documentation
+		})
+	} catch (error) {
+		console.error('Error building repository documentation:', error)
+		return res.status(500).render('admin_docs', {
+			title: 'Documentatie | Admin',
+			documentation: {
+				groups: [],
+				stats: {
+					groupCount: 0,
+					fileCount: 0,
+					directoryCount: 0,
+					lineCount: 0
+				}
+			},
+			notifications: [
+				createNotification(
+					'error',
+					'Documentatie kon niet worden geladen',
+					'Probeer de pagina opnieuw te openen.'
 				)
 			]
 		})

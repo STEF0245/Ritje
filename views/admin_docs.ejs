@@ -1,0 +1,144 @@
+<%# @file Admin documentation page for browsing repository structure, pages, source, and docs. %>
+
+<!DOCTYPE html>
+<html lang="nl" class="text-slate-200">
+	<%- include('partials/head', { title }) %>
+
+	<%
+		const groups = documentation?.groups || []
+		const stats = documentation?.stats || {}
+		const totalGroups = stats.groupCount || groups.length || 0
+		const totalFiles = stats.fileCount || 0
+		const totalDirectories = stats.directoryCount || 0
+		const totalLines = stats.lineCount || 0
+		const groupIconByType = {
+			views: 'fa-solid fa-window-maximize',
+			source: 'fa-solid fa-code',
+			client: 'fa-solid fa-desktop',
+			style: 'fa-solid fa-palette'
+		}
+	%>
+
+	<body class="theme-body min-h-screen flex flex-col">
+		<%- include('partials/header', { user }) %>
+		<main class="theme-main flex-1 pt-0!">
+			<%- include('partials/admin_nav', { selected: { docs: true } }) %>
+
+			<section class="max-w-7xl mx-auto px-4 md:px-6 py-8 md:py-10 space-y-8">
+				<div class="text-center">
+					<p class="theme-kicker">Ritje Admin</p>
+					<h1 class="theme-heading theme-accent-text">Documentatie</h1>
+					<p class="theme-subtext max-w-3xl mx-auto">
+						Bekijk de folderstructuur, broncode en ingebedde documentatie van
+						de belangrijkste delen van de applicatie.
+					</p>
+				</div>
+
+				<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+					<div class="theme-panel p-5">
+						<p class="theme-text-muted text-xs uppercase tracking-[0.12em]">Mappen</p>
+						<p class="text-3xl font-black theme-text-primary mt-2"><%= totalDirectories %></p>
+					</div>
+					<div class="theme-panel p-5">
+						<p class="theme-text-muted text-xs uppercase tracking-[0.12em]">Bestanden</p>
+						<p class="text-3xl font-black theme-text-primary mt-2"><%= totalFiles %></p>
+					</div>
+					<div class="theme-panel p-5">
+						<p class="theme-text-muted text-xs uppercase tracking-[0.12em]">Secties</p>
+						<p class="text-3xl font-black theme-text-primary mt-2"><%= totalGroups %></p>
+					</div>
+					<div class="theme-panel p-5">
+						<p class="theme-text-muted text-xs uppercase tracking-[0.12em]">Regels</p>
+						<p class="text-3xl font-black theme-text-primary mt-2"><%= totalLines %></p>
+					</div>
+				</div>
+
+				<div class="theme-panel p-4 md:p-5">
+					<label for="docsSearch" class="block text-sm font-semibold theme-text-primary">Filter bestanden</label>
+					<input id="docsSearch" type="search" placeholder="Zoek op pad, bestandsnaam of documentatie" class="theme-input mt-3" />
+				</div>
+
+				<% if (groups.length === 0) { %>
+					<article class="theme-panel p-8 md:p-10 text-center">
+						<h2 class="text-xl font-extrabold theme-text-primary">Geen documentatie gevonden</h2>
+						<p class="theme-subtext">De opgegeven bronmappen zijn niet beschikbaar of leeg.</p>
+					</article>
+				<% } %>
+
+				<% groups.forEach((group) => { %>
+					<section class="space-y-4" data-doc-group data-group-key="<%= group.key %>">
+						<div class="flex flex-wrap items-center justify-between gap-3">
+							<div>
+								<p class="theme-kicker"><%= group.rootPath %></p>
+								<h2 class="text-2xl font-black theme-text-primary mt-1">
+									<i class="<%= groupIconByType[group.type] || 'fa-solid fa-folder' %> mr-2 theme-accent-text"></i>
+									<%= group.label %>
+								</h2>
+								<p class="theme-text-muted text-sm mt-1">
+									<%= group.fileCount %> bestanden en <%= group.directoryCount %> mappen
+								</p>
+							</div>
+						</div>
+
+						<div class="grid gap-6 lg:grid-cols-[320px_1fr] items-start">
+							<aside class="theme-panel p-4 md:p-5 lg:sticky lg:top-24">
+								<h3 class="text-sm font-bold uppercase tracking-[0.18em] theme-text-muted">Folderstructuur</h3>
+								<div class="mt-4 docs-tree">
+									<% (group.tree || []).forEach((node) => { %>
+										<%- include('partials/docs_tree_node', { node }) %>
+									<% }) %>
+								</div>
+							</aside>
+
+							<div class="space-y-4">
+								<% group.files.forEach((file) => { %>
+									<article
+										id="<%= file.anchorId %>"
+										data-doc-file-card
+										data-doc-path="<%= `${group.rootLabel}/${file.relativePath}` %>"
+										class="docs-file-card theme-panel p-5 md:p-6"
+									>
+										<header class="flex flex-wrap items-start justify-between gap-3 border-b theme-border-soft pb-4">
+											<div>
+												<p class="theme-kicker"><%= group.label %></p>
+												<h3 class="text-xl font-black theme-text-primary mt-1"><%= file.name %></h3>
+												<p class="theme-text-muted text-sm mt-1 font-mono"><%= group.rootLabel %>/<%= file.relativePath %></p>
+											</div>
+											<div class="flex flex-wrap gap-2">
+												<span class="theme-pill theme-surface border theme-border px-3 py-1 text-xs uppercase tracking-[0.12em] theme-text-muted"><%= file.extension || 'no-ext' %></span>
+												<span class="theme-pill theme-surface border theme-border px-3 py-1 text-xs uppercase tracking-[0.12em] theme-text-muted"><%= file.lineCount %> regels</span>
+												<span class="theme-pill theme-surface border theme-border px-3 py-1 text-xs uppercase tracking-[0.12em] theme-text-muted"><%= file.sizeLabel %></span>
+											</div>
+										</header>
+
+										<div class="mt-4 grid gap-4 xl:grid-cols-2">
+											<div class="theme-surface border theme-border-soft rounded-xl p-4">
+												<div class="flex items-center justify-between gap-3 mb-3">
+													<h4 class="text-sm font-bold uppercase tracking-[0.16em] theme-text-muted">Documentatie</h4>
+												</div>
+												<% if (file.documentation) { %>
+													<pre class="theme-code"><code><%- file.documentation %></code></pre>
+												<% } else { %>
+													<p class="theme-text-muted text-sm">Geen documentatieblok gevonden bovenaan dit bestand.</p>
+												<% } %>
+											</div>
+
+											<div class="theme-surface border theme-border-soft rounded-xl p-4">
+												<div class="flex items-center justify-between gap-3 mb-3">
+													<h4 class="text-sm font-bold uppercase tracking-[0.16em] theme-text-muted">Broncode</h4>
+												</div>
+												<pre class="theme-code"><code><%- file.source %></code></pre>
+											</div>
+										</div>
+									</article>
+								<% }) %>
+							</div>
+						</div>
+					</section>
+				<% }) %>
+			</section>
+		</main>
+		<script src="/js/admin_docs.js"></script>
+		<%- include('partials/footer') %>
+	</body>
+</html>

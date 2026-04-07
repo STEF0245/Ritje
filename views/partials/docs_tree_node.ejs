@@ -1,0 +1,23 @@
+<%
+	const node = locals.node || {}
+	const isDirectory = node.type === 'directory'
+	const label = node.name || node.relativePath || 'Onbekend'
+%>
+
+<% if (isDirectory) { %>
+	<details class="docs-tree-node" <%= node.depth === 0 ? 'open' : '' %>>
+		<summary class="docs-tree-summary">
+			<span class="font-semibold theme-text-primary"><%= label %></span>
+			<span class="theme-text-muted text-xs"><%= node.children?.length || 0 %> items</span>
+		</summary>
+		<div class="docs-tree-children">
+			<% (node.children || []).forEach((child) => { %>
+				<%- include('docs_tree_node', { node: child }) %>
+			<% }) %>
+		</div>
+	</details>
+<% } else { %>
+	<a href="#<%= node.anchorId %>" class="docs-tree-file">
+		<span class="font-mono text-xs theme-text-muted"><%= node.relativePath %></span>
+	</a>
+<% } %>
