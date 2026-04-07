@@ -4,13 +4,6 @@ import path from 'node:path'
 const REPO_ROOT = process.cwd()
 const ALLOWED_GROUPS = [
 	{
-		key: 'views',
-		label: "Pagina's",
-		rootPath: path.join(REPO_ROOT, 'views'),
-		type: 'views',
-		allowedExtensions: new Set(['.ejs'])
-	},
-	{
 		key: 'src',
 		label: 'Servercode',
 		rootPath: path.join(REPO_ROOT, 'src'),
@@ -55,6 +48,9 @@ const escapeHtml = (value) => {
 		.replaceAll('"', '&quot;')
 		.replaceAll("'", '&#39;')
 }
+
+const normalizeRelativePath = (value) =>
+	toPosix(String(value || '').replace(/^[/\\]+/, '')).toLowerCase()
 
 const slugify = (value) =>
 	String(value)
@@ -450,4 +446,51 @@ export const buildRepositoryDocumentation = async () => {
 			lineCount: totalLines
 		}
 	}
+}
+
+export const findDocumentationFile = (
+	documentation,
+	groupKey,
+	relativePath
+) => {
+	const normalizedGroupKey = String(groupKey || '').trim()
+	const normalizedPath = normalizeRelativePath(relativePath)
+
+	if (!normalizedGroupKey || !normalizedPath) {
+		return null
+	}
+
+	const targetGroup = (documentation?.groups || []).find(
+		(group) => group.key === normalizedGroupKey
+	)
+	if (!targetGroup) {
+		return null
+	}
+
+	const targetFile = (targetGroup.files || []).find(
+		(file) => normalizeRelativePath(file.relativePath) === normalizedPath
+	)
+
+	if (!targetFile) {
+		return null
+	}
+
+	return {
+		group: targetGroup,
+		file: targetFile
+	}
+}
+
+export const renderSourceWithLineAnchors = (source) => {
+	const rawSource = String(source || '')
+	const lines = rawSource.split(/\r?\n/)
+
+	return lines
+		.map((line, index) => {
+			const lineNumber = index + 1
+			const lineId = `L${lineNumber}`
+			const safeLine = escapeHtml(line)
+			return `<span id="${lineId}" class="docs-source-line"><a class="docs-source-line-number" href="#${lineId}">${lineNumber}</a><span class="docs-source-line-content">${safeLine || ' '}</span></span>`
+		})
+		.join('\n')
 }

@@ -23,7 +23,11 @@ import {
 	createNotification,
 	renderWithErrorNotification
 } from '../utils/notification.util.js'
-import { buildRepositoryDocumentation } from '../utils/repository-docs.util.js'
+import {
+	buildRepositoryDocumentation,
+	findDocumentationFile,
+	renderSourceWithLineAnchors
+} from '../utils/repository-docs.util.js'
 
 const GEOCODE_TIMEOUT_MS = Number(
 	process.env.PROFILE_GEOCODE_TIMEOUT_MS || 7000
@@ -861,6 +865,77 @@ export const getDocumentationPage = async (req, res) => {
 					lineCount: 0
 				}
 			},
+			notifications: [
+				createNotification(
+					'error',
+					'Documentatie kon niet worden geladen',
+					'Probeer de pagina opnieuw te openen.'
+				)
+			]
+		})
+	}
+}
+
+/**
+ * @brief  Render details for one documented source file.
+ * @details  Loads repository documentation and renders a single file page with
+ *           documentation sections and line-referenced source content.
+ * @param {object} req - Express request object.
+ * @param {object} res - Express response object.
+ * @returns {Promise<object>} Express response.
+ */
+export const getDocumentationFilePage = async (req, res) => {
+	try {
+		const documentation = await buildRepositoryDocumentation()
+		const { groupKey = '', filePath = '' } = req.query || {}
+		const fileMatch = findDocumentationFile(
+			documentation,
+			groupKey,
+			filePath
+		)
+
+		if (!fileMatch) {
+			return res.status(404).render('admin_docs_file', {
+				title: 'Bestand niet gevonden | Admin',
+				documentation,
+				group: null,
+				file: null,
+				sourceWithLineAnchors: '',
+				notifications: [
+					createNotification(
+						'error',
+						'Bestand niet gevonden',
+						'Controleer de link en probeer opnieuw.'
+					)
+				]
+			})
+		}
+
+		return res.render('admin_docs_file', {
+			title: `${fileMatch.file.name} | Documentatie`,
+			documentation,
+			group: fileMatch.group,
+			file: fileMatch.file,
+			sourceWithLineAnchors: renderSourceWithLineAnchors(
+				fileMatch.file.content
+			)
+		})
+	} catch (error) {
+		console.error('Error loading documentation file page:', error)
+		return res.status(500).render('admin_docs_file', {
+			title: 'Documentatie | Admin',
+			documentation: {
+				groups: [],
+				stats: {
+					groupCount: 0,
+					fileCount: 0,
+					directoryCount: 0,
+					lineCount: 0
+				}
+			},
+			group: null,
+			file: null,
+			sourceWithLineAnchors: '',
 			notifications: [
 				createNotification(
 					'error',

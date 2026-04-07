@@ -19,14 +19,12 @@
 			<%- include('partials/admin_nav', { selected: { docs: true } }) %>
 
 			<section class="max-w-6xl mx-auto px-4 md:px-6 py-8 md:py-10 space-y-6">
-				<!-- Header -->
 				<div class="mb-2 text-center">
 					<p class="theme-kicker">Ritje Admin</p>
-					<h1 class="theme-heading theme-accent-text">Broncode</h1>
-					<p class="theme-subtext">Bekijk bronbestanden en documentatie op een plek.</p>
+					<h1 class="theme-heading theme-accent-text">Documentatie Structuur</h1>
+					<p class="theme-subtext">Overzicht van mappen en bestanden. Open een bestandspagina voor documentatie en broncode.</p>
 				</div>
 
-				<!-- Stats -->
 				<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
 					<div class="theme-panel p-5">
 						<p class="theme-text-muted text-xs uppercase tracking-[0.12em]">Mappen</p>
@@ -46,10 +44,9 @@
 					</div>
 				</div>
 
-				<!-- Search -->
 				<div class="theme-panel p-4 md:p-5">
 					<label for="docsSearch" class="block text-sm font-semibold theme-text-primary">Zoeken</label>
-					<input id="docsSearch" type="search" placeholder="Zoek op pad, bestandsnaam of tekst..." class="theme-input mt-3 w-full" />
+					<input id="docsSearch" type="search" placeholder="Zoek op pad, bestandsnaam of beschrijving..." class="theme-input mt-3 w-full" />
 				</div>
 
 				<% if (groups.length === 0) { %>
@@ -59,7 +56,6 @@
 					</article>
 				<% } %>
 
-				<!-- File Browser -->
 				<% groups.forEach((group) => { %>
 					<section class="space-y-4" data-doc-group data-group-key="<%= group.key %>">
 						<div>
@@ -68,13 +64,10 @@
 								<i class="<%= groupIconByType[group.type] || 'fa-solid fa-folder' %> mr-2 theme-accent-text"></i>
 								<%= group.label %>
 							</h2>
-							<p class="theme-text-muted text-sm mt-1">
-								<%= group.fileCount %> bestanden in <%= group.directoryCount %> mappen
-							</p>
+							<p class="theme-text-muted text-sm mt-1"><%= group.fileCount %> bestanden in <%= group.directoryCount %> mappen</p>
 						</div>
 
-						<div class="grid gap-6 lg:grid-cols-[300px_1fr] items-start">
-							<!-- Folder Tree -->
+						<div class="grid gap-6 lg:grid-cols-[290px_1fr] items-start">
 							<aside class="theme-panel p-4 md:p-5 lg:sticky lg:top-24 max-h-[65vh] overflow-y-auto">
 								<h3 class="text-xs font-bold uppercase tracking-[0.18em] theme-text-muted mb-4">Mappen</h3>
 								<div class="docs-tree text-sm">
@@ -84,71 +77,35 @@
 								</div>
 							</aside>
 
-							<!-- Files -->
-							<div class="space-y-4">
-								<% group.files.forEach((file) => { %>
-									<article
-										id="<%= file.anchorId %>"
-										data-doc-file-card
-										data-doc-path="<%= `${group.rootLabel}/${file.relativePath}` %>"
-										class="docs-file-card theme-panel overflow-hidden"
-									>
-										<header class="p-5 md:p-6 border-b theme-border-soft">
-											<div class="flex flex-wrap items-start justify-between gap-3">
-												<div>
-													<p class="theme-kicker text-xs"><%= group.label %></p>
-													<h3 class="text-lg font-bold theme-text-primary mt-1 break-all"><%= file.name %></h3>
-													<p class="theme-text-muted text-xs mt-1 font-mono break-all"><%= group.rootLabel %>/<%= file.relativePath %></p>
+							<div class="theme-panel overflow-hidden">
+								<ul class="divide-y theme-border-soft">
+									<% group.files.forEach((file) => {
+										const firstSection = (file.documentationSections || [])[0]
+										const description = firstSection?.content || 'Geen documentatie gevonden.'
+										const shortDescription = description.length > 180 ? `${description.slice(0, 177)}...` : description
+										const fileLink = `/admin/docs/file?groupKey=${encodeURIComponent(group.key)}&filePath=${encodeURIComponent(file.relativePath)}`
+									%>
+										<li
+											id="<%= file.anchorId %>"
+											class="p-4 md:p-5"
+											data-doc-file-card
+											data-doc-path="<%= `${group.rootLabel}/${file.relativePath}` %>"
+										>
+											<div class="flex items-start justify-between gap-4">
+												<div class="min-w-0">
+													<p class="theme-text-primary font-semibold break-all"><%= file.relativePath %></p>
+													<p class="theme-text-muted text-sm mt-1"><%= shortDescription %></p>
+													<div class="mt-2 flex flex-wrap gap-2 text-xs">
+														<span class="theme-surface border theme-border rounded-md px-2 py-1">.<%= file.extension || 'noext' %></span>
+														<span class="theme-surface border theme-border rounded-md px-2 py-1"><%= file.lineCount %> regels</span>
+														<span class="theme-surface border theme-border rounded-md px-2 py-1"><%= (file.documentationSections || []).length %> doc blokken</span>
+													</div>
 												</div>
-												<div class="flex flex-wrap gap-2 shrink-0">
-													<span class="theme-pill theme-surface border theme-border px-2 py-1 text-xs">.<%= file.extension || 'noext' %></span>
-													<span class="theme-pill theme-surface border theme-border px-2 py-1 text-xs"><%= file.lineCount %> ln</span>
-													<span class="theme-pill theme-surface border theme-border px-2 py-1 text-xs"><%= file.sizeLabel %></span>
-												</div>
+												<a href="<%= fileLink %>" class="theme-btn-secondary px-3 py-2 text-sm shrink-0">Open bestand</a>
 											</div>
-										</header>
-
-										<% if (file.documentation || file.source) { %>
-											<div class="grid md:grid-cols-2 gap-0">
-												<% if ((file.documentationSections || []).length) { %>
-													<div class="theme-surface border-r theme-border-soft border-b md:border-b-0 p-4 md:p-5 max-h-96 overflow-y-auto">
-														<div class="docs-doc-header">
-															<p class="text-xs font-bold uppercase tracking-[0.12em] theme-text-muted">Documentatie</p>
-															<span class="docs-doc-count"><%= file.documentationSections.length %> blokken</span>
-														</div>
-														<div class="docs-doc-sections mt-3">
-															<% file.documentationSections.forEach((section, index) => { %>
-																<details class="docs-doc-section" <%= index === 0 ? 'open' : '' %>>
-																	<summary class="docs-doc-section-summary">
-																		<span class="docs-doc-title"><%- section.title %></span>
-																		<span class="docs-doc-line">regel <%= section.lineNumber %></span>
-																	</summary>
-																	<pre class="theme-code text-xs mt-2"><code><%- section.content %></code></pre>
-																</details>
-															<% }) %>
-														</div>
-													</div>
-												<% } else if (file.documentation) { %>
-													<div class="theme-surface border-r theme-border-soft border-b md:border-b-0 p-4 md:p-5 max-h-96 overflow-y-auto">
-														<p class="text-xs font-bold uppercase tracking-[0.12em] theme-text-muted mb-3">Documentatie</p>
-														<pre class="theme-code text-xs"><code><%- file.documentation %></code></pre>
-													</div>
-												<% } else { %>
-													<div class="theme-surface border-r theme-border-soft border-b md:border-b-0 p-4 md:p-5 max-h-96 overflow-y-auto">
-														<p class="text-xs font-bold uppercase tracking-[0.12em] theme-text-muted mb-3">Documentatie</p>
-														<p class="theme-text-muted text-xs">Geen documentatieblokken gevonden.</p>
-													</div>
-												<% } %>
-												<% if (file.source) { %>
-													<div class="p-4 md:p-5 max-h-96 overflow-y-auto">
-														<p class="text-xs font-bold uppercase tracking-[0.12em] theme-text-muted mb-3">Broncode</p>
-														<pre class="theme-code text-xs"><code><%- file.source %></code></pre>
-													</div>
-												<% } %>
-											</div>
-										<% } %>
-									</article>
-								<% }) %>
+										</li>
+									<% }) %>
+								</ul>
 							</div>
 						</div>
 					</section>

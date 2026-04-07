@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="nl" class="text-slate-200">
+	<%- include('partials/head', { title }) %>
+
+	<body class="theme-body min-h-screen flex flex-col">
+		<%- include('partials/header', { user }) %>
+		<main class="theme-main flex-1 pt-0!">
+			<%- include('partials/admin_nav', { selected: { docs: true } }) %>
+
+			<section class="max-w-6xl mx-auto px-4 md:px-6 py-8 md:py-10 space-y-6">
+				<div class="flex flex-wrap items-center justify-between gap-3">
+					<div>
+						<p class="theme-kicker">Ritje Admin</p>
+						<h1 class="theme-heading theme-accent-text">Bestandsdocumentatie</h1>
+					</div>
+					<a href="/admin/docs" class="theme-btn-secondary px-3 py-2 text-sm">Terug naar structuur</a>
+				</div>
+
+				<% if (!file || !group) { %>
+					<article class="theme-panel p-8 md:p-10 text-center">
+						<h2 class="text-xl font-extrabold theme-text-primary">Bestand niet gevonden</h2>
+						<p class="theme-subtext">Ga terug naar het overzicht en kies een geldig bestand.</p>
+					</article>
+				<% } else { %>
+					<article class="theme-panel p-5 md:p-6 space-y-2">
+						<p class="theme-kicker"><%= group.label %></p>
+						<h2 class="text-xl md:text-2xl font-black theme-text-primary break-all"><%= file.name %></h2>
+						<p class="theme-text-muted text-sm font-mono break-all"><%= group.rootLabel %>/<%= file.relativePath %></p>
+						<div class="flex flex-wrap gap-2 text-xs pt-2">
+							<span class="theme-surface border theme-border rounded-md px-2 py-1">.<%= file.extension || 'noext' %></span>
+							<span class="theme-surface border theme-border rounded-md px-2 py-1"><%= file.lineCount %> regels</span>
+							<span class="theme-surface border theme-border rounded-md px-2 py-1"><%= (file.documentationSections || []).length %> doc blokken</span>
+						</div>
+					</article>
+
+					<div class="grid gap-6 xl:grid-cols-[380px_1fr] items-start">
+						<aside class="theme-panel p-4 md:p-5 xl:sticky xl:top-24 max-h-[70vh] overflow-y-auto">
+							<h3 class="text-xs font-bold uppercase tracking-[0.16em] theme-text-muted mb-4">Documentatieblokken</h3>
+							<% if ((file.documentationSections || []).length === 0) { %>
+								<p class="theme-text-muted text-sm">Geen documentatieblokken gevonden.</p>
+							<% } else { %>
+								<ul class="space-y-2">
+									<% file.documentationSections.forEach((section, index) => { %>
+										<li class="theme-surface border theme-border rounded-md p-3">
+											<p class="theme-text-primary text-sm font-semibold"><%= section.title %></p>
+											<div class="mt-2 flex items-center justify-between gap-2 text-xs">
+												<span class="theme-text-muted">Regel <%= section.lineNumber %></span>
+												<a href="#L<%= section.lineNumber %>" class="theme-link">Ga naar bron</a>
+											</div>
+											<details class="mt-2">
+												<summary class="theme-link text-xs cursor-pointer">Toon tekst</summary>
+												<pre class="theme-code text-xs mt-2"><code><%- section.content %></code></pre>
+											</details>
+										</li>
+									<% }) %>
+								</ul>
+							<% } %>
+						</aside>
+
+						<article class="theme-panel p-4 md:p-5 max-h-[70vh] overflow-auto">
+							<div class="flex items-center justify-between gap-3 mb-3">
+								<h3 class="text-xs font-bold uppercase tracking-[0.16em] theme-text-muted">Broncode</h3>
+								<span class="theme-text-muted text-xs">Klik op regelnummers voor links</span>
+							</div>
+							<pre class="theme-code docs-source-block text-xs"><code><%- sourceWithLineAnchors %></code></pre>
+						</article>
+					</div>
+				<% } %>
+			</section>
+		</main>
+		<%- include('partials/footer') %>
+	</body>
+</html>
