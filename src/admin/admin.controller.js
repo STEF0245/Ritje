@@ -1,4 +1,5 @@
 import db from '../firebase/db.js'
+import { auth, generateRandomUid } from '../firebase/auth.js'
 import { forwardGeocode } from '../location/location.service.js'
 import {
 	safeTrim,
@@ -97,6 +98,21 @@ const mapFormDataToEditUser = (formData = {}) => {
 	}
 }
 
+const mapFormDataToNewUser = (formData = {}) => {
+	return {
+		...mapFormDataToEditUser(formData),
+		password: safeTrim(formData.password, 128)
+	}
+}
+
+const renderUserNewPage = (res, options = {}) => {
+	return res.status(options.status || 200).render('admin_user_new', {
+		title: 'Nieuwe gebruiker | Admin',
+		newUser: options.newUser || {},
+		notifications: options.notifications || []
+	})
+}
+
 export const getAdminPage = (req, res) => {
 	res.render('admin', {
 		title: 'Dashboard | Admin'
@@ -127,12 +143,206 @@ export const getUsersPage = (req, res) => {
 }
 
 export const getUsersNewPage = (req, res) => {
-	res.render('admin_users_new', {
-		title: 'Nieuw | Gebruikers | Admin'
-	})
+	return renderUserNewPage(res)
 }
 
-export const postUserNewPage = (req, res) => {}
+export const postUserNewPage = async (req, res) => {
+	const {
+		firstName = '',
+		lastName = '',
+		email = '',
+		phoneNumber = '',
+		photoURL = '',
+		password = ''
+	} = req.body
+
+	const safeFirstName = safeTrim(firstName, 100)
+	const safeLastName = safeTrim(lastName, 100)
+	const safePhoneNumber = safeTrim(phoneNumber, 20)
+	const safeEmail = safeTrim(email, 254)
+	const safePhotoURL = safeTrim(photoURL, 2048)
+	const safePassword = safeTrim(password, 128)
+	const fullName = `${safeFirstName} ${safeLastName}`.trim()
+
+	if (!safeFirstName || !safeLastName) {
+		return renderUserNewPage(res, {
+			status: 400,
+			newUser: mapFormDataToNewUser(req.body),
+			notifications: [
+				createNotification(
+					'error',
+					'Ongeldige naam',
+					'Voornaam en achternaam zijn verplicht.'
+				)
+			]
+		})
+	}
+
+	if (!isValidEmail(safeEmail)) {
+		return renderUserNewPage(res, {
+			status: 400,
+			newUser: mapFormDataToNewUser(req.body),
+			notifications: [
+				createNotification(
+					'error',
+					'Ongeldig e-mailadres',
+					'Geef een geldig e-mailadres op.'
+				)
+			]
+		})
+	}
+
+	if (safePassword.length < 6) {
+		return renderUserNewPage(res, {
+			status: 400,
+			newUser: mapFormDataToNewUser(req.body),
+			notifications: [
+				createNotification(
+					'error',
+					'Ongeldig wachtwoord',
+					'Wachtwoord moet minstens 6 tekens lang zijn.'
+				)
+			]
+		})
+	}
+
+	if (!isValidHttpsUrl(safePhotoURL)) {
+		return renderUserNewPage(res, {
+			status: 400,
+			newUser: mapFormDataToNewUser(req.body),
+			notifications: [
+				createNotification(
+					'error',
+					'Profielfoto-URL is ongeldig',
+					'Profielfoto-URL moet een geldige HTTPS URL zijn.'
+				)
+			]
+		})
+	}
+
+	let address
+	try {
+		address = parseAndValidateProfileAddress(req.body)
+	} catch {
+		return renderUserNewPage(res, {
+			status: 400,
+			newUser: mapFormDataToNewUser(req.body),
+			notifications: [
+				createNotification(
+					'error',
+					'Ongeldige adresgegevens',
+					'Controleer straat, huisnummer, postcode en stad.'
+				)
+			]
+		})
+	}
+
+	const query = `${address.street} ${address.houseNumber}, ${address.postalCode} ${address.city}`
+
+	try {
+		const { result } = await withTimeout(
+			(signal) => forwardGeocode(query, signal),
+			GEOCODE_TIMEOUT_MS
+		)
+
+		if (!result?.lat || !result?.lon || !result?.raw) {
+			return renderUserNewPage(res, {
+				status: 422,
+				newUser: mapFormDataToNewUser(req.body),
+				notifications: [
+					createNotification(
+						'error',
+						'Adresverificatie mislukt',
+						'Het adres kon niet geverifieerd worden. Controleer je gegevens en probeer opnieuw.'
+					)
+				]
+			})
+		}
+
+		const raw = result.raw
+		const normalizedAddress = {
+			street: raw.street || address.street,
+			houseNumber: raw.housenumber || address.houseNumber,
+			postalCode: raw.postcode || address.postalCode,
+			city: raw.village || raw.city || raw.town || address.city
+		}
+
+		const createdAuthUser = await auth.createUser({
+			uid: generateRandomUid(),
+			email: safeEmail,
+			password: safePassword,
+			displayName: fullName,
+			photoURL: safePhotoURL || undefined,
+			emailVerified: false,
+			disabled: false
+		})
+
+		const userRecord = {
+			email: safeEmail,
+			phoneNumber: safePhoneNumber,
+			photoURL: safePhotoURL,
+			emailVerified: false,
+			name: {
+				first: safeFirstName,
+				last: safeLastName,
+				full: fullName
+			},
+			address: normalizedAddress,
+			coords: {
+				latitude: result.lat,
+				longitude: result.lon
+			},
+			createdAt:
+				createdAuthUser.metadata.creationTime ||
+				new Date().toISOString(),
+			lastSignInTime: createdAuthUser.metadata.lastSignInTime || '',
+			updatedAt: new Date()
+		}
+
+		try {
+			await db.ref(`users/${createdAuthUser.uid}`).set(userRecord)
+		} catch (error) {
+			console.error('Error saving new admin user to database:', error)
+			try {
+				await auth.deleteUser(createdAuthUser.uid)
+			} catch (cleanupError) {
+				console.error(
+					'Error rolling back created auth user:',
+					cleanupError
+				)
+			}
+
+			return renderUserNewPage(res, {
+				status: 500,
+				newUser: mapFormDataToNewUser(req.body),
+				notifications: [
+					createNotification(
+						'error',
+						'Gebruiker kon niet worden opgeslagen',
+						'Er ging iets mis bij het opslaan van de gebruiker. Probeer het opnieuw.'
+					)
+				]
+			})
+		}
+
+		return res.redirect(
+			`/admin/users/${encodeURIComponent(createdAuthUser.uid)}`
+		)
+	} catch (error) {
+		console.error('Error creating new admin user:', error?.message)
+		return renderUserNewPage(res, {
+			status: 502,
+			newUser: mapFormDataToNewUser(req.body),
+			notifications: [
+				createNotification(
+					'error',
+					'Adresverificatie mislukt',
+					'Adresverificatie is tijdelijk niet beschikbaar. Probeer later opnieuw.'
+				)
+			]
+		})
+	}
+}
 
 export const getUserPage = (req, res) => {
 	const { uid } = req.params

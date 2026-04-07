@@ -3,6 +3,16 @@ import app from './app.js'
 
 export const auth = getAuth(app)
 
+export const generateRandomUid = () => {
+	const chars =
+		'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+	let uid = ''
+	for (let i = 0; i < 8; i++) {
+		uid += chars.charAt(Math.floor(Math.random() * chars.length))
+	}
+	return uid
+}
+
 export const verifyIdToken = async (idToken, checkRevoked = true) => {
 	try {
 		return await auth.verifyIdToken(idToken, checkRevoked)
