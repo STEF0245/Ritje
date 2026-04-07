@@ -121,6 +121,15 @@ app.use(
 	})
 )
 
+// JSDoc output (admin-only)
+app.use('/admin/api-docs', (req, res, next) => {
+	express.static(path.join(process.cwd(), 'docs'), {
+		maxAge: config.isProduction ? '1d' : '0',
+		etag: true,
+		immutable: false
+	})(req, res, next)
+})
+
 // =====================
 // JSON Response Formatting
 // =====================
