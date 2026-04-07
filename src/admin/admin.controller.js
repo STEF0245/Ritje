@@ -26,6 +26,7 @@ import {
 import {
 	buildRepositoryDocumentation,
 	findDocumentationFile,
+	renderDocumentationMarkdown,
 	renderSourceWithLineAnchors
 } from '../utils/repository-docs.util.js'
 
@@ -849,13 +850,13 @@ export const getDocumentationPage = async (req, res) => {
 		const documentation = await buildRepositoryDocumentation()
 
 		return res.render('admin_docs', {
-			title: 'Documentatie | Admin',
+			title: 'Docs | Admin',
 			documentation
 		})
 	} catch (error) {
 		console.error('Error building repository documentation:', error)
 		return res.status(500).render('admin_docs', {
-			title: 'Documentatie | Admin',
+			title: 'Docs | Admin',
 			documentation: {
 				groups: [],
 				stats: {
@@ -868,7 +869,7 @@ export const getDocumentationPage = async (req, res) => {
 			notifications: [
 				createNotification(
 					'error',
-					'Documentatie kon niet worden geladen',
+					'Docs kon niet worden geladen',
 					'Probeer de pagina opnieuw te openen.'
 				)
 			]
@@ -912,10 +913,18 @@ export const getDocumentationFilePage = async (req, res) => {
 		}
 
 		return res.render('admin_docs_file', {
-			title: `${fileMatch.file.name} | Documentatie`,
+			title: `${fileMatch.file.name} | Docs`,
 			documentation,
 			group: fileMatch.group,
-			file: fileMatch.file,
+			file: {
+				...fileMatch.file,
+				documentationSections: (
+					fileMatch.file.documentationSections || []
+				).map((section) => ({
+					...section,
+					contentHtml: renderDocumentationMarkdown(section.content)
+				}))
+			},
 			sourceWithLineAnchors: renderSourceWithLineAnchors(
 				fileMatch.file.content
 			)
@@ -923,7 +932,7 @@ export const getDocumentationFilePage = async (req, res) => {
 	} catch (error) {
 		console.error('Error loading documentation file page:', error)
 		return res.status(500).render('admin_docs_file', {
-			title: 'Documentatie | Admin',
+			title: 'Docs | Admin',
 			documentation: {
 				groups: [],
 				stats: {
@@ -939,7 +948,7 @@ export const getDocumentationFilePage = async (req, res) => {
 			notifications: [
 				createNotification(
 					'error',
-					'Documentatie kon niet worden geladen',
+					'Docs kon niet worden geladen',
 					'Probeer de pagina opnieuw te openen.'
 				)
 			]

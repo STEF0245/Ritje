@@ -49,11 +49,7 @@
 											<a href="#L<%= section.lineNumber %>" class="theme-link text-xs">Regel <%= section.lineNumber %></a>
 										</div>
 										<div class="mt-2 docs-doc-body text-sm theme-text-muted">
-											<% section.content.split(/\r?\n/).forEach((line) => { %>
-												<% if (line && line.trim()) { %>
-													<p><%= line %></p>
-												<% } %>
-											<% }) %>
+											<%- section.contentHtml || '' %>
 										</div>
 									</section>
 								<% }) %>

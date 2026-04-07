@@ -49,6 +49,15 @@ const escapeHtml = (value) => {
 		.replaceAll("'", '&#39;')
 }
 
+const decodeHtmlEntities = (value) => {
+	return String(value)
+		.replaceAll('&lt;', '<')
+		.replaceAll('&gt;', '>')
+		.replaceAll('&quot;', '"')
+		.replaceAll('&#39;', "'")
+		.replaceAll('&amp;', '&')
+}
+
 const normalizeRelativePath = (value) =>
 	toPosix(String(value || '').replace(/^[/\\]+/, '')).toLowerCase()
 
@@ -150,40 +159,94 @@ const summarizeTagLines = (content) => {
 
 	if (!lines.length) return ''
 
-	const mapped = lines
-		.map((line) => {
-			const tagMatch = line.match(/^@(\w+)\s*(.*)$/)
-			if (!tagMatch) return ''
+	const summaries = []
+	const params = []
+	const examples = []
+	const extra = []
+	let returnsLine = ''
+	let throwsLine = ''
 
-			const [, tag, restRaw] = tagMatch
-			const rest = restRaw.trim()
+	for (const line of lines) {
+		const tagMatch = line.match(/^@(\w+)\s*(.*)$/)
+		if (!tagMatch) continue
 
-			if (/^(param)$/i.test(tag)) {
-				const paramMatch = rest.match(/^\{[^}]*\}\s*([^\s]+)\s*(.*)$/)
-				if (paramMatch) {
-					const [, name, description] = paramMatch
-					return description
-						? `Parameter ${name}: ${description}`
-						: `Parameter ${name}`
-				}
+		const [, rawTag, restRaw] = tagMatch
+		const tag = rawTag.toLowerCase()
+		const rest = restRaw.trim()
+
+		if (tag === 'param') {
+			const paramMatch = rest.match(/^\{[^}]*\}\s*([^\s]+)\s*(.*)$/)
+			if (paramMatch) {
+				const [, name, description] = paramMatch
+				params.push(
+					description
+						? `- \`${name}\`: ${description}`
+						: `- \`${name}\``
+				)
+			} else if (rest) {
+				params.push(`- ${rest}`)
 			}
+			continue
+		}
 
-			if (/^(returns?|throws?)$/i.test(tag)) {
-				const cleanedRest = rest.replace(/^\{[^}]*\}\s*/, '').trim()
-				const label = humanizeTag(tag)
-				return cleanedRest ? `${label}: ${cleanedRest}` : label
-			}
+		if (tag === 'returns' || tag === 'return') {
+			returnsLine = rest.replace(/^\{[^}]*\}\s*/, '').trim()
+			continue
+		}
 
-			if (/^(brief|summary|description)$/i.test(tag)) {
-				return rest
-			}
+		if (tag === 'throws' || tag === 'throw') {
+			throwsLine = rest.replace(/^\{[^}]*\}\s*/, '').trim()
+			continue
+		}
 
-			const label = humanizeTag(tag)
-			return rest ? `${label}: ${rest}` : label
-		})
-		.filter(Boolean)
+		if (tag === 'example') {
+			if (rest) examples.push(rest)
+			continue
+		}
 
-	return mapped.join('\n')
+		if (tag === 'brief' || tag === 'summary' || tag === 'description') {
+			if (rest) summaries.push(rest)
+			continue
+		}
+
+		const label = humanizeTag(tag)
+		extra.push(rest ? `- **${label}:** ${rest}` : `- **${label}**`)
+	}
+
+	const output = []
+
+	if (summaries.length) {
+		output.push(summaries.join('\n\n'))
+	}
+
+	if (params.length) {
+		output.push('### Parameters')
+		output.push(params.join('\n'))
+	}
+
+	if (returnsLine) {
+		output.push('### Retourneert')
+		output.push(returnsLine)
+	}
+
+	if (throwsLine) {
+		output.push('### Fouten')
+		output.push(throwsLine)
+	}
+
+	if (extra.length) {
+		output.push('### Extra')
+		output.push(extra.join('\n'))
+	}
+
+	if (examples.length) {
+		output.push('### Voorbeeld')
+		output.push('```js')
+		output.push(examples.join('\n'))
+		output.push('```')
+	}
+
+	return output.join('\n\n').trim()
 }
 
 const extractDocumentationSections = (filePath, content) => {
@@ -221,6 +284,121 @@ const extractDocumentation = (filePath, content) => {
 	const sections = extractDocumentationSections(filePath, content)
 	if (!sections.length) return ''
 	return sections.map((section) => section.content).join('\n\n-----\n\n')
+}
+
+const formatInlineMarkdown = (input) => {
+	let output = escapeHtml(input)
+
+	output = output.replace(
+		/\[([^\]]+)\]\(((?:https?:\/\/|#)[^)\s]+)\)/g,
+		(_match, label, url) =>
+			`<a href="${escapeHtml(url)}" class="theme-link" target="_blank" rel="noopener noreferrer">${escapeHtml(label)}</a>`
+	)
+
+	output = output.replace(/`([^`]+)`/g, '<code>$1</code>')
+	output = output.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+	output = output.replace(/\*([^*]+)\*/g, '<em>$1</em>')
+
+	return output
+}
+
+export const renderDocumentationMarkdown = (input) => {
+	const raw = decodeHtmlEntities(String(input || ''))
+	const lines = raw.split(/\r?\n/)
+	const htmlParts = []
+
+	let inCodeFence = false
+	let codeLines = []
+	let currentListType = null
+
+	const closeList = () => {
+		if (!currentListType) return
+		htmlParts.push(`</${currentListType}>`)
+		currentListType = null
+	}
+
+	for (const lineRaw of lines) {
+		const line = lineRaw.replace(/\t/g, '    ')
+		const trimmed = line.trim()
+
+		if (trimmed.startsWith('```')) {
+			if (inCodeFence) {
+				htmlParts.push(
+					`<pre class="theme-code text-xs"><code>${escapeHtml(codeLines.join('\n'))}</code></pre>`
+				)
+				codeLines = []
+				inCodeFence = false
+			} else {
+				closeList()
+				inCodeFence = true
+			}
+			continue
+		}
+
+		if (inCodeFence) {
+			codeLines.push(line)
+			continue
+		}
+
+		if (!trimmed) {
+			closeList()
+			continue
+		}
+
+		const headingMatch = trimmed.match(/^(#{1,4})\s+(.*)$/)
+		if (headingMatch) {
+			closeList()
+			const level = headingMatch[1].length + 2
+			const clamped = Math.min(level, 6)
+			htmlParts.push(
+				`<h${clamped}>${formatInlineMarkdown(headingMatch[2])}</h${clamped}>`
+			)
+			continue
+		}
+
+		const bulletMatch = trimmed.match(/^[-*]\s+(.*)$/)
+		if (bulletMatch) {
+			if (currentListType !== 'ul') {
+				closeList()
+				htmlParts.push('<ul>')
+				currentListType = 'ul'
+			}
+			htmlParts.push(`<li>${formatInlineMarkdown(bulletMatch[1])}</li>`)
+			continue
+		}
+
+		const orderedMatch = trimmed.match(/^\d+\.\s+(.*)$/)
+		if (orderedMatch) {
+			if (currentListType !== 'ol') {
+				closeList()
+				htmlParts.push('<ol>')
+				currentListType = 'ol'
+			}
+			htmlParts.push(`<li>${formatInlineMarkdown(orderedMatch[1])}</li>`)
+			continue
+		}
+
+		if (trimmed.startsWith('> ')) {
+			closeList()
+			htmlParts.push(
+				`<blockquote>${formatInlineMarkdown(trimmed.slice(2))}</blockquote>`
+			)
+			continue
+		}
+
+		closeList()
+		htmlParts.push(`<p>${formatInlineMarkdown(trimmed)}</p>`)
+	}
+
+	if (inCodeFence) {
+		htmlParts.push(
+			`<pre class="theme-code text-xs"><code>${escapeHtml(codeLines.join('\n'))}</code></pre>`
+		)
+	}
+
+	closeList()
+
+	return htmlParts.join('\n')
 }
 
 const readDirectoryEntries = async (directoryPath) => {
