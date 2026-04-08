@@ -39,14 +39,22 @@
                     <p class="theme-subtext">Beheer platforminstellingen in een duidelijk overzicht per module.</p>
                 </div>
 
-                <div class="mb-8 md:mb-10 flex flex-wrap items-stretch justify-center gap-3">
-                    <div class="theme-surface theme-pill border theme-border px-4 py-2 min-w-40">
-                        <p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Modules</p>
-                        <p class="text-xl font-black theme-text-primary"><%= totalSections %></p>
+				<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 mb-8 md:mb-10">
+					<div class="theme-panel p-5">
+						<p class="theme-text-muted text-xs uppercase tracking-[0.12em]">Modules</p>
+						<p class="text-3xl font-black theme-text-primary mt-2"><%= totalSections %></p>
+					</div>
+                    <div class="theme-panel p-5">
+                        <p class="theme-text-muted text-xs uppercase tracking-[0.12em]">Actief</p>
+                        <p class="text-3xl font-black theme-text-primary mt-2"><%= Object.values(settings).filter(section => section.enabled).length %></p>
                     </div>
-                    <div class="theme-surface theme-pill border theme-border px-4 py-2 min-w-40">
-                        <p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Bron</p>
-                        <p class="text-sm font-semibold theme-text-primary mt-1">Live databasewaarden</p>
+                    <div class="theme-panel p-5">
+                        <p class="theme-text-muted text-xs uppercase tracking-[0.12em]">Instellingen</p>
+                        <p class="text-3xl font-black theme-text-primary mt-2"><%= Object.values(settings).reduce((sum, section) => sum + (Object.keys(section || {}).length - 3), 0) %></p>
+                    </div>
+                    <div class="theme-panel p-5">
+                        <p class="theme-text-muted text-xs uppercase tracking-[0.12em]">Bron</p>
+                        <p class="text-3xl font-black theme-text-primary mt-2">Database</p>
                     </div>
                 </div>
 
