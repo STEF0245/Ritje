@@ -32,6 +32,8 @@ class AppMap {
 		this.element = element
 		this.instance = null
 		this.markers = []
+		this.initialCenter = null
+		this.centerControlButton = null
 	}
 
 	/**
@@ -48,6 +50,8 @@ class AppMap {
 			return this
 		}
 
+		this.initialCenter = center
+
 		this.instance = this.createMap(center.latitude, center.longitude)
 		this.addTileLayer()
 		const markers = this.addMarkers(this.readDatasetMarkers(center))
@@ -57,6 +61,8 @@ class AppMap {
 		if (this.element.dataset.schoolMarker === 'true') {
 			this.addSchoolMarker()
 		}
+
+		this.addCenterControl()
 
 		return this
 	}
@@ -78,9 +84,10 @@ class AppMap {
 	}
 
 	calculateCenter() {
-		if (!this.markers || this.markers.length === 0) return null
-		const latitudes = this.markers.map((marker) => marker.getLatLng().lat)
-		const longitudes = this.markers.map((marker) => marker.getLatLng().lng)
+		const validMarkers = (this.markers || []).filter(Boolean)
+		if (validMarkers.length === 0) return null
+		const latitudes = validMarkers.map((marker) => marker.getLatLng().lat)
+		const longitudes = validMarkers.map((marker) => marker.getLatLng().lng)
 		const averageLatitude =
 			latitudes.reduce((sum, lat) => sum + lat, 0) / latitudes.length
 		const averageLongitude =
@@ -90,10 +97,44 @@ class AppMap {
 
 	centerMap() {
 		if (!this.instance) return
-		const center = this.calculateCenter()
+		const center = this.calculateCenter() || this.initialCenter
 		if (center) {
 			this.instance.setView([center.latitude, center.longitude], 16)
 		}
+	}
+
+	addCenterControl() {
+		if (!this.instance || this.centerControlButton) return null
+
+		const controlContainer = this.instance.zoomControl?.getContainer?.()
+		if (!controlContainer) return null
+
+		const centerButton = document.createElement('a')
+		centerButton.href = '#'
+		centerButton.className = 'leaflet-control-center'
+		centerButton.title = 'Kaart centreren'
+		centerButton.setAttribute('aria-label', 'Kaart centreren')
+		centerButton.innerHTML =
+			'<span aria-hidden="true"><i class="fas fa-location-crosshairs"></i></span>'
+
+		L.DomEvent.disableClickPropagation(centerButton)
+		L.DomEvent.disableScrollPropagation(centerButton)
+		L.DomEvent.on(centerButton, 'click', (event) => {
+			L.DomEvent.preventDefault(event)
+			this.centerMap()
+		})
+
+		const zoomOutButton = controlContainer.querySelector(
+			'.leaflet-control-zoom-out'
+		)
+		if (zoomOutButton && zoomOutButton.parentNode === controlContainer) {
+			controlContainer.insertBefore(centerButton, zoomOutButton)
+		} else {
+			controlContainer.appendChild(centerButton)
+		}
+
+		this.centerControlButton = centerButton
+		return centerButton
 	}
 
 	/**
@@ -305,7 +346,11 @@ class AppMap {
 
 		const normalized = this.normalizeMarker(marker, this.readCenter())
 		const schoolMarker = this.addNormalizedMarker(normalized)
-		this.markers.push(schoolMarker)
+		if (schoolMarker) {
+			this.markers.push(schoolMarker)
+		}
+
+		return schoolMarker
 	}
 
 	/**

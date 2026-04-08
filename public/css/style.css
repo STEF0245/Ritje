@@ -638,6 +638,7 @@
 	flex-direction: column !important;
 	gap: 0.25rem !important;
 	font-size: 0.875rem !important;
+	user-select: none !important;
 }
 
 .leaflet-control-zoom a {
@@ -660,6 +661,7 @@
 	color: var(--ride-text) !important;
 	font-weight: 700 !important;
 	transition: all 0.2s ease !important;
+	user-select: none !important;
 }
 
 .leaflet-control-zoom a:not(.leaflet-disabled):hover {
