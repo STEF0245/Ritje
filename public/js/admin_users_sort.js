@@ -7,10 +7,14 @@
 ;(function initAdminUserSorting() {
 	const userList = document.getElementById('userCollection')
 	const sortSelect = document.getElementById('sortSelect')
+	const searchInput = document.getElementById('usersSearch')
 
 	if (!userList || !sortSelect) {
 		return
 	}
+
+	const userItems = Array.from(userList.querySelectorAll('[data-user-item]'))
+	const normalize = (value) => String(value || '').toLowerCase()
 
 	/**
 	 * @brief  Resolve the sortable value for a user row.
@@ -47,9 +51,26 @@
 		userList.replaceChildren(...users)
 	}
 
+	const applyFilter = (query) => {
+		const normalizedQuery = normalize(query).trim()
+
+		for (const item of userItems) {
+			const searchable = normalize(item.textContent || '')
+			item.hidden =
+				Boolean(normalizedQuery) && !searchable.includes(normalizedQuery)
+		}
+	}
+
 	sortSelect.addEventListener('change', (event) => {
 		sortUsers(event.target.value)
 	})
 
+	if (searchInput) {
+		searchInput.addEventListener('input', (event) => {
+			applyFilter(event.target.value)
+		})
+	}
+
 	sortUsers(sortSelect.value)
+	applyFilter(searchInput?.value || '')
 })()
