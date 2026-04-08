@@ -95,9 +95,30 @@ class AppMap {
 		return { latitude: averageLatitude, longitude: averageLongitude }
 	}
 
+	getMarkerBounds() {
+		const validMarkers = (this.markers || []).filter(Boolean)
+		if (validMarkers.length === 0) {
+			return null
+		}
+
+		const markerLatLngs = validMarkers.map((marker) => marker.getLatLng())
+		return L.latLngBounds(markerLatLngs)
+	}
+
 	centerMap() {
 		if (!this.instance) return
-		const center = this.calculateCenter() || this.initialCenter
+
+		const markerBounds = this.getMarkerBounds()
+		if (markerBounds && markerBounds.isValid()) {
+			this.instance.fitBounds(markerBounds, {
+				padding: [18, 18],
+				maxZoom: 16,
+				animate: true
+			})
+			return
+		}
+
+		const center = this.initialCenter || this.calculateCenter()
 		if (center) {
 			this.instance.setView([center.latitude, center.longitude], 16)
 		}
