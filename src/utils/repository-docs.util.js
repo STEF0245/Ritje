@@ -183,6 +183,34 @@ const summarizeTagLines = (content) => {
 		}
 	}
 
+	const normalizeTypeLabel = (value) => {
+		const raw = String(value || '').trim()
+		if (!raw) return ''
+		if (/^[{}]+$/.test(raw)) return 'object'
+		if (raw.startsWith('{') && raw.endsWith('}')) {
+			const inner = raw.slice(1, -1).trim()
+			if (!inner) return 'object'
+			if (inner.includes(':')) return 'object'
+			return inner
+		}
+		return raw
+	}
+
+	const normalizeNameToken = (value) => {
+		const raw = String(value || '')
+			.trim()
+			.replace(/^\[|\]$/g, '')
+		if (!raw || raw === '}' || raw === '{' || raw === '-') return ''
+		return raw
+	}
+
+	const normalizeDescription = (value, fallback = '') => {
+		const raw = String(value || '').trim()
+		if (!raw || raw === '}' || raw === '{')
+			return String(fallback || '').trim()
+		return raw
+	}
+
 	const lines = content
 		.split(/\r?\n/)
 		.map((line) => line.trim())
@@ -207,22 +235,37 @@ const summarizeTagLines = (content) => {
 
 		if (tag === 'param') {
 			const { type, rest: withoutType } = stripLeadingTypeExpression(rest)
+			const typeLabel = normalizeTypeLabel(type)
 			const paramMatch = withoutType.match(/^([^\s]+)\s*(.*)$/)
 
 			if (paramMatch) {
 				const [, rawName, description] = paramMatch
-				const cleanName = rawName.replace(/^\[|\]$/g, '')
-				const suffix = type ? ` (${type})` : ''
+				const cleanName = normalizeNameToken(rawName)
+				const cleanDescription = normalizeDescription(
+					description,
+					withoutType
+				)
+				const suffix = typeLabel ? ` (${typeLabel})` : ''
 				params.push(
-					description
-						? `- \`${cleanName}\`${suffix}: ${description}`
-						: `- \`${cleanName}\`${suffix}`
+					cleanName && cleanDescription
+						? `- \`${cleanName}\`${suffix}: ${cleanDescription}`
+						: cleanName
+							? `- \`${cleanName}\`${suffix}`
+							: cleanDescription
+								? suffix
+									? `- ${cleanDescription}${suffix}`
+									: `- ${cleanDescription}`
+								: suffix
+									? `- parameter${suffix}`
+									: '- parameter'
 				)
 			} else if (withoutType || type) {
-				const fallbackLabel = withoutType || 'parameter'
+				const fallbackLabel =
+					normalizeDescription(withoutType, 'parameter') ||
+					'parameter'
 				params.push(
-					type
-						? `- \`${fallbackLabel}\` (${type})`
+					typeLabel
+						? `- \`${fallbackLabel}\` (${typeLabel})`
 						: `- ${fallbackLabel}`
 				)
 			}
@@ -231,21 +274,25 @@ const summarizeTagLines = (content) => {
 
 		if (tag === 'returns' || tag === 'return') {
 			const { type, rest: withoutType } = stripLeadingTypeExpression(rest)
-			returnsLine = withoutType
-				? type
-					? `${withoutType} (${type})`
-					: withoutType
-				: type
+			const typeLabel = normalizeTypeLabel(type)
+			const description = normalizeDescription(withoutType)
+			returnsLine = description
+				? typeLabel
+					? `${description} (${typeLabel})`
+					: description
+				: typeLabel
 			continue
 		}
 
 		if (tag === 'throws' || tag === 'throw') {
 			const { type, rest: withoutType } = stripLeadingTypeExpression(rest)
-			throwsLine = withoutType
-				? type
-					? `${withoutType} (${type})`
-					: withoutType
-				: type
+			const typeLabel = normalizeTypeLabel(type)
+			const description = normalizeDescription(withoutType)
+			throwsLine = description
+				? typeLabel
+					? `${description} (${typeLabel})`
+					: description
+				: typeLabel
 			continue
 		}
 
