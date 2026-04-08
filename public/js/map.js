@@ -272,35 +272,18 @@ class AppMap {
 	addSchoolMarker() {
 		if (!this.instance) return null
 
-		const details = {
+		const marker = {
 			title: 'SILA Westerlo Bovenschool',
 			lines: ['Denis Voetsstraat 21', '2260 Westerlo'],
 			mapsUrl:
 				'https://www.google.com/maps/search/?api=1&query=Denis+Voetsstraat+21%2C+2260+Westerlo',
-			icon: 'fa-school'
-		}
-
-		const coords = {
+			icon: 'fa-school',
 			latitude: 51.08839307348528,
 			longitude: 4.911829081837887
 		}
 
-		const marker = L.marker([coords.latitude, coords.longitude], {
-			title: 'SILA Westerlo Bovenschool',
-			icon: this.createMarkerIcon('fa-school')
-		}).addTo(this.instance)
-		const popup = L.popup([coords.latitude, coords.longitude], {
-			closeButton: false,
-			autoClose: false,
-			closeOnClick: true,
-			className: 'map-popup',
-			content: this.buildPopupCard(details)
-		})
-		marker.bindPopup(popup)
-		if (details.openPopup) {
-			marker.openPopup()
-		}
-		return marker
+		const normalized = this.normalizeMarker(marker, this.readCenter())
+		this.addNormalizedMarker(normalized)
 	}
 
 	/**
