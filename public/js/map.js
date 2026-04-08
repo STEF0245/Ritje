@@ -52,6 +52,10 @@ class AppMap {
 		this.addMarkers(this.readDatasetMarkers(center))
 		this.addAttribution()
 
+		if (this.element.dataset.schoolMarker === 'true') {
+			this.addSchoolMarker()
+		}
+
 		return this
 	}
 
@@ -122,6 +126,7 @@ class AppMap {
 			latitude,
 			longitude,
 			title: `${marker.title || marker.fullName || 'Locatie'}`,
+			icon: marker.icon || null,
 			lines: Array.isArray(marker.lines)
 				? marker.lines
 				: [marker.addressLineOne || '', marker.addressLineTwo || ''],
@@ -180,10 +185,10 @@ class AppMap {
 	 * @details  Uses a Font Awesome house icon inside a Leaflet div icon wrapper.
 	 * @returns {object} Leaflet div icon instance.
 	 */
-	createMarkerIcon() {
+	createMarkerIcon(icon) {
 		return L.divIcon({
 			className: 'custom-div-icon',
-			html: '<i class="fas fa-house text-[1.25rem] theme-accent-text"></i>',
+			html: `<i class="fas ${icon || 'fa-house'} text-[1.25rem] theme-accent-text"></i>`,
 			iconSize: [24, 24],
 			iconAnchor: [12, 12],
 			popupAnchor: [0, -6]
@@ -236,7 +241,7 @@ class AppMap {
 	/**
 	 * @brief  Add a single normalized marker to the map.
 	 * @details  Creates marker and popup instances and optionally opens the popup immediately.
-	 * @param {{latitude: number, longitude: number, title: string, lines: Array<string>, mapsUrl?: string, openPopup?: boolean}} normalized - Normalized marker payload.
+	 * @param {{latitude: number, longitude: number, title: string, lines: Array<string>, mapsUrl?: string, openPopup?: boolean, icon?: string}} normalized - Normalized marker payload.
 	 * @returns {object|null} Leaflet marker or null when prerequisites are missing.
 	 */
 	addNormalizedMarker(normalized) {
@@ -246,7 +251,7 @@ class AppMap {
 
 		const marker = L.marker([normalized.latitude, normalized.longitude], {
 			title: normalized.title,
-			icon: this.createMarkerIcon()
+			icon: this.createMarkerIcon(normalized.icon)
 		}).addTo(this.instance)
 
 		const popup = L.popup([normalized.latitude, normalized.longitude], {
@@ -259,6 +264,40 @@ class AppMap {
 
 		marker.bindPopup(popup)
 		if (normalized.openPopup) {
+			marker.openPopup()
+		}
+		return marker
+	}
+
+	addSchoolMarker() {
+		if (!this.instance) return null
+
+		const details = {
+			title: 'SILA Westerlo Bovenschool',
+			lines: ['Denis Voetsstraat 21', '2260 Westerlo'],
+			mapsUrl:
+				'https://www.google.com/maps/search/?api=1&query=Denis+Voetsstraat+21%2C+2260+Westerlo',
+			icon: 'fa-school'
+		}
+
+		const coords = {
+			latitude: 51.08839307348528,
+			longitude: 4.911829081837887
+		}
+
+		const marker = L.marker([coords.latitude, coords.longitude], {
+			title: 'SILA Westerlo Bovenschool',
+			icon: this.createMarkerIcon('fa-school')
+		}).addTo(this.instance)
+		const popup = L.popup([coords.latitude, coords.longitude], {
+			closeButton: false,
+			autoClose: false,
+			closeOnClick: true,
+			className: 'map-popup',
+			content: this.buildPopupCard(details)
+		})
+		marker.bindPopup(popup)
+		if (details.openPopup) {
 			marker.openPopup()
 		}
 		return marker

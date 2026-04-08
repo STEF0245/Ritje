@@ -26,16 +26,14 @@
 		const safeAddressLineTwo = `${postalCode} ${city}`.trim() || '-'
 		const mapsUrl = hasCoordinates ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(safeAddressLineOne + ', ' + safeAddressLineTwo)}` : null;
 		const mapMarkers = hasCoordinates
-			? [
-					{
-						latitude: coords?.latitude,
-						longitude: coords?.longitude,
-						title: fullName,
-						lines: [safeAddressLineOne, safeAddressLineTwo],
-						mapsUrl,
-						openPopup: true
-					}
-			  ]
+			? [{
+					latitude: coords?.latitude,
+					longitude: coords?.longitude,
+					title: 'Uw woonplaats',
+					lines: [safeAddressLineOne, safeAddressLineTwo],
+					mapsUrl,
+					openPopup: true
+				}]
 			: []
 		const mapMarkersJson = JSON.stringify(mapMarkers)
 		const scheduleDays = []
@@ -156,6 +154,7 @@
 											data-latitude="<%= metadata?.coords?.latitude || '' %>"
 											data-longitude="<%= metadata?.coords?.longitude || '' %>"
 											data-markers="<%= mapMarkersJson %>"
+											data-school-marker="true"
 										></div>
 									</div>
 								</details>
