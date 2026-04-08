@@ -31,6 +31,7 @@ class AppMap {
 	constructor(element) {
 		this.element = element
 		this.instance = null
+		this.markers = []
 	}
 
 	/**
@@ -49,7 +50,8 @@ class AppMap {
 
 		this.instance = this.createMap(center.latitude, center.longitude)
 		this.addTileLayer()
-		this.addMarkers(this.readDatasetMarkers(center))
+		const markers = this.addMarkers(this.readDatasetMarkers(center))
+		this.markers.push(...markers)
 		this.addAttribution()
 
 		if (this.element.dataset.schoolMarker === 'true') {
@@ -73,6 +75,25 @@ class AppMap {
 		}
 
 		return { latitude, longitude }
+	}
+
+	calculateCenter() {
+		if (!this.markers || this.markers.length === 0) return null
+		const latitudes = this.markers.map((marker) => marker.getLatLng().lat)
+		const longitudes = this.markers.map((marker) => marker.getLatLng().lng)
+		const averageLatitude =
+			latitudes.reduce((sum, lat) => sum + lat, 0) / latitudes.length
+		const averageLongitude =
+			longitudes.reduce((sum, lng) => sum + lng, 0) / longitudes.length
+		return { latitude: averageLatitude, longitude: averageLongitude }
+	}
+
+	centerMap() {
+		if (!this.instance) return
+		const center = this.calculateCenter()
+		if (center) {
+			this.instance.setView([center.latitude, center.longitude], 16)
+		}
 	}
 
 	/**
@@ -283,7 +304,8 @@ class AppMap {
 		}
 
 		const normalized = this.normalizeMarker(marker, this.readCenter())
-		this.addNormalizedMarker(normalized)
+		const schoolMarker = this.addNormalizedMarker(normalized)
+		this.markers.push(schoolMarker)
 	}
 
 	/**
