@@ -5,8 +5,7 @@
 		const firstName = metadata?.name?.first || ''
 		const lastName = metadata?.name?.last || ''
 		const fullName = `${metadata?.name?.full || ''}`.trim() || 'Ritje Gebruiker'
-		const initials = fullName.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'A'
-
+		const initials = fullName.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'RG'
 		const photoURL = user?.photoURL || null
 		const phoneNumber = user?.phoneNumber || ''
 		const joinedDate = user?.createdAt ? new Date(user.createdAt).toLocaleString('nl-BE', { 
@@ -36,7 +35,6 @@
 				}]
 			: []
 		const mapMarkersJson = JSON.stringify(mapMarkers)
-		const scheduleDays = []
 	%>
 	<%- include('partials/head', { title }) %>
 
@@ -159,25 +157,6 @@
 									</div>
 								</details>
 							</div>
-						</div>
-					</article>
-
-					<article class="theme-panel p-6 lg:col-span-2 lg:col-start-2">
-						<h2 class="text-xl font-extrabold theme-text-primary">Urenrooster</h2>
-						<p class="theme-text-muted text-sm mt-1">
-							Bekijk je huidige urenrooster per dag. Dit helpt collega's om ritten te plannen.
-						</p>
-
-						<div class="mt-6 grid grid-cols-1 md:grid-cols-3 md:col-width-auto gap-4">
-							<% scheduleDays.forEach((day) => {
-								const daySchedule = weeklySchedule?.[day.key] || null
-								const hasHours = Boolean(daySchedule?.start && daySchedule?.end)
-							%>
-								<div class="theme-surface theme-pill border theme-border p-4">
-									<p class="text-xs uppercase tracking-[0.12em] theme-text-muted"><%= day.label %></p>
-									<p class="theme-text-primary font-semibold mt-1"><%= hasHours ? `${daySchedule.start} - ${daySchedule.end}` : 'Geen uren ingesteld' %></p>
-								</div>
-							<% }) %>
 						</div>
 					</article>
 				</div>
