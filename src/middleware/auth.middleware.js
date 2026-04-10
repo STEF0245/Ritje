@@ -37,10 +37,7 @@ const mapUserData = (firebaseUser, dbUser, admin) => {
 			dbUser?.emailVerified || firebaseUser?.emailVerified || false,
 		createdAt:
 			firebaseUser?.metadata?.creationTime || dbUser?.createdAt || '',
-		lastSignInTime:
-			firebaseUser?.metadata?.lastSignInTime ||
-			dbUser?.lastSignInTime ||
-			'',
+		lastSignInTime: firebaseUser?.metadata?.lastSignInTime || '',
 		disabled: firebaseUser?.disabled || false,
 		metadata: dbUser || {},
 		isAdmin: admin || false

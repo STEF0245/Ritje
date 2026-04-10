@@ -326,7 +326,6 @@ export const postUserNewPage = async (req, res) => {
 			createdAt:
 				createdAuthUser.metadata.creationTime ||
 				new Date().toISOString(),
-			lastSignInTime: createdAuthUser.metadata.lastSignInTime || '',
 			updatedAt: new Date()
 		}
 
