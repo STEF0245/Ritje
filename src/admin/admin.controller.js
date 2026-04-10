@@ -308,6 +308,7 @@ export const postUserNewPage = async (req, res) => {
 		})
 
 		const userRecord = {
+			uid: createdAuthUser.uid,
 			email: safeEmail,
 			phoneNumber: safePhoneNumber,
 			photoURL: safePhotoURL,
