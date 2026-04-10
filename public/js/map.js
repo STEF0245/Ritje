@@ -73,12 +73,13 @@ class AppMap {
 	 * @returns {{latitude: number, longitude: number}|null} Parsed center coordinates.
 	 */
 	readCenter() {
+		const calculatedCenter = this.calculateCenter()
+		if (calculatedCenter) return calculatedCenter
 		const latitude = parseFloat(this.element.dataset.latitude || '')
 		const longitude = parseFloat(this.element.dataset.longitude || '')
 
-		if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+		if (!Number.isFinite(latitude) || !Number.isFinite(longitude))
 			return null
-		}
 
 		return { latitude, longitude }
 	}
