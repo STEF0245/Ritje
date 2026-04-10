@@ -8,10 +8,9 @@ import db from '../firebase/db.js'
 
 const DEFAULT_MAINTENANCE = {
 	enabled: false,
-	message: 'De site is tijdelijk in onderhoud. Probeer het later opnieuw.',
+	status: 'In onderhoud',
 	startTime: null,
-	endTime: null,
-	updatedAt: null
+	endTime: null
 }
 
 const settings = {
@@ -22,7 +21,7 @@ const settings = {
  * @brief  Normalize persisted maintenance settings into the expected shape.
  * @details  Supports legacy keys and ensures boolean fields are properly coerced while inheriting defaults.
  * @param {object} [data={}] - Raw settings payload from Realtime Database.
- * @returns {{enabled: boolean, message: string, startTime: string|null, endTime: string|null, updatedAt: string|null}} Normalized maintenance settings.
+ * @returns {{enabled: boolean, status: string, startTime: string|null, endTime: string|null}} Normalized maintenance settings.
  */
 const normalizeMaintenanceSettings = (data = {}) => {
 	const source = data.maintenance || data.maintenanceMode || {}
@@ -75,7 +74,7 @@ const checkMaintenanceMode = async (req, res, next) => {
 
 		return res.status(503).render('maintenance', {
 			title: 'Onderhoud',
-			message: settings?.maintenance?.message,
+			status: settings?.maintenance?.status,
 			startTime: settings?.maintenance?.startTime,
 			endTime: settings?.maintenance?.endTime
 		})
