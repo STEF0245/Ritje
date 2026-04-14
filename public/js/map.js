@@ -16,6 +16,10 @@ class AppMap {
 	}
 
 	static DEFAULT_SELECTOR = '[data-map]'
+	static EMPTY_STATE_BEHAVIOR = {
+		SHOW_MAP: 'show-map',
+		SHOW_MESSAGE: 'show-message'
+	}
 
 	/**
 	 * @brief  Initialize all map elements matching the selector.
@@ -49,6 +53,17 @@ class AppMap {
 	init() {
 		if (!this.element) return this
 
+		const hasDatasetMarkers = this.parseDatasetMarkers().length > 0
+		const hasSchoolMarker = this.element.dataset.schoolMarker === 'true'
+		if (
+			!hasDatasetMarkers &&
+			!hasSchoolMarker &&
+			this.shouldShowEmptyMessage()
+		) {
+			this.showNoCoordinatesMessage()
+			return this
+		}
+
 		const center = this.readCenter()
 		this.initialCenter = center
 		const datasetMarkers = this.readDatasetMarkers(center)
@@ -66,6 +81,15 @@ class AppMap {
 		this.addCenterControl()
 
 		return this
+	}
+
+	shouldShowEmptyMessage() {
+		const behavior = this.element.dataset.emptyStateBehavior
+		if (!behavior) return false
+
+		return (
+			behavior.toLowerCase() === AppMap.EMPTY_STATE_BEHAVIOR.SHOW_MESSAGE
+		)
 	}
 
 	/**
@@ -471,7 +495,7 @@ class AppMap {
 
 	/**
 	 * @brief  Show a fallback message when no valid coordinates are available.
-	 * @details  Replaces map content with a styled explanatory message.
+	 * @details  Replaces map content with a styled explanatory message when configured for empty marker sets.
 	 * @returns {void}
 	 */
 	showNoCoordinatesMessage() {
