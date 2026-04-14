@@ -312,7 +312,6 @@ export const postUserNewPage = async (req, res) => {
 			email: safeEmail,
 			phoneNumber: safePhoneNumber,
 			photoURL: safePhotoURL,
-			emailVerified: false,
 			name: {
 				first: safeFirstName,
 				last: safeLastName,

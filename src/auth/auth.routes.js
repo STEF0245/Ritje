@@ -10,8 +10,10 @@ import config from '../config.js'
 import {
 	getLoginPage,
 	loginController,
-	logoutController
+	logoutController,
+	getIdTokenController
 } from './auth.controller.js'
+import requireAuth from '../middleware/auth.middleware.js'
 
 const router = express.Router()
 
@@ -34,6 +36,7 @@ const logoutRateLimit = rateLimit({
 router.get('/login', getLoginPage)
 router.post('/login', loginRateLimit, loginController)
 router.post('/logout', logoutRateLimit, logoutController)
+router.get('/api/id-token', requireAuth, getIdTokenController)
 router.get('/api/firebase-config', (req, res) => {
 	res.json(config.firebase.web)
 })

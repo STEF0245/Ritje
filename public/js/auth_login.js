@@ -4,26 +4,14 @@
  * @details  This script initializes the Firebase app with configuration fetched from the server, listens for the login form submission, and uses Firebase Authentication to sign in the user with email and password. Upon successful login, it retrieves the ID token and submits it to the server for session cookie creation. It also provides user feedback on the login status.
  */
 
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js'
-import {
-	getAuth,
-	signInWithEmailAndPassword,
-	signOut
-} from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js'
+import { auth } from './firebase.js'
+import { signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js'
 
 const form = document.getElementById('login-form')
 const statusNode = document.getElementById('login-status')
 const emailInput = document.getElementById('email')
 const passwordInput = document.getElementById('password')
 const idTokenInput = document.getElementById('idToken')
-
-const requiredConfigKeys = ['apiKey', 'authDomain', 'projectId', 'appId']
-// Fetch config from server instead of window
-const response = await fetch('/api/firebase-config')
-const firebaseConfig = await response.json()
-const hasValidConfig = requiredConfigKeys.every((key) =>
-	Boolean(firebaseConfig[key])
-)
 
 if (!form || !emailInput || !passwordInput || !idTokenInput) {
 	throw new Error('Login formulier is niet correct geladen.')
@@ -42,19 +30,6 @@ const setStatus = (message, type) => {
 		statusNode.className = `mt-4 text-sm font-medium ${type === 'info' ? 'text-blue-500' : ''} ${type === 'danger' ? 'text-red-500' : ''}`
 	}
 }
-
-if (!hasValidConfig) {
-	if (statusNode) {
-		setStatus(
-			'Authenticatieconfiguratie ontbreekt. Neem contact op met de beheerder.',
-			'danger'
-		)
-	}
-	throw new Error('Missing Firebase web configuration for login flow.')
-}
-
-const app = initializeApp(firebaseConfig)
-const auth = getAuth(app)
 
 form.addEventListener('submit', async (event) => {
 	event.preventDefault()

@@ -8,8 +8,8 @@
 	const createdAt = locals.createdAt || 'Onbekend'
 	const lastSignIn = locals.lastSignIn || 'Onbekend'
 	const emailVerified = Boolean(locals.emailVerified)
-	const verifiedLabel = locals.verifiedLabel || (emailVerified ? 'Ja' : 'Nee')
-	const verifiedTone = locals.verifiedTone || (emailVerified ? 'text-emerald-300' : 'text-amber-300')
+	const verifiedLabel = emailVerified ? 'Ja' : 'Nee'
+	const verifiedTone = emailVerified ? 'text-emerald-300' : 'text-amber-300'
 	const cardClass = locals.cardClass || 'theme-panel p-6 lg:col-span-1 h-full flex flex-col max-h-fit'
 %>
 
@@ -46,7 +46,8 @@
 		</div>
 		<div class="flex items-center justify-between gap-4">
 			<span class="theme-text-muted">E-mail bevestigd</span>
-			<span class="<%= verifiedTone %>"><%= verifiedLabel %></span>
+			<span id="emailVerified" class="<%= verifiedTone %> <%= verifiedLabel === 'Nee' ? 'cursor-pointer' : '' %>"><%= verifiedLabel %></span>
 		</div>
 	</div>
+	<script src="/js/user_email.js" type="module"></script>
 </div>

@@ -31,10 +31,10 @@ const mapUserData = (firebaseUser, dbUser, admin) => {
 		uid: firebaseUser?.uid,
 		email: firebaseUser?.email || dbUser?.email || '',
 		phoneNumber: firebaseUser?.phoneNumber || dbUser?.phoneNumber || '',
-		displayName: dbUser?.name?.full || firebaseUser?.displayName || '',
+		displayName: firebaseUser?.displayName || dbUser?.name?.full || '',
 		photoURL: firebaseUser?.photoURL || dbUser?.photoURL || '',
 		emailVerified:
-			dbUser?.emailVerified || firebaseUser?.emailVerified || false,
+			firebaseUser?.emailVerified || false,
 		createdAt:
 			firebaseUser?.metadata?.creationTime || dbUser?.createdAt || '',
 		lastSignInTime: firebaseUser?.metadata?.lastSignInTime || '',
