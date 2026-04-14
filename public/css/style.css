@@ -588,14 +588,6 @@
 	transition: border-color 0.2s ease;
 }
 
-.profile-map-details[open] .profile-map-panel {
-	border-color: color-mix(
-		in srgb,
-		var(--ride-accent-soft) 70%,
-		var(--ride-border)
-	);
-}
-
 /* Leaflet attribution styling */
 .leaflet-dragging .leaflet-control-attribution {
 	pointer-events: none !important;
@@ -701,4 +693,15 @@
 
 .leaflet-tile.leaflet-tile-loaded {
 	filter: grayscale(1) invert(1) brightness(0.9);
+}
+
+.divide-y > * {
+	border-top-width: 0 !important;
+	border-bottom-width: 0 !important;
+}
+
+.divide-y > :not([hidden]) ~ :not([hidden]) {
+	border-top-width: 1px !important;
+	border-top-style: solid;
+	border-top-color: inherit;
 }
