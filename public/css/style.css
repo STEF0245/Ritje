@@ -698,3 +698,7 @@
 .unset {
 	all: unset;
 }
+
+.leaflet-tile.leaflet-tile-loaded {
+	filter: grayscale(1) invert(1) brightness(0.9);
+}
