@@ -1,7 +1,7 @@
 /**
  * @file Leaflet map bootstrap for profile and admin location views.
  * @brief  Renders map markers and popup content from server-provided data.
- * @details  This script defines the AppMap class which initializes Leaflet maps on elements with the `data-map` attribute. It reads center coordinates and marker data from the element's dataset, creates a map instance, adds tile layers, and renders markers with custom icons and popups. The map is constrained to Belgian boundaries and includes proper attribution. If no valid coordinates are provided, it shows a user-friendly message instead of the map.
+ * @details  This script defines the AppMap class which initializes Leaflet maps on elements with the `data-map` attribute. It derives the initial center from dataset markers, optional school marker coordinates, or a Belgian fallback center. It then creates a map instance, adds tile layers, and renders markers with custom icons and popups. The map is constrained to Belgian boundaries and includes proper attribution.
  */
 
 class AppMap {
@@ -50,16 +50,12 @@ class AppMap {
 		if (!this.element) return this
 
 		const center = this.readCenter()
-		if (!center) {
-			this.showNoCoordinatesMessage()
-			return this
-		}
-
 		this.initialCenter = center
+		const datasetMarkers = this.readDatasetMarkers(center)
 
 		this.instance = this.createMap(center.latitude, center.longitude)
 		this.addTileLayer()
-		const markers = this.addMarkers(this.readDatasetMarkers(center))
+		const markers = this.addMarkers(datasetMarkers, center)
 		this.markers.push(...markers)
 		this.addAttribution()
 
@@ -93,46 +89,48 @@ class AppMap {
 	}
 
 	readCenterFromDatasetMarkers() {
+		const parsedMarkers = this.parseDatasetMarkers()
+		if (parsedMarkers.length === 0) return null
+
+		const markerCoordinates = parsedMarkers
+			.map((marker) => {
+				const latitude = Number(marker?.latitude ?? marker?.lat)
+				const longitude = Number(marker?.longitude ?? marker?.lon)
+				if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+					return null
+				}
+				return { latitude, longitude }
+			})
+			.filter(Boolean)
+
+		if (markerCoordinates.length === 0) return null
+
+		const averageLatitude =
+			markerCoordinates.reduce(
+				(sum, marker) => sum + marker.latitude,
+				0
+			) / markerCoordinates.length
+		const averageLongitude =
+			markerCoordinates.reduce(
+				(sum, marker) => sum + marker.longitude,
+				0
+			) / markerCoordinates.length
+
+		return {
+			latitude: averageLatitude,
+			longitude: averageLongitude
+		}
+	}
+
+	parseDatasetMarkers() {
 		const rawMarkers = this.element?.dataset?.markers
-		if (!rawMarkers) return null
+		if (!rawMarkers) return []
 
 		try {
 			const parsed = JSON.parse(rawMarkers)
-			if (!Array.isArray(parsed) || parsed.length === 0) return null
-
-			const markerCoordinates = parsed
-				.map((marker) => {
-					const latitude = Number(marker?.latitude ?? marker?.lat)
-					const longitude = Number(marker?.longitude ?? marker?.lon)
-					if (
-						!Number.isFinite(latitude) ||
-						!Number.isFinite(longitude)
-					) {
-						return null
-					}
-					return { latitude, longitude }
-				})
-				.filter(Boolean)
-
-			if (markerCoordinates.length === 0) return null
-
-			const averageLatitude =
-				markerCoordinates.reduce(
-					(sum, marker) => sum + marker.latitude,
-					0
-				) / markerCoordinates.length
-			const averageLongitude =
-				markerCoordinates.reduce(
-					(sum, marker) => sum + marker.longitude,
-					0
-				) / markerCoordinates.length
-
-			return {
-				latitude: averageLatitude,
-				longitude: averageLongitude
-			}
+			return Array.isArray(parsed) ? parsed : []
 		} catch {
-			return null
+			return []
 		}
 	}
 
@@ -218,21 +216,9 @@ class AppMap {
 	 * @returns {Array<object>} Normalized marker objects.
 	 */
 	readDatasetMarkers(center) {
-		const rawMarkers = this.element.dataset.markers
-		if (rawMarkers) {
-			try {
-				const parsed = JSON.parse(rawMarkers)
-				if (Array.isArray(parsed)) {
-					return parsed
-						.map((marker) => this.normalizeMarker(marker, center))
-						.filter(Boolean)
-				}
-			} catch {
-				return []
-			}
-		}
-
-		return []
+		return this.parseDatasetMarkers()
+			.map((marker) => this.normalizeMarker(marker, center))
+			.filter(Boolean)
 	}
 
 	/**
@@ -437,17 +423,14 @@ class AppMap {
 	 * @param {Array<object>} [markers=[]] - Marker list.
 	 * @returns {Array<object>} Rendered Leaflet markers.
 	 */
-	addMarkers(markers = []) {
+	addMarkers(markers = [], fallbackCenter = this.initialCenter) {
 		if (!this.instance || !Array.isArray(markers) || markers.length === 0) {
 			return []
 		}
 
 		return markers
 			.map((marker, index) => {
-				const normalized = this.normalizeMarker(
-					marker,
-					this.readCenter()
-				)
+				const normalized = this.normalizeMarker(marker, fallbackCenter)
 				if (!normalized) {
 					return null
 				}
