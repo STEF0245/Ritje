@@ -46,8 +46,10 @@
 		</div>
 		<div class="flex items-center justify-between gap-4">
 			<span class="theme-text-muted">E-mail bevestigd</span>
-			<span id="emailVerified" class="<%= verifiedTone %> <%= verifiedLabel === 'Nee' ? 'cursor-pointer' : '' %>"><%= verifiedLabel %></span>
+			<span id="emailVerified" class="<%= verifiedTone %> <%= verifiedLabel === 'Nee' && locals.resendVerification ? 'cursor-pointer' : '' %>"><%= verifiedLabel %></span>
 		</div>
 	</div>
-	<script src="/js/user_email.js" type="module"></script>
+	<% if (locals.resendVerification) { %>
+		<script src="/js/user_email.js" type="module"></script>
+	<% } %>
 </div>
