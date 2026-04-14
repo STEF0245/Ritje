@@ -41,8 +41,7 @@
 							uid: user?.uid || '-',
 							createdAt: joinedDate,
 							lastSignIn: lastSignInDate,
-							emailVerified: user?.email_verified,
-							verifiedLabel: user?.email_verified ? 'Ja' : 'Nee'
+							emailVerified: user?.emailVerified || false,
 						}) %>
 
 						<div class="mt-4 pt-3 grid grid-cols-2 gap-3">
