@@ -10,6 +10,11 @@ class AppMap {
 		[49.497, 2.5407]
 	]
 
+	static DEFAULT_CENTER_BELGIUM = {
+		latitude: 50.8503,
+		longitude: 4.3517
+	}
+
 	static DEFAULT_SELECTOR = '[data-map]'
 
 	/**
@@ -73,16 +78,62 @@ class AppMap {
 	 * @returns {{latitude: number, longitude: number}|null} Parsed center coordinates.
 	 */
 	readCenter() {
-		const calculatedCenter = this.calculateCenter()
-		if (calculatedCenter) return calculatedCenter
-		
-		const latitude = parseFloat(this.element.dataset.latitude || '')
-		const longitude = parseFloat(this.element.dataset.longitude || '')
+		const centerFromDatasetMarkers = this.readCenterFromDatasetMarkers()
+		if (centerFromDatasetMarkers) return centerFromDatasetMarkers
 
-		if (!Number.isFinite(latitude) || !Number.isFinite(longitude))
+		if (this.element.dataset.schoolMarker === 'true') {
+			const schoolMarker = this.getSchoolMarkerData()
+			return {
+				latitude: schoolMarker.latitude,
+				longitude: schoolMarker.longitude
+			}
+		}
+
+		return AppMap.DEFAULT_CENTER_BELGIUM
+	}
+
+	readCenterFromDatasetMarkers() {
+		const rawMarkers = this.element?.dataset?.markers
+		if (!rawMarkers) return null
+
+		try {
+			const parsed = JSON.parse(rawMarkers)
+			if (!Array.isArray(parsed) || parsed.length === 0) return null
+
+			const markerCoordinates = parsed
+				.map((marker) => {
+					const latitude = Number(marker?.latitude ?? marker?.lat)
+					const longitude = Number(marker?.longitude ?? marker?.lon)
+					if (
+						!Number.isFinite(latitude) ||
+						!Number.isFinite(longitude)
+					) {
+						return null
+					}
+					return { latitude, longitude }
+				})
+				.filter(Boolean)
+
+			if (markerCoordinates.length === 0) return null
+
+			const averageLatitude =
+				markerCoordinates.reduce(
+					(sum, marker) => sum + marker.latitude,
+					0
+				) / markerCoordinates.length
+			const averageLongitude =
+				markerCoordinates.reduce(
+					(sum, marker) => sum + marker.longitude,
+					0
+				) / markerCoordinates.length
+
+			return {
+				latitude: averageLatitude,
+				longitude: averageLongitude
+			}
+		} catch {
 			return null
-
-		return { latitude: latitude, longitude: longitude }
+		}
 	}
 
 	calculateCenter() {
@@ -357,15 +408,7 @@ class AppMap {
 	addSchoolMarker() {
 		if (!this.instance) return null
 
-		const marker = {
-			title: 'SILA Westerlo Bovenschool',
-			lines: ['Denis Voetsstraat 21', '2260 Westerlo'],
-			mapsUrl:
-				'https://www.google.com/maps/search/?api=1&query=Denis+Voetsstraat+21%2C+2260+Westerlo',
-			icon: 'fa-school',
-			latitude: 51.08839307348528,
-			longitude: 4.911829081837887
-		}
+		const marker = this.getSchoolMarkerData()
 
 		const normalized = this.normalizeMarker(marker, this.readCenter())
 		const schoolMarker = this.addNormalizedMarker(normalized)
@@ -374,6 +417,18 @@ class AppMap {
 		}
 
 		return schoolMarker
+	}
+
+	getSchoolMarkerData() {
+		return {
+			title: 'SILA Westerlo Bovenschool',
+			lines: ['Denis Voetsstraat 21', '2260 Westerlo'],
+			mapsUrl:
+				'https://www.google.com/maps/search/?api=1&query=Denis+Voetsstraat+21%2C+2260+Westerlo',
+			icon: 'fa-school',
+			latitude: 51.08839307348528,
+			longitude: 4.911829081837887
+		}
 	}
 
 	/**
