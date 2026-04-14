@@ -78,6 +78,10 @@ class AppMap {
 			this.addSchoolMarker()
 		}
 
+		if (this.element.dataset.center === 'true') {
+			this.centerMap()
+		}
+
 		this.addCenterControl()
 
 		return this
