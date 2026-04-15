@@ -25,37 +25,14 @@ const setupEmailVerificationResend = async () => {
 		verifiedSpan.style.pointerEvents = 'none'
 
 		try {
-			const response = await fetch(
-				'/api/auth/resend-verification-email',
-				{
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json'
-					}
-				}
-			)
-
-			if (!response.ok) {
-				const error = await response.json().catch(() => null)
-				throw new Error(
-					error?.message || 'Failed to send verification email'
-				)
-			}
-
-			console.log(
-				'[Email Verification] Verification email sent successfully'
-			)
-			alert(
-				'Verificatie-e-mail is opnieuw verzonden. Controleer je inbox.'
-			)
+			const form = document.createElement('form')
+			form.method = 'POST'
+			form.action = '/api/auth/resend-verification-email'
+			form.style.display = 'none'
+			document.body.appendChild(form)
+			form.submit()
 		} catch (error) {
 			console.error('[Email Verification] Error:', error.message)
-			alert(
-				'Er is een fout opgetreden bij het verzenden van de verificatie-e-mail. Probeer het later opnieuw.'
-			)
-		} finally {
-			verifiedSpan.style.opacity = '1'
-			verifiedSpan.style.pointerEvents = 'auto'
 		}
 	})
 }

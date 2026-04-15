@@ -5,7 +5,7 @@
  */
 
 import express from 'express'
-import rateLimit from 'express-rate-limit'
+import { rateLimit, ipKeyGenerator } from 'express-rate-limit'
 import config from '../config.js'
 import {
 	getLoginPage,
@@ -13,12 +13,18 @@ import {
 	logoutController,
 	resendVerificationEmailController
 } from './auth.controller.js'
+import { renderWithNotifications } from '../utils/notification.util.js'
 
 const router = express.Router()
+
+const keyGenerator = (req) => {
+	return req.user?.uid || ipKeyGenerator(req.ip)
+}
 
 const loginRateLimit = rateLimit({
 	windowMs: 15 * 60 * 1000,
 	max: 10,
+	keyGenerator,
 	standardHeaders: true,
 	legacyHeaders: false,
 	message: { message: 'Too many login attempts. Please try again later.' }
@@ -27,6 +33,7 @@ const loginRateLimit = rateLimit({
 const logoutRateLimit = rateLimit({
 	windowMs: 15 * 60 * 1000,
 	max: 20,
+	keyGenerator,
 	standardHeaders: true,
 	legacyHeaders: false,
 	message: { message: 'Too many logout attempts. Please try again later.' }
@@ -35,10 +42,28 @@ const logoutRateLimit = rateLimit({
 const resendVerificationRateLimit = rateLimit({
 	windowMs: 5 * 60 * 1000,
 	max: 1,
+	keyGenerator,
 	standardHeaders: true,
 	legacyHeaders: false,
 	message: {
 		message: 'Too many verification email attempts. Please try again later.'
+	},
+	handler: (req, res, next, options) => {
+		return renderWithNotifications(res, {
+			status: options.statusCode,
+			view: 'profile',
+			title: 'Profiel',
+			notifications: [
+				{
+					type: 'error',
+					message:
+						'Te veel verzoeken om de verificatie-e-mail opnieuw te verzenden. Probeer het later opnieuw.'
+				}
+			],
+			extra: {
+				user: req.user
+			}
+		})
 	}
 })
 

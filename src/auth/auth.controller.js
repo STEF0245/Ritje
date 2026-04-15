@@ -6,7 +6,10 @@
 
 import { verifyIdToken } from '../firebase/auth.js'
 import config from '../config.js'
-import { renderWithErrorNotification } from '../utils/notification.util.js'
+import {
+	renderWithErrorNotification,
+	renderWithNotifications
+} from '../utils/notification.util.js'
 
 /**
  * @brief  Render the login page.
@@ -89,8 +92,23 @@ export const resendVerificationEmailController = async (req, res) => {
 	try {
 		const idToken = req.user?.idToken
 		if (!idToken) {
-			return res.status(401).json({
-				message: 'Niet geverifieerd. Log in en probeer het opnieuw.'
+			return res.status(401).redirect('/login')
+		}
+
+		if (req.user.emailVerified) {
+			return renderWithNotifications(res, {
+				status: 200,
+				view: 'profile',
+				title: 'Profiel',
+				notifications: [
+					{
+						type: 'error',
+						message: 'E-mailadres is al geverifieerd.'
+					}
+				],
+				extra: {
+					user: req.user
+				}
 			})
 		}
 
@@ -113,17 +131,52 @@ export const resendVerificationEmailController = async (req, res) => {
 			const message =
 				errorBody?.error?.message ||
 				'Er is een fout opgetreden bij het verzenden van de verificatie-e-mail.'
-			return res.status(502).json({ message })
+			return renderWithNotifications(res, {
+				status: 502,
+				view: 'profile',
+				title: 'Profiel',
+				notifications: [
+					{
+						type: 'error',
+						message
+					}
+				],
+				extra: {
+					user: req.user
+				}
+			})
 		}
 
-		return res.json({
-			message: 'Verificatie-e-mail is opnieuw verzonden.'
+		return renderWithNotifications(res, {
+			status: 200,
+			view: 'profile',
+			title: 'Profiel',
+			notifications: [
+				{
+					type: 'success',
+					message: 'Verificatie-e-mail is opnieuw verzonden.'
+				}
+			],
+			extra: {
+				user: req.user
+			}
 		})
 	} catch (error) {
 		console.error('[Auth] Resend verification email error:', error)
-		return res.status(500).json({
-			message:
-				'Er is een fout opgetreden bij het verzenden van de verificatie-e-mail.'
+		return renderWithNotifications(res, {
+			status: 500,
+			view: 'profile',
+			title: 'Profiel',
+			notifications: [
+				{
+					type: 'error',
+					message:
+						'Er is een fout opgetreden bij het verzenden van de verificatie-e-mail.'
+				}
+			],
+			extra: {
+				user: req.user
+			}
 		})
 	}
 }
