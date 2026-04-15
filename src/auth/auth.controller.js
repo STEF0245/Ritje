@@ -8,7 +8,7 @@ import { verifyIdToken } from '../firebase/auth.js'
 import config from '../config.js'
 import {
 	renderWithErrorNotification,
-	renderWithNotifications
+	setFlashNotification
 } from '../utils/notification.util.js'
 
 /**
@@ -96,20 +96,11 @@ export const resendVerificationEmailController = async (req, res) => {
 		}
 
 		if (req.user.emailVerified) {
-			return renderWithNotifications(res, {
-				status: 200,
-				view: 'profile',
-				title: 'Profiel',
-				notifications: [
-					{
-						type: 'error',
-						message: 'E-mailadres is al geverifieerd.'
-					}
-				],
-				extra: {
-					user: req.user
-				}
+			setFlashNotification(res, {
+				type: 'error',
+				message: 'E-mailadres is al geverifieerd.'
 			})
+			return res.redirect('/profile')
 		}
 
 		const response = await fetch(
@@ -131,52 +122,25 @@ export const resendVerificationEmailController = async (req, res) => {
 			const message =
 				errorBody?.error?.message ||
 				'Er is een fout opgetreden bij het verzenden van de verificatie-e-mail.'
-			return renderWithNotifications(res, {
-				status: 502,
-				view: 'profile',
-				title: 'Profiel',
-				notifications: [
-					{
-						type: 'error',
-						message
-					}
-				],
-				extra: {
-					user: req.user
-				}
+			setFlashNotification(res, {
+				type: 'error',
+				message
 			})
+			return res.redirect('/profile')
 		}
 
-		return renderWithNotifications(res, {
-			status: 200,
-			view: 'profile',
-			title: 'Profiel',
-			notifications: [
-				{
-					type: 'success',
-					message: 'Verificatie-e-mail is opnieuw verzonden.'
-				}
-			],
-			extra: {
-				user: req.user
-			}
+		setFlashNotification(res, {
+			type: 'success',
+			message: 'Verificatie-e-mail is opnieuw verzonden.'
 		})
+		return res.redirect('/profile')
 	} catch (error) {
 		console.error('[Auth] Resend verification email error:', error)
-		return renderWithNotifications(res, {
-			status: 500,
-			view: 'profile',
-			title: 'Profiel',
-			notifications: [
-				{
-					type: 'error',
-					message:
-						'Er is een fout opgetreden bij het verzenden van de verificatie-e-mail.'
-				}
-			],
-			extra: {
-				user: req.user
-			}
+		setFlashNotification(res, {
+			type: 'error',
+			message:
+				'Er is een fout opgetreden bij het verzenden van de verificatie-e-mail.'
 		})
+		return res.redirect('/profile')
 	}
 }

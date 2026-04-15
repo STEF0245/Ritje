@@ -153,7 +153,19 @@ if (!config.isProduction) {
 app.use(requireAuth)
 app.use((req, res, next) => {
 	res.locals.user = req.user || null
-	res.locals.notifications = []
+	const flashNotification = req.cookies.flashNotification
+	if (flashNotification) {
+		try {
+			res.locals.notifications = [
+				JSON.parse(decodeURIComponent(flashNotification))
+			]
+		} catch {
+			res.locals.notifications = []
+		}
+		res.clearCookie('flashNotification', { path: '/' })
+	} else {
+		res.locals.notifications = []
+	}
 	next()
 })
 app.use(checkMaintenanceMode)

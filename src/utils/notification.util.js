@@ -74,3 +74,24 @@ export const addNotifications = (res, notifications = []) => {
 
 	res.locals.notifications = notifications
 }
+
+/**
+ * @brief  Store a one-time flash notification in a cookie.
+ * @details  Serializes a notification payload so the next request can render it and then clear the cookie.
+ * @param {object} res - Express response object.
+ * @param {object} notification - Notification payload.
+ * @returns {void}
+ */
+export const setFlashNotification = (res, notification) => {
+	res.cookie(
+		'flashNotification',
+		encodeURIComponent(JSON.stringify(notification)),
+		{
+			httpOnly: true,
+			sameSite: 'strict',
+			secure: process.env.NODE_ENV === 'production',
+			maxAge: 60 * 1000,
+			path: '/'
+		}
+	)
+}
