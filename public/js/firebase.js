@@ -24,33 +24,42 @@ const auth = getAuth(app)
 // Enable persistence so auth state is maintained across page reloads
 await setPersistence(auth, browserLocalPersistence)
 
+const initialSession = window.__RITJE_SESSION__ || { idToken: null, user: null }
+
 /**
- * Store the user's ID token for API calls when needed.
- * This is fetched from the server since it's in an HTTP-only cookie.
+ * Store session data for API calls and client-side user context.
+ * This is fetched from the server because the token lives in an HTTP-only cookie.
  */
-let userIdToken = null
+let userIdToken = initialSession.idToken || null
+let currentSessionUser = initialSession.user || null
+
+/**
+ * Fetch and cache the authenticated session payload.
+ * @returns {Promise<{ idToken: string|null, user: object|null }>} Session payload.
+ */
+export const getSessionData = async () => {
+	return {
+		idToken: userIdToken,
+		user: currentSessionUser
+	}
+}
 
 /**
  * Fetch the user's ID token from the server.
  * @returns {Promise<string>} The user's Firebase ID token.
  */
 export const getIdToken = async () => {
-	if (userIdToken) {
-		return userIdToken
-	}
+	const { idToken } = await getSessionData()
+	return idToken
+}
 
-	try {
-		const res = await fetch('/api/id-token')
-		if (res.ok) {
-			const { idToken } = await res.json()
-			userIdToken = idToken
-			return idToken
-		}
-	} catch (error) {
-		console.error('[Firebase] Error fetching ID token:', error)
-	}
-
-	return null
+/**
+ * Fetch the authenticated user from the same session payload as the token.
+ * @returns {Promise<object|null>} Normalized authenticated user object.
+ */
+export const getCurrentUser = async () => {
+	const { user } = await getSessionData()
+	return user
 }
 
 /**

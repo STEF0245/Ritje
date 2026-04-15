@@ -24,20 +24,21 @@ const isPathAuthFree = (path) => {
  * @param {object} firebaseUser - Firebase Auth user record.
  * @param {object} dbUser - User metadata from Realtime Database.
  * @param {boolean} admin - Whether the user has admin access.
+ * @param {string} idToken - Verified Firebase ID token from the session cookie.
  * @returns {object} Normalized authenticated user object.
  */
-const mapUserData = (firebaseUser, dbUser, admin) => {
+const mapUserData = (firebaseUser, dbUser, admin, idToken) => {
 	return {
 		uid: firebaseUser?.uid,
 		email: firebaseUser?.email || dbUser?.email || '',
 		phoneNumber: firebaseUser?.phoneNumber || dbUser?.phoneNumber || '',
 		displayName: firebaseUser?.displayName || dbUser?.name?.full || '',
 		photoURL: firebaseUser?.photoURL || dbUser?.photoURL || '',
-		emailVerified:
-			firebaseUser?.emailVerified || false,
+		emailVerified: firebaseUser?.emailVerified || false,
 		createdAt:
 			firebaseUser?.metadata?.creationTime || dbUser?.createdAt || '',
 		lastSignInTime: firebaseUser?.metadata?.lastSignInTime || '',
+		idToken: idToken || '',
 		disabled: firebaseUser?.disabled || false,
 		metadata: dbUser || {},
 		isAdmin: admin || false
@@ -74,7 +75,7 @@ export const requireAuth = async (req, res, next) => {
 		const userData = userSnapshot.val() || {}
 		const admin = adminSnapshot.val() === true
 
-		req.user = mapUserData(user, userData, admin)
+		req.user = mapUserData(user, userData, admin, idToken)
 
 		if (req.path === '/login') return res.redirect('/profile')
 		next()

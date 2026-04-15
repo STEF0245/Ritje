@@ -3,7 +3,7 @@
  * Uses Firebase REST API to send verification email.
  */
 
-import { getIdToken } from './firebase.js'
+import { getSessionData } from './firebase.js'
 
 const setupEmailVerificationResend = async () => {
 	const verifiedSpan = document.querySelector('#emailVerified')
@@ -15,7 +15,9 @@ const setupEmailVerificationResend = async () => {
 
 	// Only allow clicking if email is not verified (has cursor-pointer class)
 	if (!verifiedSpan.classList.contains('cursor-pointer')) {
-		console.log('[Email Verification] Email is already verified, skipping setup')
+		console.log(
+			'[Email Verification] Email is already verified, skipping setup'
+		)
 		return
 	}
 
@@ -25,8 +27,14 @@ const setupEmailVerificationResend = async () => {
 		verifiedSpan.style.pointerEvents = 'none'
 
 		try {
-			// Get the user's ID token from the server
-			const idToken = await getIdToken()
+			const { user, idToken } = await getSessionData()
+			if (!user?.uid) {
+				console.error(
+					'[Email Verification] Could not resolve authenticated user'
+				)
+				alert('Niet geverifieerd. Log in en probeer het opnieuw.')
+				throw new Error('No authenticated user')
+			}
 
 			if (!idToken) {
 				console.error('[Email Verification] Could not get ID token')
@@ -34,7 +42,9 @@ const setupEmailVerificationResend = async () => {
 				throw new Error('No ID token')
 			}
 
-			console.log('[Email Verification] Got ID token, calling Firebase REST API')
+			console.log(
+				'[Email Verification] Got ID token, calling Firebase REST API'
+			)
 
 			// Call Firebase REST API to send verification email
 			// Get Firebase API key from config
@@ -58,11 +68,17 @@ const setupEmailVerificationResend = async () => {
 
 			if (!response.ok) {
 				const error = await response.json()
-				throw new Error(error.error?.message || 'Failed to send verification email')
+				throw new Error(
+					error.error?.message || 'Failed to send verification email'
+				)
 			}
 
-			console.log('[Email Verification] Verification email sent successfully')
-			alert('Verificatie-e-mail is opnieuw verzonden. Controleer je inbox.')
+			console.log(
+				'[Email Verification] Verification email sent successfully'
+			)
+			alert(
+				'Verificatie-e-mail is opnieuw verzonden. Controleer je inbox.'
+			)
 		} catch (error) {
 			console.error('[Email Verification] Error:', error.message)
 			alert(

@@ -4,7 +4,7 @@
  * @details  Provides handlers for rendering login, verifying ID tokens, issuing secure session cookies, and clearing sessions on logout.
  */
 
-import { verifyIdToken, auth } from '../firebase/auth.js'
+import { verifyIdToken } from '../firebase/auth.js'
 import config from '../config.js'
 import { renderWithErrorNotification } from '../utils/notification.util.js'
 
@@ -76,43 +76,4 @@ export const logoutController = (req, res) => {
 		sameSite: 'strict'
 	})
 	res.redirect('/login')
-}
-
-/**
- * @brief  Get the user's ID token.
- * @details  Returns the ID token from the authenticated user's session cookie.
- *           The token is used by the client for Firebase API operations.
- * @param {object} req - Express request with authenticated user (from middleware).
- * @param {object} res - Express response.
- * @returns {Promise<object>} JSON with idToken.
- */
-export const getIdTokenController = async (req, res) => {
-	try {
-		if (!req.get('cookie')) {
-			return res.status(401).json({
-				message: 'Niet geverifieerd.'
-			})
-		}
-
-		// The token is stored in the cookie. We need to get it from the request
-		// The auth middleware has already verified it, so we can trust it
-		const token = req.cookies.token
-
-		if (!token) {
-			return res.status(401).json({
-				message: 'Geen token gevonden.'
-			})
-		}
-
-		console.log(`[Auth] Returning ID token for ${req.user?.uid}`)
-
-		res.json({
-			idToken: token
-		})
-	} catch (error) {
-		console.error('[Auth] Error getting ID token:', error)
-		res.status(500).json({
-			message: 'Er is een fout opgetreden.'
-		})
-	}
 }
