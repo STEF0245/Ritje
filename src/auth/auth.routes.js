@@ -10,7 +10,8 @@ import config from '../config.js'
 import {
 	getLoginPage,
 	loginController,
-	logoutController
+	logoutController,
+	resendVerificationEmailController
 } from './auth.controller.js'
 
 const router = express.Router()
@@ -31,9 +32,24 @@ const logoutRateLimit = rateLimit({
 	message: { message: 'Too many logout attempts. Please try again later.' }
 })
 
+const resendVerificationRateLimit = rateLimit({
+	windowMs: 5 * 60 * 1000,
+	max: 1,
+	standardHeaders: true,
+	legacyHeaders: false,
+	message: {
+		message: 'Too many verification email attempts. Please try again later.'
+	}
+})
+
 router.get('/login', getLoginPage)
 router.post('/login', loginRateLimit, loginController)
 router.post('/logout', logoutRateLimit, logoutController)
+router.post(
+	'/api/auth/resend-verification-email',
+	resendVerificationRateLimit,
+	resendVerificationEmailController
+)
 router.get('/api/firebase-config', (req, res) => {
 	res.json(config.firebase.web)
 })

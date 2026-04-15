@@ -77,3 +77,53 @@ export const logoutController = (req, res) => {
 	})
 	res.redirect('/login')
 }
+
+/**
+ * @brief  Resend the Firebase email verification message.
+ * @details  Uses the authenticated session token from `req.user` to request a verification email via Firebase Identity Toolkit.
+ * @param {object} req - Express request with authenticated user.
+ * @param {object} res - Express response object.
+ * @returns {Promise<object>} JSON success or error response.
+ */
+export const resendVerificationEmailController = async (req, res) => {
+	try {
+		const idToken = req.user?.idToken
+		if (!idToken) {
+			return res.status(401).json({
+				message: 'Niet geverifieerd. Log in en probeer het opnieuw.'
+			})
+		}
+
+		const response = await fetch(
+			`https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${config.firebase.web.apiKey}`,
+			{
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					requestType: 'VERIFY_EMAIL',
+					idToken
+				})
+			}
+		)
+
+		if (!response.ok) {
+			const errorBody = await response.json().catch(() => null)
+			const message =
+				errorBody?.error?.message ||
+				'Er is een fout opgetreden bij het verzenden van de verificatie-e-mail.'
+			return res.status(502).json({ message })
+		}
+
+		return res.json({
+			message: 'Verificatie-e-mail is opnieuw verzonden.'
+		})
+	} catch (error) {
+		console.error('[Auth] Resend verification email error:', error)
+		return res.status(500).json({
+			message:
+				'Er is een fout opgetreden bij het verzenden van de verificatie-e-mail.'
+		})
+	}
+}

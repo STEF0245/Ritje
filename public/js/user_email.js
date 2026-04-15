@@ -1,9 +1,7 @@
 /**
  * @file Client-side email verification resend handler.
- * Uses Firebase REST API to send verification email.
+ * Requests the server to resend the verification email.
  */
-
-import { getSessionData } from './firebase.js'
 
 const setupEmailVerificationResend = async () => {
 	const verifiedSpan = document.querySelector('#emailVerified')
@@ -27,49 +25,20 @@ const setupEmailVerificationResend = async () => {
 		verifiedSpan.style.pointerEvents = 'none'
 
 		try {
-			const { user, idToken } = await getSessionData()
-			if (!user?.uid) {
-				console.error(
-					'[Email Verification] Could not resolve authenticated user'
-				)
-				alert('Niet geverifieerd. Log in en probeer het opnieuw.')
-				throw new Error('No authenticated user')
-			}
-
-			if (!idToken) {
-				console.error('[Email Verification] Could not get ID token')
-				alert('Niet geverifieerd. Log in en probeer het opnieuw.')
-				throw new Error('No ID token')
-			}
-
-			console.log(
-				'[Email Verification] Got ID token, calling Firebase REST API'
-			)
-
-			// Call Firebase REST API to send verification email
-			// Get Firebase API key from config
-			const configRes = await fetch('/api/firebase-config')
-			const config = await configRes.json()
-			const apiKey = config.apiKey
-
 			const response = await fetch(
-				`https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${apiKey}`,
+				'/api/auth/resend-verification-email',
 				{
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json'
-					},
-					body: JSON.stringify({
-						requestType: 'VERIFY_EMAIL',
-						idToken: idToken
-					})
+					}
 				}
 			)
 
 			if (!response.ok) {
-				const error = await response.json()
+				const error = await response.json().catch(() => null)
 				throw new Error(
-					error.error?.message || 'Failed to send verification email'
+					error?.message || 'Failed to send verification email'
 				)
 			}
 
