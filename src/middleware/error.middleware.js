@@ -5,10 +5,7 @@
  */
 
 import config from '../config.js'
-import {
-	addNotifications,
-	createNotification
-} from '../utils/notification.util.js'
+import { respondWithNotification } from '../utils/notification.util.js'
 
 /**
  * @brief  Send an error response formatted for the requested content type.
@@ -29,12 +26,18 @@ export const sendErrorResponse = ({
 	title = 'Er ging iets mis'
 }) => {
 	if (req.accepts('html')) {
-		addNotifications(res, [createNotification('error', 'Fout', message)])
-		return res.status(status).render('error', {
+		return respondWithNotification(res, {
+			type: 'error',
+			label: 'Fout',
+			message,
+			status,
+			view: 'error',
 			title,
-			error: {
-				status,
-				message
+			extra: {
+				error: {
+					status,
+					message
+				}
 			}
 		})
 	}

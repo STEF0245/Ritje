@@ -5,7 +5,7 @@
  */
 
 import db from '../firebase/db.js'
-import { createNotification } from '../utils/notification.util.js'
+import { respondWithNotification } from '../utils/notification.util.js'
 
 const getAllUsers = async () => {
 	try {
@@ -32,7 +32,8 @@ const buildRideMarkers = (users = []) => {
 			const houseNumber = user?.address?.houseNumber || ''
 			const postalCode = user?.address?.postalCode || ''
 			const city = user?.address?.city || ''
-			const mapsQuery = `${street} ${houseNumber}, ${postalCode} ${city}`.trim()
+			const mapsQuery =
+				`${street} ${houseNumber}, ${postalCode} ${city}`.trim()
 
 			return {
 				latitude,
@@ -56,7 +57,9 @@ const getRideMapCenter = (markers = []) => {
 	}
 
 	const validMarkers = markers.filter(
-		(marker) => Number.isFinite(marker.latitude) && Number.isFinite(marker.longitude)
+		(marker) =>
+			Number.isFinite(marker.latitude) &&
+			Number.isFinite(marker.longitude)
 	)
 
 	if (validMarkers.length === 0) {
@@ -94,15 +97,13 @@ export const getRidePage = async (req, res) => {
 		})
 	} catch (error) {
 		console.error('Error rendering ride page:', error)
-		return res.status(500).render('ride_view', {
-			title: 'Ritje',
-			notifications: [
-				createNotification(
-					'error',
-					'Fout',
-					'Er is een fout opgetreden bij het laden van de ritpagina. Probeer het later opnieuw.'
-				)
-			]
+		return respondWithNotification(res, {
+			type: 'error',
+			message:
+				'Er is een fout opgetreden bij het laden van de ritpagina. Probeer het later opnieuw.',
+			status: 500,
+			view: 'ride_view',
+			title: 'Ritje'
 		})
 	}
 }

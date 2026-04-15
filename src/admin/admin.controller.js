@@ -19,10 +19,7 @@ import {
 	isValidEmail
 } from '../utils/input.util.js'
 import { isValidFirebaseUid } from '../utils/firebase.util.js'
-import {
-	createNotification,
-	renderWithErrorNotification
-} from '../utils/notification.util.js'
+import { respondWithNotification } from '../utils/notification.util.js'
 import {
 	buildRepositoryDocumentation,
 	findDocumentationFile,
@@ -90,16 +87,30 @@ const mapFormDataToNewUser = (formData = {}) => {
  * @returns {object} Express response.
  */
 const renderUserNewPage = (res, options = {}) => {
+	if (options.notification) {
+		return respondWithNotification(res, {
+			type: options.notification.type,
+			label: options.notification.label,
+			message: options.notification.message,
+			status: options.status || 200,
+			view: 'admin_user_new',
+			title: 'Nieuwe gebruiker | Admin',
+			extra: {
+				newUser: options.newUser || {}
+			}
+		})
+	}
+
 	return res.status(options.status || 200).render('admin_user_new', {
 		title: 'Nieuwe gebruiker | Admin',
 		newUser: options.newUser || {},
-		notifications: options.notifications || []
+		notifications: []
 	})
 }
 
 /**
  * @brief  Render a user detail page with a consistent error fallback.
- * @details  Wraps `renderWithErrorNotification` so all admin user detail and edit pages receive the same fallback payload structure.
+ * @details  Uses the shared notification response helper so all admin user detail and edit pages receive the same fallback payload structure.
  * @param {object} res - Express response object.
  * @param {string} view - View name to render.
  * @param {string} title - Page title.
@@ -109,7 +120,8 @@ const renderUserNewPage = (res, options = {}) => {
  * @returns {object} Express response.
  */
 const renderUserDetailError = (res, view, title, status, message, extra) => {
-	return renderWithErrorNotification(res, {
+	return respondWithNotification(res, {
+		type: 'error',
 		status,
 		view,
 		title,
@@ -149,7 +161,8 @@ export const getUsersPage = async (req, res) => {
 		})
 	} catch (error) {
 		console.error('Error fetching users:', error)
-		return renderWithErrorNotification(res, {
+		return respondWithNotification(res, {
+			type: 'error',
 			status: 500,
 			view: 'admin_users',
 			title: 'Gebruikers | Admin',
@@ -200,13 +213,11 @@ export const postUserNewPage = async (req, res) => {
 		return renderUserNewPage(res, {
 			status: 400,
 			newUser: mapFormDataToNewUser(req.body),
-			notifications: [
-				createNotification(
-					'error',
-					'Ongeldige naam',
-					'Voornaam en achternaam zijn verplicht.'
-				)
-			]
+			notification: {
+				type: 'error',
+				label: 'Ongeldige naam',
+				message: 'Voornaam en achternaam zijn verplicht.'
+			}
 		})
 	}
 
@@ -214,13 +225,11 @@ export const postUserNewPage = async (req, res) => {
 		return renderUserNewPage(res, {
 			status: 400,
 			newUser: mapFormDataToNewUser(req.body),
-			notifications: [
-				createNotification(
-					'error',
-					'Ongeldig e-mailadres',
-					'Geef een geldig e-mailadres op.'
-				)
-			]
+			notification: {
+				type: 'error',
+				label: 'Ongeldig e-mailadres',
+				message: 'Geef een geldig e-mailadres op.'
+			}
 		})
 	}
 
@@ -228,13 +237,11 @@ export const postUserNewPage = async (req, res) => {
 		return renderUserNewPage(res, {
 			status: 400,
 			newUser: mapFormDataToNewUser(req.body),
-			notifications: [
-				createNotification(
-					'error',
-					'Ongeldig wachtwoord',
-					'Wachtwoord moet minstens 6 tekens lang zijn.'
-				)
-			]
+			notification: {
+				type: 'error',
+				label: 'Ongeldig wachtwoord',
+				message: 'Wachtwoord moet minstens 6 tekens lang zijn.'
+			}
 		})
 	}
 
@@ -242,13 +249,11 @@ export const postUserNewPage = async (req, res) => {
 		return renderUserNewPage(res, {
 			status: 400,
 			newUser: mapFormDataToNewUser(req.body),
-			notifications: [
-				createNotification(
-					'error',
-					'Profielfoto-URL is ongeldig',
-					'Profielfoto-URL moet een geldige HTTPS URL zijn.'
-				)
-			]
+			notification: {
+				type: 'error',
+				label: 'Profielfoto-URL is ongeldig',
+				message: 'Profielfoto-URL moet een geldige HTTPS URL zijn.'
+			}
 		})
 	}
 
@@ -259,13 +264,11 @@ export const postUserNewPage = async (req, res) => {
 		return renderUserNewPage(res, {
 			status: 400,
 			newUser: mapFormDataToNewUser(req.body),
-			notifications: [
-				createNotification(
-					'error',
-					'Ongeldige adresgegevens',
-					'Controleer straat, huisnummer, postcode en stad.'
-				)
-			]
+			notification: {
+				type: 'error',
+				label: 'Ongeldige adresgegevens',
+				message: 'Controleer straat, huisnummer, postcode en stad.'
+			}
 		})
 	}
 
@@ -282,13 +285,12 @@ export const postUserNewPage = async (req, res) => {
 			return renderUserNewPage(res, {
 				status: 422,
 				newUser: mapFormDataToNewUser(req.body),
-				notifications: [
-					createNotification(
-						'error',
-						'Adresverificatie mislukt',
+				notification: {
+					type: 'error',
+					label: 'Adresverificatie mislukt',
+					message:
 						'Het adres kon niet geverifieerd worden. Controleer je gegevens en probeer opnieuw.'
-					)
-				]
+				}
 			})
 		}
 
@@ -344,13 +346,12 @@ export const postUserNewPage = async (req, res) => {
 			return renderUserNewPage(res, {
 				status: 500,
 				newUser: mapFormDataToNewUser(req.body),
-				notifications: [
-					createNotification(
-						'error',
-						'Gebruiker kon niet worden opgeslagen',
+				notification: {
+					type: 'error',
+					label: 'Gebruiker kon niet worden opgeslagen',
+					message:
 						'Er ging iets mis bij het opslaan van de gebruiker. Probeer het opnieuw.'
-					)
-				]
+				}
 			})
 		}
 
@@ -362,13 +363,12 @@ export const postUserNewPage = async (req, res) => {
 		return renderUserNewPage(res, {
 			status: 502,
 			newUser: mapFormDataToNewUser(req.body),
-			notifications: [
-				createNotification(
-					'error',
-					'Adresverificatie mislukt',
+			notification: {
+				type: 'error',
+				label: 'Adresverificatie mislukt',
+				message:
 					'Adresverificatie is tijdelijk niet beschikbaar. Probeer later opnieuw.'
-				)
-			]
+			}
 		})
 	}
 }
@@ -489,7 +489,8 @@ export const getUserEditPage = async (req, res) => {
 export const postUserEditPage = async (req, res) => {
 	const { uid } = req.params
 	if (!isValidFirebaseUid(uid)) {
-		return renderWithErrorNotification(res, {
+		return respondWithNotification(res, {
+			type: 'error',
 			status: 400,
 			view: 'admin_user_edit',
 			title: 'Bewerk | Gebruikers | Admin',
@@ -517,7 +518,8 @@ export const postUserEditPage = async (req, res) => {
 	const fullName = `${safeFirstName} ${safeLastName}`.trim()
 
 	if (safeEmail && !isValidEmail(safeEmail)) {
-		return renderWithErrorNotification(res, {
+		return respondWithNotification(res, {
+			type: 'error',
 			status: 400,
 			view: 'admin_user_edit',
 			title: 'Bewerk | Gebruikers | Admin',
@@ -530,7 +532,8 @@ export const postUserEditPage = async (req, res) => {
 	}
 
 	if (!isValidHttpsUrl(safePhotoURL)) {
-		return renderWithErrorNotification(res, {
+		return respondWithNotification(res, {
+			type: 'error',
 			status: 400,
 			view: 'admin_user_edit',
 			title: 'Bewerk | Gebruikers | Admin',
@@ -546,17 +549,17 @@ export const postUserEditPage = async (req, res) => {
 	try {
 		addressFields = parseAndValidateAddress(req.body)
 	} catch {
-		return res.status(400).render('admin_user_edit', {
+		return respondWithNotification(res, {
+			type: 'error',
+			label: 'Ongeldige adresgegevens',
+			message: 'Controleer straat, huisnummer, postcode en stad.',
+			status: 400,
+			view: 'admin_user_edit',
 			title: 'Bewerk | Gebruikers | Admin',
-			userUid: uid,
-			editUser: mapFormDataToEditUser(req.body),
-			notifications: [
-				createNotification(
-					'error',
-					'Ongeldige adresgegevens',
-					'Controleer straat, huisnummer, postcode en stad.'
-				)
-			]
+			extra: {
+				userUid: uid,
+				editUser: mapFormDataToEditUser(req.body)
+			}
 		})
 	}
 
@@ -570,17 +573,18 @@ export const postUserEditPage = async (req, res) => {
 		const { result } = geocodeResult
 
 		if (!result?.lat || !result?.lon || !result?.raw) {
-			return res.status(422).render('admin_user_edit', {
+			return respondWithNotification(res, {
+				type: 'error',
+				label: 'Adresverificatie mislukt',
+				message:
+					'Het adres kon niet geverifieerd worden. Controleer je gegevens en probeer opnieuw.',
+				status: 422,
+				view: 'admin_user_edit',
 				title: 'Bewerk | Gebruikers | Admin',
-				userUid: uid,
-				editUser: mapFormDataToEditUser(req.body),
-				notifications: [
-					createNotification(
-						'error',
-						'Adresverificatie mislukt',
-						'Het adres kon niet geverifieerd worden. Controleer je gegevens en probeer opnieuw.'
-					)
-				]
+				extra: {
+					userUid: uid,
+					editUser: mapFormDataToEditUser(req.body)
+				}
 			})
 		}
 
@@ -609,17 +613,18 @@ export const postUserEditPage = async (req, res) => {
 		return res.redirect(`/admin/users/${encodeURIComponent(uid)}`)
 	} catch (error) {
 		console.error('Admin user update geocoding error:', error?.message)
-		return res.status(502).render('admin_user_edit', {
+		return respondWithNotification(res, {
+			type: 'error',
+			label: 'Adresverificatie mislukt',
+			message:
+				'Adresverificatie is tijdelijk niet beschikbaar. Probeer later opnieuw.',
+			status: 502,
+			view: 'admin_user_edit',
 			title: 'Bewerk | Gebruikers | Admin',
-			userUid: uid,
-			editUser: mapFormDataToEditUser(req.body),
-			notifications: [
-				createNotification(
-					'error',
-					'Adresverificatie mislukt',
-					'Adresverificatie is tijdelijk niet beschikbaar. Probeer later opnieuw.'
-				)
-			]
+			extra: {
+				userUid: uid,
+				editUser: mapFormDataToEditUser(req.body)
+			}
 		})
 	}
 }
@@ -634,7 +639,8 @@ export const postUserEditPage = async (req, res) => {
 export const deleteUserController = async (req, res) => {
 	const { uid } = req.params
 	if (!isValidFirebaseUid(uid)) {
-		return renderWithErrorNotification(res, {
+		return respondWithNotification(res, {
+			type: 'error',
 			status: 400,
 			view: 'admin_user',
 			title: 'Gebruiker | Admin',
@@ -652,7 +658,8 @@ export const deleteUserController = async (req, res) => {
 		return res.redirect('/admin/users')
 	} catch (error) {
 		console.error('Error deleting user:', error)
-		return renderWithErrorNotification(res, {
+		return respondWithNotification(res, {
+			type: 'error',
 			status: 500,
 			view: 'admin_user',
 			title: 'Gebruiker | Admin',
@@ -823,16 +830,16 @@ export const getSettingsPage = async (req, res) => {
 		})
 	} catch (error) {
 		console.error('Error fetching settings:', error)
-		return res.status(500).render('admin_settings', {
+		return respondWithNotification(res, {
+			type: 'error',
+			message:
+				'Instellingen konden niet worden geladen. Probeer het opnieuw.',
+			status: 500,
+			view: 'admin_settings',
 			title: 'Instellingen | Admin',
-			settings: buildSettingsViewModel(),
-			notifications: [
-				createNotification(
-					'error',
-					'Fout',
-					'Instellingen konden niet worden geladen. Probeer het opnieuw.'
-				)
-			]
+			extra: {
+				settings: buildSettingsViewModel()
+			}
 		})
 	}
 }
@@ -854,24 +861,24 @@ export const getDocumentationPage = async (req, res) => {
 		})
 	} catch (error) {
 		console.error('Error building repository documentation:', error)
-		return res.status(500).render('admin_docs', {
+		return respondWithNotification(res, {
+			type: 'error',
+			label: 'Docs kon niet worden geladen',
+			message: 'Probeer de pagina opnieuw te openen.',
+			status: 500,
+			view: 'admin_docs',
 			title: 'Docs | Admin',
-			documentation: {
-				groups: [],
-				stats: {
-					groupCount: 0,
-					fileCount: 0,
-					directoryCount: 0,
-					lineCount: 0
+			extra: {
+				documentation: {
+					groups: [],
+					stats: {
+						groupCount: 0,
+						fileCount: 0,
+						directoryCount: 0,
+						lineCount: 0
+					}
 				}
-			},
-			notifications: [
-				createNotification(
-					'error',
-					'Docs kon niet worden geladen',
-					'Probeer de pagina opnieuw te openen.'
-				)
-			]
+			}
 		})
 	}
 }
@@ -895,19 +902,19 @@ export const getDocumentationFilePage = async (req, res) => {
 		)
 
 		if (!fileMatch) {
-			return res.status(404).render('admin_docs_file', {
+			return respondWithNotification(res, {
+				type: 'error',
+				label: 'Bestand niet gevonden',
+				message: 'Controleer de link en probeer opnieuw.',
+				status: 404,
+				view: 'admin_docs_file',
 				title: 'Bestand niet gevonden | Admin',
-				documentation,
-				group: null,
-				file: null,
-				sourceWithLineAnchors: '',
-				notifications: [
-					createNotification(
-						'error',
-						'Bestand niet gevonden',
-						'Controleer de link en probeer opnieuw.'
-					)
-				]
+				extra: {
+					documentation,
+					group: null,
+					file: null,
+					sourceWithLineAnchors: ''
+				}
 			})
 		}
 
@@ -930,27 +937,27 @@ export const getDocumentationFilePage = async (req, res) => {
 		})
 	} catch (error) {
 		console.error('Error loading documentation file page:', error)
-		return res.status(500).render('admin_docs_file', {
+		return respondWithNotification(res, {
+			type: 'error',
+			label: 'Docs kon niet worden geladen',
+			message: 'Probeer de pagina opnieuw te openen.',
+			status: 500,
+			view: 'admin_docs_file',
 			title: 'Docs | Admin',
-			documentation: {
-				groups: [],
-				stats: {
-					groupCount: 0,
-					fileCount: 0,
-					directoryCount: 0,
-					lineCount: 0
-				}
-			},
-			group: null,
-			file: null,
-			sourceWithLineAnchors: '',
-			notifications: [
-				createNotification(
-					'error',
-					'Docs kon niet worden geladen',
-					'Probeer de pagina opnieuw te openen.'
-				)
-			]
+			extra: {
+				documentation: {
+					groups: [],
+					stats: {
+						groupCount: 0,
+						fileCount: 0,
+						directoryCount: 0,
+						lineCount: 0
+					}
+				},
+				group: null,
+				file: null,
+				sourceWithLineAnchors: ''
+			}
 		})
 	}
 }
@@ -970,31 +977,30 @@ export const postSettingsPage = async (req, res) => {
 
 		await db.ref('settings').update(nextSettings)
 
-		return res.render('admin_settings', {
+		return respondWithNotification(res, {
+			type: 'success',
+			label: 'Succes',
+			message: 'Instellingen succesvol opgeslagen.',
+			view: 'admin_settings',
 			title: 'Instellingen | Admin',
-			settings: buildSettingsViewModel(nextSettings),
-			notifications: [
-				createNotification(
-					'success',
-					'Succes',
-					'Instellingen succesvol opgeslagen.'
-				)
-			]
+			extra: {
+				settings: buildSettingsViewModel(nextSettings)
+			}
 		})
 	} catch (error) {
 		console.error('Error saving settings:', error)
-		return res.status(500).render('admin_settings', {
+		return respondWithNotification(res, {
+			type: 'error',
+			message:
+				'Instellingen konden niet worden opgeslagen. Probeer het opnieuw.',
+			status: 500,
+			view: 'admin_settings',
 			title: 'Instellingen | Admin',
-			settings: buildSettingsViewModel(
-				mapFormDataToSettings(req.body, {})
-			),
-			notifications: [
-				createNotification(
-					'error',
-					'Fout',
-					'Instellingen konden niet worden opgeslagen. Probeer het opnieuw.'
+			extra: {
+				settings: buildSettingsViewModel(
+					mapFormDataToSettings(req.body, {})
 				)
-			]
+			}
 		})
 	}
 }

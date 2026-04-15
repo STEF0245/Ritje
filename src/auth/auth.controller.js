@@ -6,10 +6,7 @@
 
 import { verifyIdToken } from '../firebase/auth.js'
 import config from '../config.js'
-import {
-	renderWithErrorNotification,
-	redirectWithNotification
-} from '../utils/notification.util.js'
+import { respondWithNotification } from '../utils/notification.util.js'
 
 /**
  * @brief  Render the login page.
@@ -36,7 +33,8 @@ export const loginController = async (req, res) => {
 	const { idToken } = req.body
 	try {
 		if (!idToken) {
-			return renderWithErrorNotification(res, {
+			return respondWithNotification(res, {
+				type: 'error',
 				status: 400,
 				view: 'login',
 				title: 'Login',
@@ -55,7 +53,8 @@ export const loginController = async (req, res) => {
 		res.redirect('/profile')
 	} catch (err) {
 		console.error('Login error:', err.message)
-		return renderWithErrorNotification(res, {
+		return respondWithNotification(res, {
+			type: 'error',
 			status: 401,
 			view: 'login',
 			title: 'Login',
@@ -96,11 +95,10 @@ export const resendVerificationEmailController = async (req, res) => {
 		}
 
 		if (req.user.emailVerified) {
-			return redirectWithNotification(res, {
-				notification: {
-					type: 'error',
-					message: 'E-mailadres is al geverifieerd.'
-				}
+			return respondWithNotification(res, {
+				type: 'error',
+				message: 'E-mailadres is al geverifieerd.',
+				redirectTo: '/profile'
 			})
 		}
 
@@ -123,28 +121,25 @@ export const resendVerificationEmailController = async (req, res) => {
 			const message =
 				errorBody?.error?.message ||
 				'Er is een fout opgetreden bij het verzenden van de verificatie-e-mail.'
-			return redirectWithNotification(res, {
-				notification: {
-					type: 'error',
-					message
-				}
+			return respondWithNotification(res, {
+				type: 'error',
+				message,
+				redirectTo: '/profile'
 			})
 		}
 
-		return redirectWithNotification(res, {
-			notification: {
-				type: 'success',
-				message: 'Verificatie-e-mail is opnieuw verzonden.'
-			}
+		return respondWithNotification(res, {
+			type: 'success',
+			message: 'Verificatie-e-mail is opnieuw verzonden.',
+			redirectTo: '/profile'
 		})
 	} catch (error) {
 		console.error('[Auth] Resend verification email error:', error)
-		return redirectWithNotification(res, {
-			notification: {
-				type: 'error',
-				message:
-					'Er is een fout opgetreden bij het verzenden van de verificatie-e-mail.'
-			}
+		return respondWithNotification(res, {
+			type: 'error',
+			message:
+				'Er is een fout opgetreden bij het verzenden van de verificatie-e-mail.',
+			redirectTo: '/profile'
 		})
 	}
 }

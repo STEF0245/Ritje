@@ -12,10 +12,7 @@ import {
 	withTimeout
 } from '../utils/address.util.js'
 import { isValidFirebaseUid } from '../utils/firebase.util.js'
-import {
-	createNotification,
-	renderWithErrorNotification
-} from '../utils/notification.util.js'
+import { respondWithNotification } from '../utils/notification.util.js'
 
 const GEOCODE_TIMEOUT_MS = Number(
 	process.env.PROFILE_GEOCODE_TIMEOUT_MS || 7000
@@ -23,23 +20,6 @@ const GEOCODE_TIMEOUT_MS = Number(
 
 const GEOCODE_ERROR_MESSAGE =
 	'Adresverificatie is tijdelijk niet beschikbaar. Probeer later opnieuw.'
-
-/**
- * @brief  Render the profile edit page with normalized form feedback.
- * @details  Centralizes profile edit re-rendering so error branches can supply consistent status codes, form state, and notifications.
- * @param {object} res - Express response object.
- * @param {number} statusCode - HTTP status code to send.
- * @param {object} formData - Current form values.
- * @param {Array<object>} notifications - Notifications to display.
- * @returns {object} Express response.
- */
-const renderProfileEditPage = (res, statusCode, formData, notifications) => {
-	return res.status(statusCode).render('profile_edit', {
-		title: 'Bewerk Profiel',
-		formData,
-		notifications
-	})
-}
 
 /**
  * @brief  Render the profile overview page.
@@ -79,7 +59,8 @@ export const profileEditController = async (req, res) => {
 	const userId = req.user?.uid
 
 	if (!isValidFirebaseUid(userId)) {
-		return renderWithErrorNotification(res, {
+		return respondWithNotification(res, {
+			type: 'error',
 			status: 403,
 			view: 'profile_edit',
 			title: 'Bewerk Profiel',
@@ -91,13 +72,15 @@ export const profileEditController = async (req, res) => {
 	try {
 		addressFields = parseAndValidateAddress(req.body)
 	} catch {
-		return renderProfileEditPage(res, 400, req.body, [
-			createNotification(
-				'error',
-				'Ongeldige adresgegevens',
-				'Controleer straat, huisnummer, postcode en stad.'
-			)
-		])
+		return respondWithNotification(res, {
+			type: 'error',
+			label: 'Ongeldige adresgegevens',
+			message: 'Controleer straat, huisnummer, postcode en stad.',
+			status: 400,
+			view: 'profile_edit',
+			title: 'Bewerk Profiel',
+			extra: { formData: req.body }
+		})
 	}
 
 	const query = `${addressFields.street} ${addressFields.houseNumber}, ${addressFields.postalCode} ${addressFields.city}`
@@ -110,13 +93,16 @@ export const profileEditController = async (req, res) => {
 		const { result } = geocodeResult
 
 		if (!result?.lat || !result?.lon || !result?.raw) {
-			return renderProfileEditPage(res, 422, req.body, [
-				createNotification(
-					'error',
-					'Adresverificatie mislukt',
-					'Het adres kon niet geverifieerd worden. Controleer je gegevens en probeer opnieuw.'
-				)
-			])
+			return respondWithNotification(res, {
+				type: 'error',
+				label: 'Adresverificatie mislukt',
+				message:
+					'Het adres kon niet geverifieerd worden. Controleer je gegevens en probeer opnieuw.',
+				status: 422,
+				view: 'profile_edit',
+				title: 'Bewerk Profiel',
+				extra: { formData: req.body }
+			})
 		}
 
 		const normalizedAddress = normalizeGeocodedAddress(
@@ -138,12 +124,14 @@ export const profileEditController = async (req, res) => {
 		return res.redirect('/profile')
 	} catch (error) {
 		console.error('Profile update geocoding error:', error?.message)
-		return renderProfileEditPage(res, 502, req.body, [
-			createNotification(
-				'error',
-				'Adresverificatie mislukt',
-				GEOCODE_ERROR_MESSAGE
-			)
-		])
+		return respondWithNotification(res, {
+			type: 'error',
+			label: 'Adresverificatie mislukt',
+			message: GEOCODE_ERROR_MESSAGE,
+			status: 502,
+			view: 'profile_edit',
+			title: 'Bewerk Profiel',
+			extra: { formData: req.body }
+		})
 	}
 }

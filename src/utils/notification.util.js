@@ -12,7 +12,7 @@
  * @param {string|null} [message=null] - Optional descriptive message.
  * @returns {{type: string, label: string, message: string|null}} Notification object.
  */
-export const createNotification = (type, label, message = null) => {
+const createNotification = (type, label, message = null) => {
 	return {
 		type,
 		label,
@@ -21,58 +21,43 @@ export const createNotification = (type, label, message = null) => {
 }
 
 /**
- * @brief  Render a view with normalized notification payloads.
- * @details  Guarantees the `notifications` local is always an array and merges caller-provided extra locals.
+ * @brief  Respond with a single notification using either render or redirect.
+ * @details  Uses a one-time flash cookie when redirecting, or injects notification locals when rendering a view.
  * @param {object} res - Express response object.
- * @param {{status?: number, view: string, title: string, notifications?: Array<object>, extra?: object}} options - Render options.
+ * @param {{type: string, label?: string|null, message?: string|null, status?: number, view?: string, title?: string, extra?: object, redirectTo?: string}} options - Notification response options.
  * @returns {object} Express response.
  */
-export const renderWithNotifications = (
+export const respondWithNotification = (
 	res,
-	{ status = 200, view, title, notifications = [], extra = {} }
+	{
+		type,
+		label = null,
+		message = null,
+		status = 200,
+		view,
+		title,
+		extra = {},
+		redirectTo
+	}
 ) => {
-	const safeNotifications = Array.isArray(notifications) ? notifications : []
+	const notification = createNotification(type, label, message)
+
+	if (redirectTo) {
+		setFlashNotification(res, notification)
+		return res.redirect(redirectTo)
+	}
+
+	if (!view || !title) {
+		throw new Error(
+			'respondWithNotification requires view and title when redirectTo is not provided.'
+		)
+	}
 
 	return res.status(status).render(view, {
 		title,
-		notifications: safeNotifications,
+		notifications: [notification],
 		...extra
 	})
-}
-
-/**
- * @brief  Render a view with a single error notification.
- * @details  Convenience helper around `renderWithNotifications` for the common error scenario.
- * @param {object} res - Express response object.
- * @param {{status: number, view: string, title: string, message: string, label?: string, extra?: object}} options - Error render options.
- * @returns {object} Express response.
- */
-export const renderWithErrorNotification = (
-	res,
-	{ status, view, title, message, label = 'Fout', extra = {} }
-) => {
-	return renderWithNotifications(res, {
-		status,
-		view,
-		title,
-		notifications: [createNotification('error', label, message)],
-		extra
-	})
-}
-
-/**
- * @brief  Attach notifications to response locals.
- * @details  Updates `res.locals.notifications` only when the provided value is an array.
- * @param {object} res - Express response object.
- * @param {Array<object>} [notifications=[]] - Notification list.
- * @returns {void}
- */
-export const addNotifications = (res, notifications = []) => {
-	if (!Array.isArray(notifications)) {
-		return
-	}
-
-	res.locals.notifications = notifications
 }
 
 /**
@@ -94,19 +79,4 @@ export const setFlashNotification = (res, notification) => {
 			path: '/'
 		}
 	)
-}
-
-/**
- * @brief  Redirect while carrying a one-time flash notification.
- * @details  Stores the notification in a cookie and immediately redirects to the target page.
- * @param {object} res - Express response object.
- * @param {{redirectTo?: string, notification: object}} options - Redirect notification options.
- * @returns {object} Express response.
- */
-export const redirectWithNotification = (
-	res,
-	{ redirectTo = '/profile', notification }
-) => {
-	setFlashNotification(res, notification)
-	return res.redirect(redirectTo)
 }
