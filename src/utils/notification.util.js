@@ -95,3 +95,18 @@ export const setFlashNotification = (res, notification) => {
 		}
 	)
 }
+
+/**
+ * @brief  Redirect while carrying a one-time flash notification.
+ * @details  Stores the notification in a cookie and immediately redirects to the target page.
+ * @param {object} res - Express response object.
+ * @param {{redirectTo?: string, notification: object}} options - Redirect notification options.
+ * @returns {object} Express response.
+ */
+export const redirectWithNotification = (
+	res,
+	{ redirectTo = '/profile', notification }
+) => {
+	setFlashNotification(res, notification)
+	return res.redirect(redirectTo)
+}

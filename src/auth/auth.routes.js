@@ -13,7 +13,7 @@ import {
 	logoutController,
 	resendVerificationEmailController
 } from './auth.controller.js'
-import { setFlashNotification } from '../utils/notification.util.js'
+import { redirectWithNotification } from '../utils/notification.util.js'
 
 const router = express.Router()
 
@@ -49,12 +49,13 @@ const resendVerificationRateLimit = rateLimit({
 		message: 'Too many verification email attempts. Please try again later.'
 	},
 	handler: (req, res, next, options) => {
-		setFlashNotification(res, {
-			type: 'error',
-			message:
-				'Te veel verzoeken om de verificatie-e-mail opnieuw te verzenden. Probeer het later opnieuw.'
+		return redirectWithNotification(res, {
+			notification: {
+				type: 'error',
+				message:
+					'Te veel verzoeken om de verificatie-e-mail opnieuw te verzenden. Probeer het later opnieuw.'
+			}
 		})
-		return res.redirect('/profile')
 	}
 })
 

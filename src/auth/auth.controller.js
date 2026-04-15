@@ -8,7 +8,7 @@ import { verifyIdToken } from '../firebase/auth.js'
 import config from '../config.js'
 import {
 	renderWithErrorNotification,
-	setFlashNotification
+	redirectWithNotification
 } from '../utils/notification.util.js'
 
 /**
@@ -96,11 +96,12 @@ export const resendVerificationEmailController = async (req, res) => {
 		}
 
 		if (req.user.emailVerified) {
-			setFlashNotification(res, {
-				type: 'error',
-				message: 'E-mailadres is al geverifieerd.'
+			return redirectWithNotification(res, {
+				notification: {
+					type: 'error',
+					message: 'E-mailadres is al geverifieerd.'
+				}
 			})
-			return res.redirect('/profile')
 		}
 
 		const response = await fetch(
@@ -122,25 +123,28 @@ export const resendVerificationEmailController = async (req, res) => {
 			const message =
 				errorBody?.error?.message ||
 				'Er is een fout opgetreden bij het verzenden van de verificatie-e-mail.'
-			setFlashNotification(res, {
-				type: 'error',
-				message
+			return redirectWithNotification(res, {
+				notification: {
+					type: 'error',
+					message
+				}
 			})
-			return res.redirect('/profile')
 		}
 
-		setFlashNotification(res, {
-			type: 'success',
-			message: 'Verificatie-e-mail is opnieuw verzonden.'
+		return redirectWithNotification(res, {
+			notification: {
+				type: 'success',
+				message: 'Verificatie-e-mail is opnieuw verzonden.'
+			}
 		})
-		return res.redirect('/profile')
 	} catch (error) {
 		console.error('[Auth] Resend verification email error:', error)
-		setFlashNotification(res, {
-			type: 'error',
-			message:
-				'Er is een fout opgetreden bij het verzenden van de verificatie-e-mail.'
+		return redirectWithNotification(res, {
+			notification: {
+				type: 'error',
+				message:
+					'Er is een fout opgetreden bij het verzenden van de verificatie-e-mail.'
+			}
 		})
-		return res.redirect('/profile')
 	}
 }
