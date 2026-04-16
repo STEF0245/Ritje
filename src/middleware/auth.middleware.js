@@ -7,6 +7,11 @@
 import { verifyIdToken, auth } from '../firebase/auth.js'
 import db from '../firebase/db.js'
 import config from '../config.js'
+import {
+	createNotification,
+	setFlashNotification
+} from '../utils/notification.util.js'
+import { sendVerificationEmail } from '../auth/auth.controller.js'
 
 /**
  * @brief  Determine whether a request path can bypass authentication.
@@ -76,6 +81,20 @@ export const requireAuth = async (req, res, next) => {
 		const admin = adminSnapshot.val() === true
 
 		req.user = mapUserData(user, userData, admin, idToken)
+
+		if (req.user && !req.user.emailVerified) {
+			setFlashNotification(
+				res,
+				createNotification(
+					'warning',
+					'Waarschuwing',
+					'Gelieve uw e-mailadres te verifiëren'
+				)
+			)
+			await sendVerificationEmail(idToken).catch((err) => {
+				console.error('Error sending verification email:', err.message)
+			})
+		}
 
 		if (req.path === '/login') return res.redirect('/profile')
 		next()

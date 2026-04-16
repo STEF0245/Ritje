@@ -12,7 +12,7 @@
  * @param {string|null} [message=null] - Optional descriptive message.
  * @returns {{type: string, label: string, message: string|null}} Notification object.
  */
-const createNotification = (type, label, message = null) => {
+export const createNotification = (type, label, message = null) => {
 	return {
 		type,
 		label,
