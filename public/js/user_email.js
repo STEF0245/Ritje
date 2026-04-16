@@ -13,14 +13,10 @@ const setupEmailVerificationResend = async () => {
 
 	// Only allow clicking if email is not verified (has cursor-pointer class)
 	if (!verifiedSpan.classList.contains('cursor-pointer')) {
-		console.log(
-			'[Email Verification] Email is already verified, skipping setup'
-		)
 		return
 	}
 
 	verifiedSpan.addEventListener('click', async () => {
-		console.log('[Email Verification] Click triggered')
 		verifiedSpan.style.opacity = '0.5'
 		verifiedSpan.style.pointerEvents = 'none'
 
