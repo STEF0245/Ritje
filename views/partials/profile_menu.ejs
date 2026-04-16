@@ -1,8 +1,9 @@
 <%
-	const displayName = user?.displayName || user?.email || 'Account'
-	const firstInitial = user?.name?.first?.charAt(0)?.toUpperCase() || ''
-	const lastInitial = user?.name?.last?.charAt(0)?.toUpperCase() || ''
-	const initials = `${firstInitial}${lastInitial}` || 'A'
+	const metadata = user?.metadata || {}
+	const firstName = metadata?.name?.first || ''
+	const lastName = metadata?.name?.last || ''
+	const fullName = `${metadata?.name?.full || ''}`.trim() || 'Ritje Gebruiker'
+	const initials = `${firstName.charAt(0)}${lastName.charAt(0)}` || 'RG'
 %>
 
 <div class="flex items-center gap-3 text-sm font-medium justify-end">
@@ -22,14 +23,14 @@
 					<%= initials %>
 				</span>
 			<% } %>
-			<span class="max-w-40 truncate"><%= displayName %></span>
+			<span class="max-w-40 truncate"><%= fullName %></span>
 		</a>
 
 		<a
 			href='/profile'
 			class="md:hidden flex items-center gap-3 theme-pill border theme-border theme-surface px-3 py-2 theme-text-primary theme-hover-accent-border"
 			aria-label="Ga naar je profiel"
-			title="<%= displayName %>"
+			title="<%= fullName %>"
 		>
 			<% if (user?.photoURL) { %>
 				<img
@@ -42,7 +43,7 @@
 					<%= initials %>
 				</span>
 			<% } %>
-			<span class="max-w-40 truncate"><%= displayName %></span>
+			<span class="max-w-40 truncate"><%= fullName %></span>
 		</a>
 	<% } else { %>
 		<a
