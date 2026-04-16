@@ -80,7 +80,7 @@ export const logoutController = (req, res) => {
 	res.redirect('/login')
 }
 
-const sendVerificationEmail = async (idToken) => {
+export const sendVerificationEmail = async (idToken) => {
 	try {
 		const response = await fetch(
 			`https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${config.firebase.web.apiKey}`,
