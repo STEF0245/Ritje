@@ -420,7 +420,6 @@ export const calculateRoute = async (
 	routingUrl.searchParams.set('mode', mode)
 	routingUrl.searchParams.set('type', type)
 	routingUrl.searchParams.set('lang', 'nl')
-	routingUrl.searchParams.set('max_speed', '120')
 	routingUrl.searchParams.set('format', 'geojson')
 
 	const response = await fetch(routingUrl)
