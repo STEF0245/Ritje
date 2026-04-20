@@ -1,86 +1,84 @@
+<% 
+	const metadata = user?.metadata || {}
+	const firstName = metadata?.name?.first || ''
+	const lastName = metadata?.name?.last || ''
+	const fullName = `${metadata?.name?.full || ''}`.trim() || 'Ritje Gebruiker'
+	const initials = `${firstName.charAt(0)}${lastName.charAt(0)}` || 'RG'
+	const photoURL = user?.photoURL || null
+	const phoneNumber = user?.phoneNumber || ''
+	const joinedDate = user?.createdAt ? new Date(user.createdAt).toLocaleString('nl-BE', { 
+		year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' 
+	}) : 'Onbekend';
+	const lastSignInDate = user?.lastSignInTime ? new Date(user.lastSignInTime).toLocaleString('nl-BE', { 
+		year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' 
+	}) : 'Onbekend';		const address = metadata?.address || {}
+
+	const schedule = metadata?.schedule || {}
+	const scheduleEntries = Object.entries(schedule || {})
+
+	const resolveDayLabel = (day, index) => {
+		const days = ['Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag']
+		return days[index] || `Dag ${index + 1}`
+	}
+
+	const resolveHourLabel = (hour, first) => {
+		const hourMap = {
+			'1': ['8:25', '9:15'],
+			'2': ['9:15', '10:20'],
+			'3': ['10:20', '11:10'],
+			'4': ['11:10', '12:00'],
+			'5': ['13:00', '13:50'],
+			'6': ['13:50', '14:40'],
+			'7': ['14:55', '15:45'],
+			'8': ['15:45', '16:35']
+		}
+		if (!hour) return null
+		const hourNumber = Number(hour)
+		if (isNaN(hourNumber) || hourNumber < 1 || hourNumber > 8)
+			return null
+		const [start, end] = hourMap[hour] || []
+		return first ? start : end
+	}
+
+	const getActiveHours = (hours) => {
+		if (Array.isArray(hours)) {
+			return hours
+				.map((isActive, index) => (isActive ? String(index + 1) : null))
+			.filter(Boolean)
+		}
+		if (hours && typeof hours === 'object') {
+			return Object.entries(hours)
+				.filter(([, isActive]) => Boolean(isActive))
+				.map(([hour]) => String(hour))
+				.sort((a, b) => Number(a) - Number(b))
+		}
+		return []
+	}
+
+	const coords = metadata?.coords || {}
+	const street = address?.street || ''
+	const houseNumber = address?.houseNumber || ''
+	const postalCode = address?.postalCode || ''
+	const city = address?.city || ''
+	const hasCoordinates = Boolean(coords?.latitude && coords?.longitude)
+	const safeAddressLineOne = `${street} ${houseNumber}`.trim() || '-'
+	const safeAddressLineTwo = `${postalCode} ${city}`.trim() || '-'
+	const mapsUrl = hasCoordinates ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(safeAddressLineOne + ', ' + safeAddressLineTwo)}` : null;
+	const mapMarkers = hasCoordinates
+		? [{
+				latitude: coords?.latitude,
+				longitude: coords?.longitude,
+				title: 'Uw woonplaats',
+				lines: [safeAddressLineOne, safeAddressLineTwo],
+				mapsUrl,
+				openPopup: true
+			}]
+		: []
+	const mapMarkersJson = JSON.stringify(mapMarkers)
+%>
+
 <!DOCTYPE html>
 <html lang="nl" class="text-slate-200">
-	<% 
-		const metadata = user?.metadata || {}
-		const firstName = metadata?.name?.first || ''
-		const lastName = metadata?.name?.last || ''
-		const fullName = `${metadata?.name?.full || ''}`.trim() || 'Ritje Gebruiker'
-		const initials = `${firstName.charAt(0)}${lastName.charAt(0)}` || 'RG'
-		const photoURL = user?.photoURL || null
-		const phoneNumber = user?.phoneNumber || ''
-		const joinedDate = user?.createdAt ? new Date(user.createdAt).toLocaleString('nl-BE', { 
-			year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' 
-		}) : 'Onbekend';
-		const lastSignInDate = user?.lastSignInTime ? new Date(user.lastSignInTime).toLocaleString('nl-BE', { 
-			year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' 
-		}) : 'Onbekend';		const address = metadata?.address || {}
-
-		const schedule = metadata?.schedule || {}
-		const scheduleEntries = Object.entries(schedule || {})
-
-		const resolveDayLabel = (day, index) => {
-			const days = ['Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag']
-			return days[index] || `Dag ${day}` || `Dag ${index + 1}`
-		}
-
-		const resolveHourLabel = (hour, first) => {
-			const hourMap = {
-				'1': ['8:25', '9:15'],
-				'2': ['9:15', '10:20'],
-				'3': ['10:20', '11:10'],
-				'4': ['11:10', '12:00'],
-				'5': ['13:00', '13:50'],
-				'6': ['13:50', '14:40'],
-				'7': ['14:55', '15:45'],
-				'8': ['15:45', '16:35']
-			}
-			if (!hour) return null
-			const hourNumber = Number(hour)
-			if (isNaN(hourNumber) || hourNumber < 1 || hourNumber > 8)
-				return null
-
-			const [start, end] = hourMap[hour] || []
-			return first ? start : end
-		}
-
-		const getActiveHours = (hours) => {
-			if (Array.isArray(hours)) {
-				return hours
-					.map((isActive, index) => (isActive ? String(index) : null))
-					.filter(Boolean)
-			}
-
-			if (hours && typeof hours === 'object') {
-				return Object.entries(hours)
-					.filter(([, isActive]) => Boolean(isActive))
-					.map(([hour]) => String(hour))
-					.sort((a, b) => Number(a) - Number(b))
-			}
-
-			return []
-		}
-
-		const coords = metadata?.coords || {}
-		const street = address?.street || ''
-		const houseNumber = address?.houseNumber || ''
-		const postalCode = address?.postalCode || ''
-		const city = address?.city || ''
-		const hasCoordinates = Boolean(coords?.latitude && coords?.longitude)
-		const safeAddressLineOne = `${street} ${houseNumber}`.trim() || '-'
-		const safeAddressLineTwo = `${postalCode} ${city}`.trim() || '-'
-		const mapsUrl = hasCoordinates ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(safeAddressLineOne + ', ' + safeAddressLineTwo)}` : null;
-		const mapMarkers = hasCoordinates
-			? [{
-					latitude: coords?.latitude,
-					longitude: coords?.longitude,
-					title: 'Uw woonplaats',
-					lines: [safeAddressLineOne, safeAddressLineTwo],
-					mapsUrl,
-					openPopup: true
-				}]
-			: []
-		const mapMarkersJson = JSON.stringify(mapMarkers)
-	%>
 	<%- include('partials/head', { title }) %>
 
 	<body class="theme-body min-h-screen flex flex-col">
@@ -152,7 +150,7 @@
 								</div>
 							</div>
 
-							<div class="theme-surface theme-pill border theme-border p-4 md:col-span-2">
+							<div class="theme-surface theme-pill border theme-border p-4">
 								<div class="flex items-start justify-between gap-3">
 									<div>
 										<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Kaart</p>
@@ -195,7 +193,7 @@
 
 						<div class="mt-6 space-y-4">
 							<% if (scheduleEntries.length > 0) { %>
-								<div class="theme-surface theme-pill border theme-border p-4">
+								<div class="theme-surface theme-pill border theme-border p-4 flex flex-wrap justify-between">
 									<% scheduleEntries.forEach(([day, hours], index) => { %>
 										<%
 											const dayLabel = resolveDayLabel(day, index)
@@ -205,7 +203,7 @@
 											const firstLabel = resolveHourLabel(first, true)
 											const lastLabel = resolveHourLabel(last, false)
 										%>
-										<div class="mb-2 last:mb-0 theme-pill border theme-border theme-surface p-3 w-fit">
+										<div class="theme-pill border theme-border theme-surface p-3 w-30">
 											<p class="text-xs uppercase tracking-[0.12em] theme-text-muted"><%= dayLabel %></p>
 											<p class="theme-text-primary font-semibold mt-1"><%= firstLabel && lastLabel ? `${firstLabel} - ${lastLabel}` : 'Niet beschikbaar' %></p>
 										</div>
