@@ -32,20 +32,11 @@ const buildProviderLimiter = (providerName, config) =>
 		}
 	})
 
-const nominatimLimiter = buildProviderLimiter(
-	'nominatim',
-	RATE_LIMIT_CONFIG.nominatim
-)
 const geoapifyLimiter = buildProviderLimiter(
 	'geoapify',
 	RATE_LIMIT_CONFIG.geoapify
 )
 
-router.post(
-	'/reverse-geocode',
-	nominatimLimiter,
-	geoapifyLimiter,
-	reverseGeocodeController
-)
+router.post('/reverse-geocode', geoapifyLimiter, reverseGeocodeController)
 
 export default router

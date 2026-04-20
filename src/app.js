@@ -50,7 +50,7 @@ app.use((req, res, next) => {
 		`style-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net`,
 		`img-src 'self' data: https:`,
 		`font-src 'self' data:`,
-		`connect-src 'self' ${origin} https://www.googleapis.com https://cdn.jsdelivr.net https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://nominatim.openstreetmap.org https://api.geoapify.com https://unpkg.com https://www.gstatic.com`,
+		`connect-src 'self' ${origin} https://www.googleapis.com https://cdn.jsdelivr.net https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://api.geoapify.com https://unpkg.com https://www.gstatic.com`,
 		`base-uri 'self' ${origin}`,
 		`form-action 'self' ${origin}`,
 		`frame-ancestors 'none'`
