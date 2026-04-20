@@ -38,42 +38,31 @@ app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true, limit: '10mb' }))
 app.use(cookieParser())
 
+// Dynamic CSP middleware to support both localhost and IP access
+app.use((req, res, next) => {
+	const host = req.get('host')
+	const protocol = req.protocol
+	const origin = `${protocol}://${host}`
+
+	const cspDirectives = [
+		`default-src 'self' ${origin}`,
+		`script-src 'self' 'unsafe-inline' https://www.gstatic.com https://unpkg.com https://cdn.jsdelivr.net`,
+		`style-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net`,
+		`img-src 'self' data: https:`,
+		`font-src 'self' data:`,
+		`connect-src 'self' ${origin} https://www.googleapis.com https://cdn.jsdelivr.net https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://nominatim.openstreetmap.org https://api.geoapify.com https://unpkg.com https://www.gstatic.com`,
+		`base-uri 'self' ${origin}`,
+		`form-action 'self' ${origin}`,
+		`frame-ancestors 'none'`
+	].join('; ')
+
+	res.setHeader('Content-Security-Policy', cspDirectives)
+	next()
+})
+
 app.use(
 	helmet({
-		contentSecurityPolicy: {
-			directives: {
-				defaultSrc: ["'self'"],
-				scriptSrc: [
-					"'self'",
-					"'unsafe-inline'",
-					'https://www.gstatic.com',
-					'https://unpkg.com',
-					'https://cdn.jsdelivr.net'
-				],
-				styleSrc: [
-					"'self'",
-					"'unsafe-inline'",
-					'https://unpkg.com',
-					'https://cdn.jsdelivr.net'
-				],
-				imgSrc: ["'self'", 'data:', 'https:'],
-				fontSrc: ["'self'", 'data:'],
-				connectSrc: [
-					"'self'",
-					'https://www.googleapis.com',
-					'https://cdn.jsdelivr.net',
-					'https://identitytoolkit.googleapis.com',
-					'https://securetoken.googleapis.com',
-					'https://nominatim.openstreetmap.org',
-					'https://api.geoapify.com',
-					'https://unpkg.com',
-					'https://www.gstatic.com'
-				],
-				baseUri: ["'self'"],
-				formAction: ["'self'"],
-				frameAncestors: ["'none'"]
-			}
-		},
+		contentSecurityPolicy: false,
 		referrerPolicy: { policy: 'origin-when-cross-origin' },
 		frameguard: { action: 'deny' }
 	})
