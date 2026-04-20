@@ -78,7 +78,7 @@ const getRideMapCenter = (markers = []) => {
 
 /**
  * @brief  Render the main ride page.
- * @details  Responds to GET requests for the ride page by rendering the 'ride_view' template with a title and any necessary notifications.
+ * @details  Responds to GET requests for the ride page by rendering the 'ride' template with a title and any necessary notifications.
  * @param {object} req - Express request object.
  * @param {object} res - Express response object.
  * @returns {object} Express response.
@@ -90,7 +90,7 @@ export const getRidePage = async (req, res) => {
 		const mapMarkers = buildRideMarkers(users)
 		const mapCenter = getRideMapCenter(mapMarkers)
 
-		res.render('ride_view', {
+		res.render('ride', {
 			title: 'Ritje',
 			mapMarkers,
 			mapCenter
@@ -102,7 +102,7 @@ export const getRidePage = async (req, res) => {
 			message:
 				'Er is een fout opgetreden bij het laden van de ritpagina. Probeer het later opnieuw.',
 			status: 500,
-			view: 'ride_view',
+			view: 'ride',
 			title: 'Ritje'
 		})
 	}

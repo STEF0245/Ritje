@@ -1,11 +1,12 @@
 <%
     const mapMarkersJson = JSON.stringify(locals.mapMarkers) || '[]';
+    const routeJson = JSON.stringify(locals.route) || 'null';
 %>
 
 <!DOCTYPE html>
 <html lang="nl" class="text-slate-200">
     <%- include('partials/head', { title }) %>
-
+    
 	<body class="theme-body min-h-screen flex flex-col">
 		<%- include('partials/header', { user }) %>
         <main class="theme-main flex-1">
@@ -17,6 +18,7 @@
                         <div
                             data-map
                             data-markers='<%= mapMarkersJson %>'
+                            data-route='<%= routeJson %>'
                             data-school-marker="true"
                             class="w-full h-64 mt-6 theme-pill border theme-border"
                             data-empty-state-behavior="show-message"
