@@ -205,9 +205,9 @@
 											const firstLabel = resolveHourLabel(first, true)
 											const lastLabel = resolveHourLabel(last, false)
 										%>
-										<div class="mb-2">
-											<p class="text-sm font-semibold theme-text-primary"><%= dayLabel %></p>
-											<p class="theme-text-muted"><%= firstLabel && lastLabel ? `${firstLabel} - ${lastLabel}` : 'Niet beschikbaar' %></p>
+										<div class="mb-2 last:mb-0 theme-pill border theme-border theme-surface p-3 w-fit">
+											<p class="text-xs uppercase tracking-[0.12em] theme-text-muted"><%= dayLabel %></p>
+											<p class="theme-text-primary font-semibold mt-1"><%= firstLabel && lastLabel ? `${firstLabel} - ${lastLabel}` : 'Niet beschikbaar' %></p>
 										</div>
 									<% }) %>
 								</div>
