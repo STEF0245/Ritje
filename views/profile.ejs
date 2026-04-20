@@ -16,7 +16,49 @@
 		}) : 'Onbekend';		const address = metadata?.address || {}
 
 		const schedule = metadata?.schedule || {}
-		const days = ['Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag']
+		const scheduleEntries = Object.entries(schedule || {})
+
+		const resolveDayLabel = (day, index) => {
+			const days = ['Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag']
+			return days[index] || `Dag ${day}` || `Dag ${index + 1}`
+		}
+
+		const resolveHourLabel = (hour, first) => {
+			const hourMap = {
+				'1': ['8:25', '9:15'],
+				'2': ['9:15', '10:20'],
+				'3': ['10:20', '11:10'],
+				'4': ['11:10', '12:00'],
+				'5': ['13:00', '13:50'],
+				'6': ['13:50', '14:40'],
+				'7': ['14:55', '15:45'],
+				'8': ['15:45', '16:35']
+			}
+			if (!hour) return null
+			const hourNumber = Number(hour)
+			if (isNaN(hourNumber) || hourNumber < 1 || hourNumber > 8)
+				return null
+
+			const [start, end] = hourMap[hour] || []
+			return first ? start : end
+		}
+
+		const getActiveHours = (hours) => {
+			if (Array.isArray(hours)) {
+				return hours
+					.map((isActive, index) => (isActive ? String(index) : null))
+					.filter(Boolean)
+			}
+
+			if (hours && typeof hours === 'object') {
+				return Object.entries(hours)
+					.filter(([, isActive]) => Boolean(isActive))
+					.map(([hour]) => String(hour))
+					.sort((a, b) => Number(a) - Number(b))
+			}
+
+			return []
+		}
 
 		const coords = metadata?.coords || {}
 		const street = address?.street || ''
@@ -144,6 +186,34 @@
 									</div>
 								</details>
 							</div>
+						</div>
+					</article>
+
+					<article class="theme-panel p-6 lg:col-span-2 lg:col-start-2">
+						<h2 class="text-xl font-extrabold theme-text-primary">Uurrooster</h2>
+						<p class="theme-text-muted text-sm mt-1">Overzicht van je uurrooster.</p>
+
+						<div class="mt-6 space-y-4">
+							<% if (scheduleEntries.length > 0) { %>
+								<div class="theme-surface theme-pill border theme-border p-4">
+									<% scheduleEntries.forEach(([day, hours], index) => { %>
+										<%
+											const dayLabel = resolveDayLabel(day, index)
+											const activeHours = getActiveHours(hours)
+											const first = activeHours[0] || null
+											const last = activeHours[activeHours.length - 1] || null
+											const firstLabel = resolveHourLabel(first, true)
+											const lastLabel = resolveHourLabel(last, false)
+										%>
+										<div class="mb-2">
+											<p class="text-sm font-semibold theme-text-primary"><%= dayLabel %></p>
+											<p class="theme-text-muted"><%= firstLabel && lastLabel ? `${firstLabel} - ${lastLabel}` : 'Niet beschikbaar' %></p>
+										</div>
+									<% }) %>
+								</div>
+							<% } else { %>
+								<p class="theme-text-muted">Je hebt nog geen uurrooster ingesteld.</p>
+							<% } %>
 						</div>
 					</article>
 				</div>
