@@ -193,7 +193,7 @@
 
 						<div class="mt-6 space-y-4">
 							<% if (scheduleEntries.length > 0) { %>
-								<div class="theme-surface theme-pill border theme-border p-4 flex flex-wrap justify-between">
+								<div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-4">
 									<% scheduleEntries.forEach(([day, hours], index) => { %>
 										<%
 											const dayLabel = resolveDayLabel(day, index)
@@ -203,7 +203,7 @@
 											const firstLabel = resolveHourLabel(first, true)
 											const lastLabel = resolveHourLabel(last, false)
 										%>
-										<div class="theme-pill border theme-border theme-surface p-3 w-30">
+										<div class="theme-surface theme-pill border theme-border p-4">
 											<p class="text-xs uppercase tracking-[0.12em] theme-text-muted"><%= dayLabel %></p>
 											<p class="theme-text-primary font-semibold mt-1"><%= firstLabel && lastLabel ? `${firstLabel} - ${lastLabel}` : 'Niet beschikbaar' %></p>
 										</div>
