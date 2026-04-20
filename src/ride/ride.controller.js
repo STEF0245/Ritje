@@ -6,6 +6,11 @@
 
 import db from '../firebase/db.js'
 import { respondWithNotification } from '../utils/notification.util.js'
+import {
+	calculateRoute,
+	findMarkersOnRoute,
+	getDistanceFromLatLonInKm
+} from '../location/location.service.js'
 
 const getAllUsers = async () => {
 	try {
@@ -90,10 +95,17 @@ export const getRidePage = async (req, res) => {
 		const mapMarkers = buildRideMarkers(users)
 		const mapCenter = getRideMapCenter(mapMarkers)
 
+		const userCoords = req.user?.metadata?.coords
+		const standardRoute = await calculateRoute(userCoords, {
+			latitude: 51.08839307348528,
+			longitude: 4.911829081837887
+		})
+
 		res.render('ride', {
 			title: 'Ritje',
-			mapMarkers,
-			mapCenter
+			mapMarkers: findMarkersOnRoute(mapMarkers, standardRoute),
+			mapCenter,
+			route: standardRoute
 		})
 	} catch (error) {
 		console.error('Error rendering ride page:', error)
@@ -106,4 +118,19 @@ export const getRidePage = async (req, res) => {
 			title: 'Ritje'
 		})
 	}
+}
+
+const getNearbyMarkers = (userCoords, markers) => {
+	if (!userCoords) return markers
+
+	const nearbyMarkers = markers.filter((marker) => {
+		const distance = getDistanceFromLatLonInKm(
+			userCoords.latitude,
+			userCoords.longitude,
+			marker.latitude,
+			marker.longitude
+		)
+		return distance <= 5 // Filter markers within 5 km radius
+	})
+	return nearbyMarkers.length > 0 ? nearbyMarkers : markers
 }

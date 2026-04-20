@@ -8,6 +8,7 @@ const NOMINATIM_ENDPOINT = 'https://nominatim.openstreetmap.org/reverse'
 const GEOAPIFY_ENDPOINT = 'https://api.geoapify.com/v1/geocode/reverse'
 const NOMINATIM_FORWARD_ENDPOINT = 'https://nominatim.openstreetmap.org/search'
 const GEOAPIFY_FORWARD_ENDPOINT = 'https://api.geoapify.com/v1/geocode/search'
+const GEOAPIFY_ROUTING_ENDPOINT = 'https://api.geoapify.com/v1/routing'
 
 const NOMINATIM_USER_AGENT =
 	process.env.GEOCODER_USER_AGENT ||
@@ -395,4 +396,87 @@ export const forwardGeocode = async (address, signal) => {
 		attribution,
 		result
 	}
+}
+
+// ========== Common utilities for ride map rendering ==========
+export const calculateRoute = async (
+	origin,
+	destination,
+	waypoints = [],
+	options = {}
+) => {
+	const { mode = 'drive', type = 'short' } = options
+
+	const routingUrl = new URL(GEOAPIFY_ROUTING_ENDPOINT)
+	routingUrl.searchParams.set('apiKey', process.env.GEOAPIFY_API_KEY)
+	routingUrl.searchParams.set(
+		'waypoints',
+		[
+			`${origin.latitude},${origin.longitude}`,
+			...waypoints.map((wp) => `${wp.latitude},${wp.longitude}`),
+			`${destination.latitude},${destination.longitude}`
+		].join('|')
+	)
+	routingUrl.searchParams.set('mode', mode)
+	routingUrl.searchParams.set('type', type)
+	routingUrl.searchParams.set('lang', 'nl')
+	routingUrl.searchParams.set('max_speed', '120')
+	routingUrl.searchParams.set('format', 'geojson')
+
+	const response = await fetch(routingUrl)
+	if (!response.ok) {
+		throw new Error(`Routing request failed with status ${response.status}`)
+	}
+
+	const data = await response.json()
+	return data || null
+}
+
+export const findMarkersOnRoute = (markers, route) => {
+	if (!route?.features?.[0]?.geometry?.coordinates) {
+		return []
+	}
+	const routeCoords = route.features[0].geometry.coordinates
+
+	const markersOnRoute = markers
+		.map((marker) => {
+			const isOnRoute = routeCoords.some((coords) => {
+				const [lon, lat] = coords[0]
+				const distance = getDistanceFromLatLonInKm(
+					marker.latitude,
+					marker.longitude,
+					lat,
+					lon
+				)
+				console.log(
+					`Distance from marker ${marker.title} to route point (${lat}, ${lon}): ${distance.toFixed(2)} km`
+				) // Debug log
+				return distance < 10 // 10 km threshold for being "on the route"
+			})
+			return isOnRoute ? marker : null
+		})
+		.filter(Boolean)
+
+	console.log(markersOnRoute.length, 'markers found on route') // Debug log
+
+	return markersOnRoute
+}
+
+export const getDistanceFromLatLonInKm = (lat1, lon1, lat2, lon2) => {
+	const deg2rad = (deg) => {
+		return deg * (Math.PI / 180)
+	}
+
+	const R = 6371 // Radius of the earth in km
+	const dLat = deg2rad(lat2 - lat1) // deg2rad below
+	const dLon = deg2rad(lon2 - lon1)
+	const a =
+		Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+		Math.cos(deg2rad(lat1)) *
+			Math.cos(deg2rad(lat2)) *
+			Math.sin(dLon / 2) *
+			Math.sin(dLon / 2)
+	const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+	const d = R * c // Distance in km
+	return d
 }

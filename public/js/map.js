@@ -41,6 +41,7 @@ class AppMap {
 		this.element = element
 		this.instance = null
 		this.markers = []
+		this.route = null
 		this.initialCenter = null
 		this.centerControlButton = null
 	}
@@ -80,6 +81,11 @@ class AppMap {
 
 		if (this.element.dataset.center === 'true') {
 			this.centerMap()
+		}
+
+		if (this.element.dataset.route) {
+			this.route = JSON.parse(this.element.dataset.route)
+			this.addRouteToMap(this.route)
 		}
 
 		this.addCenterControl()
@@ -235,6 +241,31 @@ class AppMap {
 
 		this.centerControlButton = centerButton
 		return centerButton
+	}
+
+	addRouteToMap(route) {
+		const popup = L.popup({
+			closeButton: false,
+			autoClose: false,
+			closeOnClick: true,
+			className: 'map-popup',
+			content: this.buildPopupCard({
+				title: 'Route',
+				lines: []
+			})
+		})
+
+		L.geoJSON(route, {
+			style: (feature) => {
+				return {
+					color: '#007bff',
+					weight: 4,
+					opacity: 0.7
+				}
+			}
+		})
+			.bindPopup(popup)
+			.addTo(this.instance)
 	}
 
 	/**
