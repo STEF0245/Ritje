@@ -244,6 +244,13 @@ class AppMap {
 	}
 
 	addRouteToMap(route) {
+		const distance = route.features[0]?.properties?.distance
+			? `${(route.features[0].properties.distance / 1000).toFixed(2)} km`
+			: 'Onbekende afstand'
+		const duration = route.features[0]?.properties?.time
+			? `${Math.round(route.features[0].properties.time / 60)} min`
+			: 'Onbekende duur'
+
 		const popup = L.popup({
 			closeButton: false,
 			autoClose: false,
@@ -251,7 +258,7 @@ class AppMap {
 			className: 'map-popup',
 			content: this.buildPopupCard({
 				title: 'Route',
-				lines: []
+				lines: [`Afstand: ${distance}`, `Duur: ${duration}`]
 			})
 		})
 
