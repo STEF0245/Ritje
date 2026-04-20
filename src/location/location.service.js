@@ -448,10 +448,7 @@ export const findMarkersOnRoute = (markers, route) => {
 					lat,
 					lon
 				)
-				console.log(
-					`Distance from marker ${marker.title} to route point (${lat}, ${lon}): ${distance.toFixed(2)} km`
-				) // Debug log
-				return distance < 10 // 10 km threshold for being "on the route"
+				return distance < 5 // 5 km threshold for being "on the route"
 			})
 			return isOnRoute ? marker : null
 		})
