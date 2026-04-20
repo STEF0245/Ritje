@@ -51,3 +51,9 @@ export const reverseGeocodeController = async (req, res) => {
 		})
 	}
 }
+
+export const forwardGeocodeController = async (req, res) => {
+	res.status(501).json({
+		error: 'Forward geocoding is not implemented yet'
+	})
+}
