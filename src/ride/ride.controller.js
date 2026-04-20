@@ -23,7 +23,7 @@ const getAllUsers = async () => {
 	}
 }
 
-const buildRideMarkers = (users = []) => {
+const buildRideMarkers = (users = [], uid) => {
 	return users
 		.map((user) => {
 			const latitude = Number(user?.coords?.latitude)
@@ -43,7 +43,10 @@ const buildRideMarkers = (users = []) => {
 			return {
 				latitude,
 				longitude,
-				title: user?.name?.full || 'Onbekende gebruiker',
+				title:
+					uid === user?.uid
+						? 'Uw woonplaats'
+						: user?.name?.full || 'Onbekende gebruiker',
 				lines: [
 					`${street} ${houseNumber}`.trim(),
 					`${postalCode} ${city}`.trim()
@@ -92,7 +95,7 @@ const getRideMapCenter = (markers = []) => {
 export const getRidePage = async (req, res) => {
 	try {
 		const users = await getAllUsers()
-		const mapMarkers = buildRideMarkers(users)
+		const mapMarkers = buildRideMarkers(users, req.user?.uid)
 		const mapCenter = getRideMapCenter(mapMarkers)
 
 		const userCoords = req.user?.metadata?.coords
