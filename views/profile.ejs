@@ -40,16 +40,40 @@
 		return first ? start : end
 	}
 
+	const normalizeHourNumber = (value) => {
+		const numeric = Number(value)
+		if (!Number.isInteger(numeric)) return null
+		if (numeric >= 1 && numeric <= 8) return numeric
+		if (numeric >= 0 && numeric <= 7) return numeric + 1
+		return null
+	}
+
 	const getActiveHours = (hours) => {
 		if (Array.isArray(hours)) {
 			return hours
-				.map((isActive, index) => (isActive ? String(index + 1) : null))
-			.filter(Boolean)
+				.map((isActive, index) => (Boolean(isActive) ? String(index + 1) : null))
+				.filter(Boolean)
 		}
 		if (hours && typeof hours === 'object') {
+			if (
+				Object.prototype.hasOwnProperty.call(hours, 'start') &&
+				Object.prototype.hasOwnProperty.call(hours, 'end')
+			) {
+				const start = normalizeHourNumber(hours.start)
+				const end = normalizeHourNumber(hours.end)
+				if (!start || !end || end < start) return []
+				return Array.from(
+					{ length: end - start + 1 },
+					(_, idx) => String(start + idx)
+				)
+			}
+
 			return Object.entries(hours)
 				.filter(([, isActive]) => Boolean(isActive))
-				.map(([hour]) => String(hour))
+				.map(([hour]) => normalizeHourNumber(hour))
+				.filter((hour) => hour !== null)
+				.map((hour) => String(hour))
+				.filter((hour, index, list) => list.indexOf(hour) === index)
 				.sort((a, b) => Number(a) - Number(b))
 		}
 		return []

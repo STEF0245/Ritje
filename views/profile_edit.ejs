@@ -22,6 +22,91 @@
 		const houseNumber = safeFormData?.houseNumber || address?.houseNumber || ''
 		const postalCode = safeFormData?.postalCode || address?.postalCode || ''
 		const city = safeFormData?.city || address?.city || ''
+
+		const schedule = metadata?.schedule || {}
+		const scheduleEntries = Object.entries(schedule || {})
+		const weekdays = [
+			{ key: 'monday', label: 'Maandag' },
+			{ key: 'tuesday', label: 'Dinsdag' },
+			{ key: 'wednesday', label: 'Woensdag' },
+			{ key: 'thursday', label: 'Donderdag' },
+			{ key: 'friday', label: 'Vrijdag' }
+		]
+
+		const resolveDayLabel = (day, index) => {
+			const keyMap = {
+				monday: 'Maandag',
+				tuesday: 'Dinsdag',
+				wednesday: 'Woensdag',
+				thursday: 'Donderdag',
+				friday: 'Vrijdag'
+			}
+			return keyMap[String(day || '').toLowerCase()] || ['Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag'][index] || `Dag ${index + 1}`
+		}
+
+		const getActiveHours = (hours) => {
+			const normalizeHourNumber = (value) => {
+				const numeric = Number(value)
+				if (!Number.isInteger(numeric)) return null
+				if (numeric >= 1 && numeric <= 8) return numeric
+				if (numeric >= 0 && numeric <= 7) return numeric + 1
+				return null
+			}
+
+			if (Array.isArray(hours)) {
+				return hours
+					.map((isActive, index) => (Boolean(isActive) ? String(index + 1) : null))
+					.filter(Boolean)
+			}
+			if (hours && typeof hours === 'object') {
+				if (
+					Object.prototype.hasOwnProperty.call(hours, 'start') &&
+					Object.prototype.hasOwnProperty.call(hours, 'end')
+				) {
+					const start = normalizeHourNumber(hours.start)
+					const end = normalizeHourNumber(hours.end)
+					if (!start || !end || end < start) return []
+					return Array.from(
+						{ length: end - start + 1 },
+						(_, idx) => String(start + idx)
+					)
+				}
+
+				return Object.entries(hours)
+					.filter(([, isActive]) => Boolean(isActive))
+					.map(([hour]) => normalizeHourNumber(hour))
+					.filter((hour) => hour !== null)
+					.map((hour) => String(hour))
+					.filter((hour, index, list) => list.indexOf(hour) === index)
+					.sort((a, b) => Number(a) - Number(b))
+			}
+			return []
+		}
+
+		const resolveDayHours = (dayKey, index) => {
+			if (Object.prototype.hasOwnProperty.call(schedule, dayKey)) {
+				return schedule[dayKey]
+			}
+			return scheduleEntries[index]?.[1] || {}
+		}
+
+		const normalizeHourValue = (value) => {
+			if (value === null || value === undefined) return ''
+			const hour = Number(String(value).trim())
+			if (!Number.isInteger(hour) || hour < 1 || hour > 8) return ''
+			return String(hour)
+		}
+
+		const hourOptions = [
+			{ value: '1', labels: { first: '1e uur (08:25)', last: '1e uur (09:15)' } },
+			{ value: '2', labels: { first: '2e uur (09:15)', last: '2e uur (10:05)' } },
+			{ value: '3', labels: { first: '3e uur (10:20)', last: '3e uur (11:10)' } },
+			{ value: '4', labels: { first: '4e uur (11:10)', last: '4e uur (12:00)' } },
+			{ value: '5', labels: { first: '5e uur (13:00)', last: '5e uur (13:50)' } },
+			{ value: '6', labels: { first: '6e uur (13:50)', last: '6e uur (14:40)' } },
+			{ value: '7', labels: { first: '7e uur (14:55)', last: '7e uur (15:45)' } },
+			{ value: '8', labels: { first: '8e uur (15:45)', last: '8e uur (16:35)' } }
+		]
 	%>
 	<%- include('partials/head', { title }) %>
 
@@ -59,7 +144,7 @@
 						<h2 class="text-xl font-extrabold theme-text-primary">Profielgegevens</h2>
 						<p class="theme-text-muted text-sm mt-1">Overzicht van je account en adresinformatie.</p>
 
-						<form class="mt-6 space-y-4" method="post" action="/profile/edit">
+						<form id="profile-edit-form" class="mt-6 space-y-4" method="post" action="/profile/edit">
 							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 								<div class="theme-surface theme-pill border theme-border p-4">
 									<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Voornaam</p>
@@ -98,10 +183,96 @@
 							</div>
 						</form>
 					</article>
+
+					<article class="theme-panel p-6 lg:col-span-2 lg:col-start-2">
+						<h2 class="text-xl font-extrabold theme-text-primary">Uurrooster</h2>
+						<p class="theme-text-muted text-sm mt-1">Beheer je uurrooster in hetzelfde formulierpatroon als je profielgegevens.</p>
+
+						<div class="mt-6 space-y-4">
+							<div class="theme-surface theme-pill border theme-border p-4">
+								<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Beschikbaarheid per dag</p>
+								<div class="mt-4 space-y-3">
+									<% weekdays.forEach(({ key: dayKey, label: fixedDayLabel }, index) => { %>
+										<%
+											const dayHours = resolveDayHours(dayKey, index)
+											const dayLabel = fixedDayLabel || resolveDayLabel(dayKey, index)
+											const activeHours = getActiveHours(dayHours)
+											const hasSubmittedStart = Object.prototype.hasOwnProperty.call(safeFormData, `scheduleStart_${dayKey}`)
+											const hasSubmittedEnd = Object.prototype.hasOwnProperty.call(safeFormData, `scheduleEnd_${dayKey}`)
+											const rawFirst = hasSubmittedStart ? safeFormData[`scheduleStart_${dayKey}`] : activeHours[0]
+											const first = normalizeHourValue(rawFirst)
+											const rawLast = hasSubmittedEnd ? safeFormData[`scheduleEnd_${dayKey}`] : activeHours[activeHours.length - 1]
+											const normalizedRawLast = normalizeHourValue(rawLast)
+											const last = first && normalizedRawLast && Number(normalizedRawLast) < Number(first) ? first : normalizedRawLast
+										%>
+										<div class="grid grid-cols-1 md:grid-cols-3 gap-3 theme-surface-strong theme-pill border theme-border p-3" data-schedule-row>
+											<div class="md:col-span-1 flex items-center">
+												<p class="theme-text-primary font-semibold"><%= dayLabel %></p>
+											</div>
+											<div class="md:col-span-1">
+												<label for="scheduleStart_<%= dayKey %>" class="text-xs uppercase tracking-[0.12em] theme-text-muted">Van</label>
+												<select id="scheduleStart_<%= dayKey %>" name="scheduleStart_<%= dayKey %>" class="mt-2 theme-input w-full" form="profile-edit-form" data-schedule-start>
+													<option value="">Niet beschikbaar</option>
+													<% hourOptions.forEach((option) => { %>
+														<option value="<%= option.value %>" <%= first === option.value ? 'selected' : '' %>><%= option.labels.first %></option>
+													<% }) %>
+												</select>
+											</div>
+											<div class="md:col-span-1">
+												<label for="scheduleEnd_<%= dayKey %>" class="text-xs uppercase tracking-[0.12em] theme-text-muted">Tot</label>
+												<select id="scheduleEnd_<%= dayKey %>" name="scheduleEnd_<%= dayKey %>" class="mt-2 theme-input w-full" form="profile-edit-form" data-schedule-end>
+													<option value="">Niet beschikbaar</option>
+													<% hourOptions.forEach((option) => { %>
+														<option value="<%= option.value %>" <%= last === option.value ? 'selected' : '' %>><%= option.labels.last %></option>
+													<% }) %>
+												</select>
+											</div>
+										</div>
+									<% }) %>
+								</div>
+							</div>
+						</div>
+					</article>
 				</div>
 			</section>
 		</main>
 
 		<%- include('partials/footer') %>
+		<script>
+			document.addEventListener('DOMContentLoaded', () => {
+				const rows = document.querySelectorAll('[data-schedule-row]')
+
+				const syncEndOptions = (startSelect, endSelect) => {
+					const startValue = Number(startSelect.value)
+					const hasStart = Number.isFinite(startValue) && startSelect.value !== ''
+
+					Array.from(endSelect.options).forEach((option) => {
+						if (!option.value) {
+							option.disabled = false
+							return
+						}
+						const optionValue = Number(option.value)
+						option.disabled = hasStart ? optionValue < startValue : false
+					})
+
+					if (endSelect.value) {
+						const endValue = Number(endSelect.value)
+						if (hasStart && endValue < startValue) {
+							endSelect.value = startSelect.value
+						}
+					}
+				}
+
+				rows.forEach((row) => {
+					const startSelect = row.querySelector('[data-schedule-start]')
+					const endSelect = row.querySelector('[data-schedule-end]')
+
+					if (!startSelect || !endSelect) return
+
+					syncEndOptions(startSelect, endSelect)
+					startSelect.addEventListener('change', () => syncEndOptions(startSelect, endSelect))
+				})
+			})
+		</script>
 	</body>
 </html>
