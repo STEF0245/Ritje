@@ -24,28 +24,25 @@
 		const city = safeFormData?.city || address?.city || ''
 
 		const schedule = metadata?.schedule || {}
-		const scheduleEntries = Object.entries(schedule || {})
-		const weekdays = [
-			{ key: 'monday', label: 'Maandag' },
-			{ key: 'tuesday', label: 'Dinsdag' },
-			{ key: 'wednesday', label: 'Woensdag' },
-			{ key: 'thursday', label: 'Donderdag' },
-			{ key: 'friday', label: 'Vrijdag' }
-		]
-
-		const resolveDayLabel = (day, index) => {
-			const keyMap = {
-				monday: 'Maandag',
-				tuesday: 'Dinsdag',
-				wednesday: 'Woensdag',
-				thursday: 'Donderdag',
-				friday: 'Vrijdag'
-			}
-			return keyMap[String(day || '').toLowerCase()] || ['Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag'][index] || `Dag ${index + 1}`
+		const legacyDayKeyByNumeric = {
+			'1': 'monday',
+			'2': 'tuesday',
+			'3': 'wednesday',
+			'4': 'thursday',
+			'5': 'friday'
 		}
+		const weekdays = [
+			{ key: '1', label: 'Maandag' },
+			{ key: '2', label: 'Dinsdag' },
+			{ key: '3', label: 'Woensdag' },
+			{ key: '4', label: 'Donderdag' },
+			{ key: '5', label: 'Vrijdag' }
+		]
 
 		const getActiveHours = (hours) => {
 			const normalizeHourNumber = (value) => {
+				if (value === null || value === undefined) return null
+				if (typeof value === 'string' && value.trim() === '') return null
 				const numeric = Number(value)
 				if (!Number.isInteger(numeric)) return null
 				if (numeric >= 1 && numeric <= 8) return numeric
@@ -83,11 +80,18 @@
 			return []
 		}
 
-		const resolveDayHours = (dayKey, index) => {
+		const resolveDayHours = (dayKey) => {
 			if (Object.prototype.hasOwnProperty.call(schedule, dayKey)) {
 				return schedule[dayKey]
 			}
-			return scheduleEntries[index]?.[1] || {}
+			const legacyDayKey = legacyDayKeyByNumeric[dayKey]
+			if (
+				legacyDayKey &&
+				Object.prototype.hasOwnProperty.call(schedule, legacyDayKey)
+			) {
+				return schedule[legacyDayKey]
+			}
+			return {}
 		}
 
 		const normalizeHourValue = (value) => {
@@ -194,8 +198,8 @@
 								<div class="mt-4 space-y-3">
 									<% weekdays.forEach(({ key: dayKey, label: fixedDayLabel }, index) => { %>
 										<%
-											const dayHours = resolveDayHours(dayKey, index)
-											const dayLabel = fixedDayLabel || resolveDayLabel(dayKey, index)
+											const dayHours = resolveDayHours(dayKey)
+											const dayLabel = fixedDayLabel
 											const activeHours = getActiveHours(dayHours)
 											const hasSubmittedStart = Object.prototype.hasOwnProperty.call(safeFormData, `scheduleStart_${dayKey}`)
 											const hasSubmittedEnd = Object.prototype.hasOwnProperty.call(safeFormData, `scheduleEnd_${dayKey}`)

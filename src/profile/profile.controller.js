@@ -23,7 +23,7 @@ const PROFILE_EDIT_TITLE = 'Bewerk Profiel'
 const GEOCODE_ERROR_MESSAGE =
 	'Adresverificatie is tijdelijk niet beschikbaar. Probeer later opnieuw.'
 
-const WEEKDAY_KEYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
+const WEEKDAY_KEYS = ['1', '2', '3', '4', '5']
 
 const normalizeHourInput = (value) => {
 	if (value === null || value === undefined) return null

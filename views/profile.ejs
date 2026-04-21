@@ -14,12 +14,13 @@
 	}) : 'Onbekend';		const address = metadata?.address || {}
 
 	const schedule = metadata?.schedule || {}
-	const scheduleEntries = Object.entries(schedule || {})
-
-	const resolveDayLabel = (day, index) => {
-		const days = ['Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag']
-		return days[index] || `Dag ${index + 1}`
-	}
+	const weekdays = [
+		{ key: '1', label: 'Maandag', legacyKey: 'monday' },
+		{ key: '2', label: 'Dinsdag', legacyKey: 'tuesday' },
+		{ key: '3', label: 'Woensdag', legacyKey: 'wednesday' },
+		{ key: '4', label: 'Donderdag', legacyKey: 'thursday' },
+		{ key: '5', label: 'Vrijdag', legacyKey: 'friday' }
+	]
 
 	const resolveHourLabel = (hour, first) => {
 		const hourMap = {
@@ -41,6 +42,8 @@
 	}
 
 	const normalizeHourNumber = (value) => {
+		if (value === null || value === undefined) return null
+		if (typeof value === 'string' && value.trim() === '') return null
 		const numeric = Number(value)
 		if (!Number.isInteger(numeric)) return null
 		if (numeric >= 1 && numeric <= 8) return numeric
@@ -77,6 +80,16 @@
 				.sort((a, b) => Number(a) - Number(b))
 		}
 		return []
+	}
+
+	const resolveDayHours = (dayKey, legacyKey) => {
+		if (Object.prototype.hasOwnProperty.call(schedule, dayKey)) {
+			return schedule[dayKey]
+		}
+		if (legacyKey && Object.prototype.hasOwnProperty.call(schedule, legacyKey)) {
+			return schedule[legacyKey]
+		}
+		return null
 	}
 
 	const coords = metadata?.coords || {}
@@ -216,19 +229,25 @@
 						<p class="theme-text-muted text-sm mt-1">Overzicht van je uurrooster.</p>
 
 						<div class="mt-6 space-y-4">
-							<% if (scheduleEntries.length > 0) { %>
+							<%
+								const hasAnySchedule = weekdays.some(({ key, legacyKey }) => {
+									const dayHours = resolveDayHours(key, legacyKey)
+									return getActiveHours(dayHours).length > 0
+								})
+							%>
+							<% if (hasAnySchedule) { %>
 								<div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-4">
-									<% scheduleEntries.forEach(([day, hours], index) => { %>
+									<% weekdays.forEach(({ key, label, legacyKey }) => { %>
 										<%
-											const dayLabel = resolveDayLabel(day, index)
-											const activeHours = getActiveHours(hours)
+											const dayHours = resolveDayHours(key, legacyKey)
+											const activeHours = getActiveHours(dayHours)
 											const first = activeHours[0] || null
 											const last = activeHours[activeHours.length - 1] || null
 											const firstLabel = resolveHourLabel(first, true)
 											const lastLabel = resolveHourLabel(last, false)
 										%>
 										<div class="theme-surface theme-pill border theme-border p-4">
-											<p class="text-xs uppercase tracking-[0.12em] theme-text-muted"><%= dayLabel %></p>
+											<p class="text-xs uppercase tracking-[0.12em] theme-text-muted"><%= label %></p>
 											<p class="theme-text-primary font-semibold mt-1"><%= firstLabel && lastLabel ? `${firstLabel} - ${lastLabel}` : 'Niet beschikbaar' %></p>
 										</div>
 									<% }) %>
