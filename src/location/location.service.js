@@ -309,31 +309,107 @@ export const calculateRoute = async (
 	return data || null
 }
 
-export const findMarkersOnRoute = (markers, route) => {
-	if (!route?.features?.[0]?.geometry?.coordinates) {
+const getRouteLines = (route) => {
+	const coordinates = route?.features?.[0]?.geometry?.coordinates
+
+	if (!Array.isArray(coordinates) || coordinates.length === 0) {
 		return []
 	}
-	const routeCoords = route.features[0].geometry.coordinates
 
-	const markersOnRoute = markers
-		.map((marker) => {
-			const isOnRoute = routeCoords.some((coords) => {
-				const [lon, lat] = coords[0]
-				const distance = getDistanceFromLatLonInKm(
-					marker.latitude,
-					marker.longitude,
-					lat,
-					lon
-				)
-				return distance < 5 // 5 km threshold for being "on the route"
-			})
-			return isOnRoute ? marker : null
+	if (typeof coordinates[0]?.[0] === 'number') {
+		return [coordinates]
+	}
+
+	return coordinates.filter(
+		(line) => Array.isArray(line) && typeof line[0]?.[0] === 'number'
+	)
+}
+
+const getPointToSegmentDistanceInKm = (point, start, end) => {
+	const referenceLatitude = (point.latitude + start[1] + end[1]) / 3
+	const latitudeFactor = 110.574
+	const longitudeFactor =
+		111.32 * Math.cos((referenceLatitude * Math.PI) / 180)
+
+	const project = ([longitude, latitude]) => ({
+		x: longitude * longitudeFactor,
+		y: latitude * latitudeFactor
+	})
+
+	const projectedPoint = project([point.longitude, point.latitude])
+	const projectedStart = project(start)
+	const projectedEnd = project(end)
+
+	const segmentX = projectedEnd.x - projectedStart.x
+	const segmentY = projectedEnd.y - projectedStart.y
+	const segmentLengthSquared = segmentX ** 2 + segmentY ** 2
+
+	if (segmentLengthSquared === 0) {
+		return {
+			distance: Math.hypot(
+				projectedPoint.x - projectedStart.x,
+				projectedPoint.y - projectedStart.y
+			),
+			projectionRatio: 0
+		}
+	}
+
+	const pointOffsetX = projectedPoint.x - projectedStart.x
+	const pointOffsetY = projectedPoint.y - projectedStart.y
+	const projectionRatio =
+		(pointOffsetX * segmentX + pointOffsetY * segmentY) /
+		segmentLengthSquared
+	const clampedProjectionRatio = Math.max(0, Math.min(1, projectionRatio))
+
+	const closestPoint = {
+		x: projectedStart.x + clampedProjectionRatio * segmentX,
+		y: projectedStart.y + clampedProjectionRatio * segmentY
+	}
+
+	return {
+		distance: Math.hypot(
+			projectedPoint.x - closestPoint.x,
+			projectedPoint.y - closestPoint.y
+		),
+		projectionRatio
+	}
+}
+
+export const findMarkersOnRoute = (markers, route) => {
+	const routeLines = getRouteLines(route)
+	if (routeLines.length === 0) {
+		return []
+	}
+
+	const routeSegments = routeLines.flatMap((line) =>
+		line.slice(0, -1).map((start, index) => ({
+			start,
+			end: line[index + 1]
+		}))
+	)
+
+	return markers.filter((marker) => {
+		if (
+			!Number.isFinite(marker?.latitude) ||
+			!Number.isFinite(marker?.longitude)
+		) {
+			return false
+		}
+
+		return routeSegments.some(({ start, end }, index) => {
+			const match = getPointToSegmentDistanceInKm(marker, start, end)
+			if (match.distance > 5) {
+				return false
+			}
+
+			const isFinalSegment = index === routeSegments.length - 1
+			if (isFinalSegment && match.projectionRatio > 1) {
+				return false
+			}
+
+			return true
 		})
-		.filter(Boolean)
-
-	console.log(markersOnRoute.length, 'markers found on route') // Debug log
-
-	return markersOnRoute
+	})
 }
 
 export const getDistanceFromLatLonInKm = (lat1, lon1, lat2, lon2) => {
