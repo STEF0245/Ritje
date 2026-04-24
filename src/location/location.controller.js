@@ -52,6 +52,13 @@ export const reverseGeocodeController = async (req, res) => {
 	}
 }
 
+/**
+ * @brief  Placeholder endpoint for forward geocoding.
+ * @details  Returns HTTP 501 until forward geocoding is exposed through this controller.
+ * @param {object} req - Express request object.
+ * @param {object} res - Express response object.
+ * @returns {object} Express response.
+ */
 export const forwardGeocodeController = async (req, res) => {
 	res.status(501).json({
 		error: 'Forward geocoding is not implemented yet'

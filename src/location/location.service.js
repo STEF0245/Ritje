@@ -277,6 +277,15 @@ export const forwardGeocode = async (address, signal) => {
 }
 
 // ========== Common utilities for ride map rendering ==========
+/**
+ * @brief  Calculate a route between origin, optional waypoints, and destination.
+ * @details  Calls Geoapify routing API and returns the GeoJSON response used by the ride map.
+ * @param {{latitude: number, longitude: number}} origin - Route origin.
+ * @param {{latitude: number, longitude: number}} destination - Route destination.
+ * @param {Array<{latitude: number, longitude: number}>} [waypoints=[]] - Optional intermediate stops.
+ * @param {{mode?: string, type?: string}} [options={}] - Routing options.
+ * @returns {Promise<object|null>} GeoJSON route payload.
+ */
 export const calculateRoute = async (
 	origin,
 	destination,
@@ -309,6 +318,12 @@ export const calculateRoute = async (
 	return data || null
 }
 
+/**
+ * @brief  Extract route line coordinate arrays from GeoJSON.
+ * @details  Supports both LineString and MultiLineString shapes.
+ * @param {object} route - GeoJSON route payload.
+ * @returns {Array<Array<[number, number]>>} Normalized list of route lines.
+ */
 const getRouteLines = (route) => {
 	const coordinates = route?.features?.[0]?.geometry?.coordinates
 
@@ -325,20 +340,51 @@ const getRouteLines = (route) => {
 	)
 }
 
+/**
+ * @brief  Build kilometer conversion factors for a latitude reference.
+ * @param {number} referenceLatitude - Latitude used for approximate projection scaling.
+ * @returns {{latitudeFactor: number, longitudeFactor: number}} Conversion factors.
+ */
+const getProjectionFactors = (referenceLatitude) => ({
+	latitudeFactor: 110.574,
+	longitudeFactor: 111.32 * Math.cos((referenceLatitude * Math.PI) / 180)
+})
+
+/**
+ * @brief  Project geographic coordinates onto a local kilometer plane.
+ * @param {number} longitude - Longitude in degrees.
+ * @param {number} latitude - Latitude in degrees.
+ * @param {{latitudeFactor: number, longitudeFactor: number}} factors - Projection factors.
+ * @returns {{x: number, y: number}} Projected planar point in kilometers.
+ */
+const projectCoordinateToKmPlane = (longitude, latitude, factors) => ({
+	x: longitude * factors.longitudeFactor,
+	y: latitude * factors.latitudeFactor
+})
+
+/**
+ * @brief  Compute the shortest distance from a point to a route segment.
+ * @details  Uses a local planar approximation in kilometers and returns both distance and segment projection data.
+ * @param {{latitude: number, longitude: number}} point - Point to test.
+ * @param {[number, number]} start - Segment start as [lon, lat].
+ * @param {[number, number]} end - Segment end as [lon, lat].
+ * @returns {{distance: number, clampedProjectionRatio: number, segmentLengthKm: number}} Distance/projection details.
+ */
 const getPointToSegmentDistanceInKm = (point, start, end) => {
 	const referenceLatitude = (point.latitude + start[1] + end[1]) / 3
-	const latitudeFactor = 110.574
-	const longitudeFactor =
-		111.32 * Math.cos((referenceLatitude * Math.PI) / 180)
+	const factors = getProjectionFactors(referenceLatitude)
 
-	const project = ([longitude, latitude]) => ({
-		x: longitude * longitudeFactor,
-		y: latitude * latitudeFactor
-	})
-
-	const projectedPoint = project([point.longitude, point.latitude])
-	const projectedStart = project(start)
-	const projectedEnd = project(end)
+	const projectedPoint = projectCoordinateToKmPlane(
+		point.longitude,
+		point.latitude,
+		factors
+	)
+	const projectedStart = projectCoordinateToKmPlane(
+		start[0],
+		start[1],
+		factors
+	)
+	const projectedEnd = projectCoordinateToKmPlane(end[0], end[1], factors)
 
 	const segmentX = projectedEnd.x - projectedStart.x
 	const segmentY = projectedEnd.y - projectedStart.y
@@ -351,7 +397,6 @@ const getPointToSegmentDistanceInKm = (point, start, end) => {
 				projectedPoint.x - projectedStart.x,
 				projectedPoint.y - projectedStart.y
 			),
-			projectionRatio: 0,
 			clampedProjectionRatio: 0,
 			segmentLengthKm
 		}
@@ -374,12 +419,16 @@ const getPointToSegmentDistanceInKm = (point, start, end) => {
 			projectedPoint.x - closestPoint.x,
 			projectedPoint.y - closestPoint.y
 		),
-		projectionRatio,
 		clampedProjectionRatio,
 		segmentLengthKm
 	}
 }
 
+/**
+ * @brief  Build route segments with cumulative route progress.
+ * @param {Array<Array<[number, number]>>} routeLines - Route line coordinate arrays.
+ * @returns {Array<{start: [number, number], end: [number, number], cumulativeStartKm: number, segmentLengthKm: number}>} Route segments.
+ */
 const buildRouteSegments = (routeLines) => {
 	let cumulativeStartKm = 0
 
@@ -406,6 +455,12 @@ const buildRouteSegments = (routeLines) => {
 	)
 }
 
+/**
+ * @brief  Find the closest route segment match for a marker point.
+ * @param {{latitude: number, longitude: number}} point - Marker point.
+ * @param {Array<object>} routeSegments - Built route segments.
+ * @returns {{distance: number, progressKm: number}|null} Closest route match.
+ */
 const getClosestRouteMatch = (point, routeSegments) => {
 	let closestMatch = null
 
@@ -429,6 +484,13 @@ const getClosestRouteMatch = (point, routeSegments) => {
 	return closestMatch
 }
 
+/**
+ * @brief  Resolve destination coordinates from override, waypoints, or route end.
+ * @param {object} route - Route payload.
+ * @param {Array<object>} routeSegments - Built route segments.
+ * @param {{latitude: number, longitude: number}|null} destinationOverride - Optional destination override.
+ * @returns {{longitude: number, latitude: number}|null} Destination point.
+ */
 const getDestinationPoint = (route, routeSegments, destinationOverride) => {
 	if (
 		destinationOverride &&
@@ -467,6 +529,12 @@ const getDestinationPoint = (route, routeSegments, destinationOverride) => {
 	}
 }
 
+/**
+ * @brief  Resolve origin coordinates from waypoints or route start.
+ * @param {object} route - Route payload.
+ * @param {Array<object>} routeSegments - Built route segments.
+ * @returns {{longitude: number, latitude: number}|null} Origin point.
+ */
 const getOriginPoint = (route, routeSegments) => {
 	const waypointLocation =
 		route?.features?.[0]?.properties?.waypoints?.[0]?.location
@@ -494,6 +562,14 @@ const getOriginPoint = (route, routeSegments) => {
 	}
 }
 
+/**
+ * @brief  Project marker distance on the destination-centered axis toward origin.
+ * @details  Positive values are on the origin side of destination, negative values are beyond destination.
+ * @param {{latitude: number, longitude: number}} point - Marker point.
+ * @param {{latitude: number, longitude: number}} originPoint - Route origin.
+ * @param {{latitude: number, longitude: number}} destinationPoint - Route destination.
+ * @returns {number|null} Signed projected distance in kilometers.
+ */
 const getProjectedDistanceFromDestinationAxisKm = (
 	point,
 	originPoint,
@@ -501,15 +577,15 @@ const getProjectedDistanceFromDestinationAxisKm = (
 ) => {
 	const referenceLatitude =
 		(point.latitude + originPoint.latitude + destinationPoint.latitude) / 3
-	const latitudeFactor = 110.574
-	const longitudeFactor =
-		111.32 * Math.cos((referenceLatitude * Math.PI) / 180)
+	const factors = getProjectionFactors(referenceLatitude)
 
 	const toVectorFromDestination = (targetPoint) => ({
 		x:
 			(targetPoint.longitude - destinationPoint.longitude) *
-			longitudeFactor,
-		y: (targetPoint.latitude - destinationPoint.latitude) * latitudeFactor
+			factors.longitudeFactor,
+		y:
+			(targetPoint.latitude - destinationPoint.latitude) *
+			factors.latitudeFactor
 	})
 
 	const destinationToOrigin = toVectorFromDestination(originPoint)
@@ -530,6 +606,14 @@ const getProjectedDistanceFromDestinationAxisKm = (
 	return dotProduct / originMagnitudeKm
 }
 
+/**
+ * @brief  Check if marker lies on the origin side of destination.
+ * @param {{latitude: number, longitude: number}} point - Marker point.
+ * @param {{latitude: number, longitude: number}|null} originPoint - Route origin.
+ * @param {{latitude: number, longitude: number}|null} destinationPoint - Route destination.
+ * @param {number} [maxBeyondDestinationKm=0.2] - Allowed tolerance beyond destination.
+ * @returns {boolean} True when marker should be kept for destination-side filtering.
+ */
 const isPointOnOriginSideOfDestination = (
 	point,
 	originPoint,
@@ -553,6 +637,14 @@ const isPointOnOriginSideOfDestination = (
 	return projectedDistanceKm >= -maxBeyondDestinationKm
 }
 
+/**
+ * @brief  Filter markers to those relevant for the displayed route.
+ * @details  Keeps markers close to route geometry, not beyond destination progress, and on the origin side relative to destination.
+ * @param {Array<object>} markers - Marker list.
+ * @param {object} route - GeoJSON route payload.
+ * @param {{latitude: number, longitude: number}|null} [destinationOverride=null] - Optional explicit destination.
+ * @returns {Array<object>} Filtered marker list.
+ */
 export const findMarkersOnRoute = (
 	markers,
 	route,

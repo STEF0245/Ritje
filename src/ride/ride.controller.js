@@ -8,8 +8,7 @@ import db from '../firebase/db.js'
 import { respondWithNotification } from '../utils/notification.util.js'
 import {
 	calculateRoute,
-	findMarkersOnRoute,
-	getDistanceFromLatLonInKm
+	findMarkersOnRoute
 } from '../location/location.service.js'
 
 const SCHOOL_DESTINATION = {
@@ -17,6 +16,11 @@ const SCHOOL_DESTINATION = {
 	longitude: 4.911829081837887
 }
 
+/**
+ * @brief  Fetch all user profiles from Firebase.
+ * @details  Returns an empty array when no users are found or when retrieval fails.
+ * @returns {Promise<Array<object>>} User list.
+ */
 const getAllUsers = async () => {
 	try {
 		const snapshot = await db.ref('users').once('value')
@@ -28,6 +32,13 @@ const getAllUsers = async () => {
 	}
 }
 
+/**
+ * @brief  Build map marker payloads for the ride page.
+ * @details  Converts users with valid coordinates into normalized marker objects including address lines and Google Maps links.
+ * @param {Array<object>} [users=[]] - User list.
+ * @param {string} uid - Logged-in user id to label the current user's marker.
+ * @returns {Array<object>} Marker objects.
+ */
 const buildRideMarkers = (users = [], uid) => {
 	return users
 		.map((user) => {
@@ -64,6 +75,11 @@ const buildRideMarkers = (users = [], uid) => {
 		.filter(Boolean)
 }
 
+/**
+ * @brief  Calculate the average center of valid marker coordinates.
+ * @param {Array<{latitude: number, longitude: number}>} [markers=[]] - Marker list.
+ * @returns {{latitude: number, longitude: number}|null} Averaged center or null when unavailable.
+ */
 const getRideMapCenter = (markers = []) => {
 	if (!Array.isArray(markers) || markers.length === 0) {
 		return null
@@ -104,7 +120,10 @@ export const getRidePage = async (req, res) => {
 		const mapCenter = getRideMapCenter(mapMarkers)
 
 		const userCoords = req.user?.metadata?.coords
-		const standardRoute = await calculateRoute(userCoords, SCHOOL_DESTINATION)
+		const standardRoute = await calculateRoute(
+			userCoords,
+			SCHOOL_DESTINATION
+		)
 
 		res.render('ride', {
 			title: 'Ritje',
@@ -127,19 +146,4 @@ export const getRidePage = async (req, res) => {
 			title: 'Ritje'
 		})
 	}
-}
-
-const getNearbyMarkers = (userCoords, markers) => {
-	if (!userCoords) return markers
-
-	const nearbyMarkers = markers.filter((marker) => {
-		const distance = getDistanceFromLatLonInKm(
-			userCoords.latitude,
-			userCoords.longitude,
-			marker.latitude,
-			marker.longitude
-		)
-		return distance <= 5 // Filter markers within 5 km radius
-	})
-	return nearbyMarkers.length > 0 ? nearbyMarkers : markers
 }
