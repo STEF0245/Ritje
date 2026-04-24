@@ -8,6 +8,7 @@ import db from '../firebase/db.js'
 import { auth, generateRandomUid } from '../firebase/auth.js'
 import { forwardGeocode } from '../location/location.service.js'
 import {
+	hasCompleteAddress,
 	normalizeGeocodedAddress,
 	parseAndValidateAddress,
 	withTimeout
@@ -37,7 +38,7 @@ const GEOCODE_TIMEOUT_MS = Number(
  * @param {object} formData - Raw form body submitted by the client.
  * @returns {{email: string, phoneNumber: string, photoURL: string, name: {first: string, last: string, full: string}, address: {city: string, street: string, houseNumber: string, postalCode: string}}} Normalized user form data.
  */
-const mapFormDataToEditUser = (formData = {}) => {
+const mapFormDataToUser = (formData = {}, includePassword = false) => {
 	const safeFirstName = safeTrim(formData.firstName, 100)
 	const safeLastName = safeTrim(formData.lastName, 100)
 	const safeEmail = safeTrim(formData.email, 254)
@@ -48,7 +49,7 @@ const mapFormDataToEditUser = (formData = {}) => {
 	const safePostalCode = safeTrim(formData.postalCode, 20)
 	const safePhotoURL = safeTrim(formData.photoURL, 2048)
 
-	return {
+	const mapped = {
 		email: safeEmail,
 		phoneNumber: safePhoneNumber,
 		photoURL: safePhotoURL,
@@ -64,6 +65,12 @@ const mapFormDataToEditUser = (formData = {}) => {
 			postalCode: safePostalCode
 		}
 	}
+
+	if (includePassword) {
+		mapped.password = safeTrim(formData.password, 128)
+	}
+
+	return mapped
 }
 
 /**
@@ -73,10 +80,11 @@ const mapFormDataToEditUser = (formData = {}) => {
  * @returns {{email: string, phoneNumber: string, photoURL: string, name: {first: string, last: string, full: string}, address: {city: string, street: string, houseNumber: string, postalCode: string}, password: string}} Normalized new-user form data.
  */
 const mapFormDataToNewUser = (formData = {}) => {
-	return {
-		...mapFormDataToEditUser(formData),
-		password: safeTrim(formData.password, 128)
-	}
+	return mapFormDataToUser(formData, true)
+}
+
+const mapFormDataToEditUser = (formData = {}) => {
+	return mapFormDataToUser(formData, false)
 }
 
 /**
@@ -298,6 +306,18 @@ export const postUserNewPage = async (req, res) => {
 			result.raw,
 			addressFields
 		)
+		if (!hasCompleteAddress(normalizedAddress)) {
+			return renderUserNewPage(res, {
+				status: 422,
+				newUser: mapFormDataToNewUser(req.body),
+				notification: {
+					type: 'error',
+					label: 'Adresverificatie mislukt',
+					message:
+						'Het adres kon niet geverifieerd worden. Controleer je gegevens en probeer opnieuw.'
+				}
+			})
+		}
 
 		const createdAuthUser = await auth.createUser({
 			uid: generateRandomUid(),
@@ -592,6 +612,21 @@ export const postUserEditPage = async (req, res) => {
 			result.raw,
 			addressFields
 		)
+		if (!hasCompleteAddress(normalizedAddress)) {
+			return respondWithNotification(res, {
+				type: 'error',
+				label: 'Adresverificatie mislukt',
+				message:
+					'Het adres kon niet geverifieerd worden. Controleer je gegevens en probeer opnieuw.',
+				status: 422,
+				view: 'admin_user_edit',
+				title: 'Bewerk | Gebruikers | Admin',
+				extra: {
+					userUid: uid,
+					editUser: mapFormDataToEditUser(req.body)
+				}
+			})
+		}
 
 		await db.ref(`users/${uid}`).update({
 			email: safeEmail,

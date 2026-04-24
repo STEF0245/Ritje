@@ -34,7 +34,7 @@ app.use(morgan(config.isProduction ? 'combined' : 'dev'))
 // =====================
 // Middleware setup
 // =====================
-app.use(express.json({ limit: '10mb' }))
+app.use(express.json({ limit: '10mb', type: ['application/json'] }))
 app.use(express.urlencoded({ extended: true, limit: '10mb' }))
 app.use(cookieParser())
 
@@ -141,7 +141,7 @@ if (!config.isProduction) {
 // =====================
 app.use(requireAuth)
 app.use((req, res, next) => {
-	res.locals.user = req.user || null
+	res.locals.user = req.user
 	const flashNotification = req.cookies.flashNotification
 	if (flashNotification) {
 		try {

@@ -34,8 +34,15 @@ const optionalEnvVars = [
 	'GEOAPIFY_API_KEY',
 	'GEOAPIFY_USER_AGENT',
 	'GEOAPIFY_RATE_LIMIT_WINDOW_MS',
-	'GEOAPIFY_RATE_LIMIT_MAX'
+	'GEOAPIFY_RATE_LIMIT_MAX',
+	'SCHOOL_DESTINATION_LAT',
+	'SCHOOL_DESTINATION_LON'
 ]
+
+const parseNumberWithFallback = (value, fallback) => {
+	const parsed = Number(value)
+	return Number.isFinite(parsed) ? parsed : fallback
+}
 
 /**
  * @brief  Fail fast when required environment variables are missing.
@@ -109,6 +116,19 @@ const config = {
 				10
 			),
 			max: Number.parseInt(process.env.GEOAPIFY_RATE_LIMIT_MAX || '1', 10)
+		}
+	},
+
+	ride: {
+		schoolDestination: {
+			latitude: parseNumberWithFallback(
+				process.env.SCHOOL_DESTINATION_LAT,
+				51.08839307348528
+			),
+			longitude: parseNumberWithFallback(
+				process.env.SCHOOL_DESTINATION_LON,
+				4.911829081837887
+			)
 		}
 	},
 

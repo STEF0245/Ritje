@@ -45,9 +45,12 @@ export const reverseGeocodeController = async (req, res) => {
 		const isValidationError =
 			typeof error?.message === 'string' &&
 			error.message.includes('must be')
+		const safeMessage = isValidationError
+			? 'Invalid coordinates provided'
+			: 'Reverse geocoding failed'
 
 		return res.status(isValidationError ? 400 : 502).json({
-			error: error?.message || 'Reverse geocoding failed'
+			error: safeMessage
 		})
 	}
 }

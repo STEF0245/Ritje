@@ -5,15 +5,24 @@
  */
 
 import db from '../firebase/db.js'
+import config from '../config.js'
 import { respondWithNotification } from '../utils/notification.util.js'
 import {
 	calculateRoute,
 	findMarkersOnRoute
 } from '../location/location.service.js'
 
-const SCHOOL_DESTINATION = {
-	latitude: 51.08839307348528,
-	longitude: 4.911829081837887
+const SCHOOL_DESTINATION = config.ride.schoolDestination
+
+/**
+ * @brief  Check whether a coordinate pair is valid.
+ * @param {{latitude?: number|string, longitude?: number|string}|null|undefined} point - Coordinate pair candidate.
+ * @returns {boolean} True when latitude and longitude are finite numbers.
+ */
+const hasValidCoordinates = (point) => {
+	const latitude = Number(point?.latitude)
+	const longitude = Number(point?.longitude)
+	return Number.isFinite(latitude) && Number.isFinite(longitude)
 }
 
 /**
@@ -120,18 +129,21 @@ export const getRidePage = async (req, res) => {
 		const mapCenter = getRideMapCenter(mapMarkers)
 
 		const userCoords = req.user?.metadata?.coords
-		const standardRoute = await calculateRoute(
-			userCoords,
-			SCHOOL_DESTINATION
-		)
+		const hasValidRouteEndpoints =
+			hasValidCoordinates(userCoords) &&
+			hasValidCoordinates(SCHOOL_DESTINATION)
+
+		const standardRoute = hasValidRouteEndpoints
+			? await calculateRoute(userCoords, SCHOOL_DESTINATION)
+			: null
+
+		const visibleMarkers = standardRoute
+			? findMarkersOnRoute(mapMarkers, standardRoute, SCHOOL_DESTINATION)
+			: mapMarkers
 
 		res.render('ride', {
 			title: 'Ritje',
-			mapMarkers: findMarkersOnRoute(
-				mapMarkers,
-				standardRoute,
-				SCHOOL_DESTINATION
-			),
+			mapMarkers: visibleMarkers,
 			mapCenter,
 			route: standardRoute
 		})

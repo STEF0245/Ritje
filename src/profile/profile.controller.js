@@ -7,6 +7,7 @@
 import db from '../firebase/db.js'
 import { forwardGeocode } from '../location/location.service.js'
 import {
+	hasCompleteAddress,
 	normalizeGeocodedAddress,
 	parseAndValidateAddress,
 	withTimeout
@@ -232,6 +233,15 @@ export const profileEditController = async (req, res) => {
 			result.raw,
 			addressFields
 		)
+		if (!hasCompleteAddress(normalizedAddress)) {
+			return renderProfileEditError(res, {
+				status: 422,
+				label: 'Adresverificatie mislukt',
+				message:
+					'Het adres kon niet geverifieerd worden. Controleer je gegevens en probeer opnieuw.',
+				formData: req.body
+			})
+		}
 
 		updates.address = normalizedAddress
 		updates.coords = {

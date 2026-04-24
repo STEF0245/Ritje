@@ -98,3 +98,16 @@ export const normalizeGeocodedAddress = (
 			''
 	}
 }
+
+/**
+ * @brief  Check whether a normalized address is complete.
+ * @details  Verifies that street, house number, postal code, and city are present as non-empty strings.
+ * @param {{street?: string, houseNumber?: string, postalCode?: string, city?: string}} address - Address candidate.
+ * @returns {boolean} True when all required fields are filled.
+ */
+export const hasCompleteAddress = (address = {}) => {
+	return ['street', 'houseNumber', 'postalCode', 'city'].every((field) => {
+		const value = address[field]
+		return typeof value === 'string' && value.trim().length > 0
+	})
+}
