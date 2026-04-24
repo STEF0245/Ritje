@@ -343,6 +343,7 @@ const getPointToSegmentDistanceInKm = (point, start, end) => {
 	const segmentX = projectedEnd.x - projectedStart.x
 	const segmentY = projectedEnd.y - projectedStart.y
 	const segmentLengthSquared = segmentX ** 2 + segmentY ** 2
+	const segmentLengthKm = Math.hypot(segmentX, segmentY)
 
 	if (segmentLengthSquared === 0) {
 		return {
@@ -350,7 +351,9 @@ const getPointToSegmentDistanceInKm = (point, start, end) => {
 				projectedPoint.x - projectedStart.x,
 				projectedPoint.y - projectedStart.y
 			),
-			projectionRatio: 0
+			projectionRatio: 0,
+			clampedProjectionRatio: 0,
+			segmentLengthKm
 		}
 	}
 
@@ -371,22 +374,214 @@ const getPointToSegmentDistanceInKm = (point, start, end) => {
 			projectedPoint.x - closestPoint.x,
 			projectedPoint.y - closestPoint.y
 		),
-		projectionRatio
+		projectionRatio,
+		clampedProjectionRatio,
+		segmentLengthKm
 	}
 }
 
-export const findMarkersOnRoute = (markers, route) => {
+const buildRouteSegments = (routeLines) => {
+	let cumulativeStartKm = 0
+
+	return routeLines.flatMap((line) =>
+		line.slice(0, -1).map((start, index) => {
+			const end = line[index + 1]
+			const segmentLengthKm = getDistanceFromLatLonInKm(
+				start[1],
+				start[0],
+				end[1],
+				end[0]
+			)
+
+			const segment = {
+				start,
+				end,
+				cumulativeStartKm,
+				segmentLengthKm
+			}
+
+			cumulativeStartKm += segmentLengthKm
+			return segment
+		})
+	)
+}
+
+const getClosestRouteMatch = (point, routeSegments) => {
+	let closestMatch = null
+
+	for (const segment of routeSegments) {
+		const match = getPointToSegmentDistanceInKm(
+			point,
+			segment.start,
+			segment.end
+		)
+
+		if (!closestMatch || match.distance < closestMatch.distance) {
+			closestMatch = {
+				distance: match.distance,
+				progressKm:
+					segment.cumulativeStartKm +
+					match.clampedProjectionRatio * segment.segmentLengthKm
+			}
+		}
+	}
+
+	return closestMatch
+}
+
+const getDestinationPoint = (route, routeSegments, destinationOverride) => {
+	if (
+		destinationOverride &&
+		Number.isFinite(destinationOverride.longitude) &&
+		Number.isFinite(destinationOverride.latitude)
+	) {
+		return {
+			longitude: destinationOverride.longitude,
+			latitude: destinationOverride.latitude
+		}
+	}
+
+	const waypointLocation =
+		route?.features?.[0]?.properties?.waypoints?.at(-1)?.location
+
+	if (
+		Array.isArray(waypointLocation) &&
+		waypointLocation.length >= 2 &&
+		Number.isFinite(waypointLocation[0]) &&
+		Number.isFinite(waypointLocation[1])
+	) {
+		return {
+			longitude: waypointLocation[0],
+			latitude: waypointLocation[1]
+		}
+	}
+
+	const lastSegment = routeSegments.at(-1)
+	if (!lastSegment) {
+		return null
+	}
+
+	return {
+		longitude: lastSegment.end[0],
+		latitude: lastSegment.end[1]
+	}
+}
+
+const getOriginPoint = (route, routeSegments) => {
+	const waypointLocation =
+		route?.features?.[0]?.properties?.waypoints?.[0]?.location
+
+	if (
+		Array.isArray(waypointLocation) &&
+		waypointLocation.length >= 2 &&
+		Number.isFinite(waypointLocation[0]) &&
+		Number.isFinite(waypointLocation[1])
+	) {
+		return {
+			longitude: waypointLocation[0],
+			latitude: waypointLocation[1]
+		}
+	}
+
+	const firstSegment = routeSegments[0]
+	if (!firstSegment) {
+		return null
+	}
+
+	return {
+		longitude: firstSegment.start[0],
+		latitude: firstSegment.start[1]
+	}
+}
+
+const getProjectedDistanceFromDestinationAxisKm = (
+	point,
+	originPoint,
+	destinationPoint
+) => {
+	const referenceLatitude =
+		(point.latitude + originPoint.latitude + destinationPoint.latitude) / 3
+	const latitudeFactor = 110.574
+	const longitudeFactor =
+		111.32 * Math.cos((referenceLatitude * Math.PI) / 180)
+
+	const toVectorFromDestination = (targetPoint) => ({
+		x:
+			(targetPoint.longitude - destinationPoint.longitude) *
+			longitudeFactor,
+		y: (targetPoint.latitude - destinationPoint.latitude) * latitudeFactor
+	})
+
+	const destinationToOrigin = toVectorFromDestination(originPoint)
+	const destinationToPoint = toVectorFromDestination(point)
+
+	const originMagnitudeKm = Math.hypot(
+		destinationToOrigin.x,
+		destinationToOrigin.y
+	)
+	if (originMagnitudeKm === 0) {
+		return null
+	}
+
+	const dotProduct =
+		destinationToOrigin.x * destinationToPoint.x +
+		destinationToOrigin.y * destinationToPoint.y
+
+	return dotProduct / originMagnitudeKm
+}
+
+const isPointOnOriginSideOfDestination = (
+	point,
+	originPoint,
+	destinationPoint,
+	maxBeyondDestinationKm = 0.2
+) => {
+	if (!originPoint || !destinationPoint) {
+		return true
+	}
+
+	const projectedDistanceKm = getProjectedDistanceFromDestinationAxisKm(
+		point,
+		originPoint,
+		destinationPoint
+	)
+
+	if (!Number.isFinite(projectedDistanceKm)) {
+		return true
+	}
+
+	return projectedDistanceKm >= -maxBeyondDestinationKm
+}
+
+export const findMarkersOnRoute = (
+	markers,
+	route,
+	destinationOverride = null
+) => {
 	const routeLines = getRouteLines(route)
 	if (routeLines.length === 0) {
 		return []
 	}
 
-	const routeSegments = routeLines.flatMap((line) =>
-		line.slice(0, -1).map((start, index) => ({
-			start,
-			end: line[index + 1]
-		}))
+	const routeSegments = buildRouteSegments(routeLines)
+	if (routeSegments.length === 0) {
+		return []
+	}
+
+	const originPoint = getOriginPoint(route, routeSegments)
+	const destinationPoint = getDestinationPoint(
+		route,
+		routeSegments,
+		destinationOverride
 	)
+	const destinationMatch = destinationPoint
+		? getClosestRouteMatch(destinationPoint, routeSegments)
+		: null
+	const destinationProgressKm = destinationMatch
+		? destinationMatch.progressKm
+		: routeSegments.at(-1).cumulativeStartKm +
+			routeSegments.at(-1).segmentLengthKm
+	const destinationToleranceKm = 0.05
 
 	return markers.filter((marker) => {
 		if (
@@ -396,19 +591,20 @@ export const findMarkersOnRoute = (markers, route) => {
 			return false
 		}
 
-		return routeSegments.some(({ start, end }, index) => {
-			const match = getPointToSegmentDistanceInKm(marker, start, end)
-			if (match.distance > 5) {
-				return false
-			}
+		const closestMatch = getClosestRouteMatch(marker, routeSegments)
+		if (!closestMatch || closestMatch.distance > 5) {
+			return false
+		}
 
-			const isFinalSegment = index === routeSegments.length - 1
-			if (isFinalSegment && match.projectionRatio > 1) {
-				return false
-			}
-
-			return true
-		})
+		return (
+			isPointOnOriginSideOfDestination(
+				marker,
+				originPoint,
+				destinationPoint
+			) &&
+			closestMatch.progressKm <=
+				destinationProgressKm + destinationToleranceKm
+		)
 	})
 }
 

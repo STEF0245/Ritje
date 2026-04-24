@@ -12,6 +12,11 @@ import {
 	getDistanceFromLatLonInKm
 } from '../location/location.service.js'
 
+const SCHOOL_DESTINATION = {
+	latitude: 51.08839307348528,
+	longitude: 4.911829081837887
+}
+
 const getAllUsers = async () => {
 	try {
 		const snapshot = await db.ref('users').once('value')
@@ -99,14 +104,15 @@ export const getRidePage = async (req, res) => {
 		const mapCenter = getRideMapCenter(mapMarkers)
 
 		const userCoords = req.user?.metadata?.coords
-		const standardRoute = await calculateRoute(userCoords, {
-			latitude: 51.08839307348528,
-			longitude: 4.911829081837887
-		})
+		const standardRoute = await calculateRoute(userCoords, SCHOOL_DESTINATION)
 
 		res.render('ride', {
 			title: 'Ritje',
-			mapMarkers: findMarkersOnRoute(mapMarkers, standardRoute),
+			mapMarkers: findMarkersOnRoute(
+				mapMarkers,
+				standardRoute,
+				SCHOOL_DESTINATION
+			),
 			mapCenter,
 			route: standardRoute
 		})
