@@ -525,6 +525,51 @@
 	border-radius: 0.625rem;
 }
 
+.ride-map-panel {
+	position: relative;
+	overflow: hidden;
+}
+
+.ride-map-panel::before {
+	content: '';
+	position: absolute;
+	inset: -40% auto auto -35%;
+	width: 16rem;
+	height: 16rem;
+	background: radial-gradient(
+		circle,
+		color-mix(in srgb, var(--ride-accent) 14%, transparent) 0%,
+		transparent 70%
+	);
+	pointer-events: none;
+}
+
+.ride-map-canvas {
+	height: clamp(18rem, 58vh, 34rem);
+	min-height: 18rem;
+	position: relative;
+	z-index: 1;
+}
+
+.ride-suggestion-panel {
+	position: relative;
+}
+
+.ride-suggestion-item {
+	transition:
+		border-color 0.2s ease,
+		background-color 0.2s ease;
+}
+
+.ride-suggestion-item:hover {
+	border-color: var(--ride-accent-soft);
+	background: color-mix(in srgb, var(--ride-bg-800) 94%, transparent);
+}
+
+.ride-suggestion-item:has(input:checked) {
+	border-color: var(--ride-accent);
+}
+
 .leaflet-popup.map-popup {
 	margin-bottom: 0.5rem !important;
 }

@@ -29,7 +29,14 @@ class AppMap {
 	 */
 	static initAll(selector = AppMap.DEFAULT_SELECTOR) {
 		const elements = Array.from(document.querySelectorAll(selector))
-		return elements.map((element) => new AppMap(element).init())
+		const instances = elements.map((element) => {
+			const mapInstance = new AppMap(element).init()
+			element._appMapInstance = mapInstance
+			return mapInstance
+		})
+
+		window.appMaps = instances
+		return instances
 	}
 
 	/**
@@ -41,7 +48,9 @@ class AppMap {
 		this.element = element
 		this.instance = null
 		this.markers = []
+		this.schoolMarker = null
 		this.route = null
+		this.routeLayer = null
 		this.initialCenter = null
 		this.centerControlButton = null
 	}
@@ -72,7 +81,7 @@ class AppMap {
 		this.instance = this.createMap(center.latitude, center.longitude)
 		this.addTileLayer()
 		const markers = this.addMarkers(datasetMarkers, center)
-		this.markers.push(...markers)
+		this.markers = markers
 		this.addAttribution()
 
 		if (this.element.dataset.schoolMarker === 'true') {
@@ -169,7 +178,7 @@ class AppMap {
 	}
 
 	calculateCenter() {
-		const validMarkers = (this.markers || []).filter(Boolean)
+		const validMarkers = this.getAllMapMarkers().filter(Boolean)
 		if (validMarkers.length === 0) return null
 		const latitudes = validMarkers.map((marker) => marker.getLatLng().lat)
 		const longitudes = validMarkers.map((marker) => marker.getLatLng().lng)
@@ -181,7 +190,7 @@ class AppMap {
 	}
 
 	getMarkerBounds() {
-		const validMarkers = (this.markers || []).filter(Boolean)
+		const validMarkers = this.getAllMapMarkers().filter(Boolean)
 		if (validMarkers.length === 0) {
 			return null
 		}
@@ -244,6 +253,12 @@ class AppMap {
 	}
 
 	addRouteToMap(route) {
+		if (!this.instance || !route) return null
+
+		if (this.routeLayer && this.instance.hasLayer(this.routeLayer)) {
+			this.instance.removeLayer(this.routeLayer)
+		}
+
 		const distance = route.features[0]?.properties?.distance
 			? `${(route.features[0].properties.distance / 1000).toFixed(2)} km`
 			: 'Onbekende afstand'
@@ -262,7 +277,7 @@ class AppMap {
 			})
 		})
 
-		L.geoJSON(route, {
+		this.routeLayer = L.geoJSON(route, {
 			style: (feature) => {
 				return {
 					color: '#007bff',
@@ -273,6 +288,8 @@ class AppMap {
 		})
 			.bindPopup(popup)
 			.addTo(this.instance)
+
+		return this.routeLayer
 	}
 
 	/**
@@ -465,10 +482,14 @@ class AppMap {
 		const normalized = this.normalizeMarker(marker, this.readCenter())
 		const schoolMarker = this.addNormalizedMarker(normalized)
 		if (schoolMarker) {
-			this.markers.push(schoolMarker)
+			this.schoolMarker = schoolMarker
 		}
 
 		return schoolMarker
+	}
+
+	getAllMapMarkers() {
+		return [...this.markers, this.schoolMarker].filter(Boolean)
 	}
 
 	getSchoolMarkerData() {
@@ -508,6 +529,48 @@ class AppMap {
 				return this.addNormalizedMarker(normalized)
 			})
 			.filter(Boolean)
+	}
+
+	clearMarkers() {
+		if (!this.instance) return
+
+		for (const marker of this.markers) {
+			if (marker && this.instance.hasLayer(marker)) {
+				this.instance.removeLayer(marker)
+			}
+		}
+
+		this.markers = []
+	}
+
+	setMarkers(markers = [], options = {}) {
+		const { center = false } = options
+		this.clearMarkers()
+		this.markers = this.addMarkers(markers, this.readCenter())
+
+		if (center) {
+			this.centerMap()
+		}
+
+		return this.markers
+	}
+
+	setRoute(route, options = {}) {
+		const { center = false } = options
+
+		if (this.routeLayer && this.instance?.hasLayer(this.routeLayer)) {
+			this.instance.removeLayer(this.routeLayer)
+			this.routeLayer = null
+		}
+
+		this.route = route || null
+		if (this.route) {
+			this.addRouteToMap(this.route)
+		}
+
+		if (center) {
+			this.centerMap()
+		}
 	}
 
 	/**
