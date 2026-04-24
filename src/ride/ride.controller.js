@@ -15,6 +15,57 @@ import {
 const SCHOOL_DESTINATION = config.ride.schoolDestination
 const MAX_EXACT_OPTIMIZATION_WAYPOINTS = 8
 
+const toNonNegativeInteger = (value) => {
+	const parsed = Number(value)
+	if (!Number.isFinite(parsed)) return null
+	if (!Number.isInteger(parsed) || parsed < 0) return null
+	return parsed
+}
+
+const getNestedValue = (source, path = []) => {
+	return path.reduce((current, key) => current?.[key], source)
+}
+
+const getFreeSeatCount = (metadata = {}) => {
+	const freeSeatPaths = [
+		['vehicle', 'freeSeats'],
+		['vehicle', 'availableSeats'],
+		['vehicle', 'seatsFree'],
+		['vehicle', 'seatsAvailable'],
+		['vehicle', 'passengerSeats'],
+		['freeSeats'],
+		['availableSeats'],
+		['seatsFree'],
+		['seatsAvailable'],
+		['passengerSeats']
+	]
+
+	for (const path of freeSeatPaths) {
+		const resolved = toNonNegativeInteger(getNestedValue(metadata, path))
+		if (resolved !== null) return resolved
+	}
+
+	const totalSeatPaths = [
+		['vehicle', 'seats'],
+		['vehicle', 'seatCount'],
+		['vehicle', 'capacity'],
+		['vehicleSeats'],
+		['seatCount'],
+		['capacity']
+	]
+
+	for (const path of totalSeatPaths) {
+		const total = toNonNegativeInteger(getNestedValue(metadata, path))
+		if (total !== null) return Math.max(0, total - 1)
+	}
+
+	return 0
+}
+
+const exceedsFreeSeatLimit = (selectedUids = [], freeSeatCount = 0) => {
+	return selectedUids.length > freeSeatCount
+}
+
 /**
  * @brief  Check whether a coordinate pair is valid.
  * @param {{latitude?: number|string, longitude?: number|string}|null|undefined} point - Coordinate pair candidate.
@@ -364,9 +415,11 @@ const getRideMapCenter = (markers = []) => {
 export const getRidePage = async (req, res) => {
 	try {
 		const users = await getAllUsers()
-		const mapMarkers = buildRideMarkers(users, req.user?.uid)
+		const filteredUsers = filterUsers(users, req.user)
+		const mapMarkers = buildRideMarkers(filteredUsers, req.user?.uid)
 		const mapCenter = getRideMapCenter(mapMarkers)
 		const currentUserUid = req.user?.uid
+		const freeSeatCount = getFreeSeatCount(req.user?.metadata)
 		const currentUserMarker = mapMarkers.find(
 			(marker) => marker.uid === currentUserUid
 		)
@@ -399,6 +452,7 @@ export const getRidePage = async (req, res) => {
 			title: 'Ritje',
 			mapMarkers: initialMapMarkers,
 			suggestionMarkers: suggestionMarkersWithDetour,
+			freeSeatCount,
 			mapCenter,
 			route: standardRoute
 		})
@@ -432,6 +486,13 @@ export const postRideRoutePreview = async (req, res) => {
 
 		const uniqueSelectedUids = Array.from(new Set(selectedUids))
 		const currentUserUid = req.user?.uid
+		const freeSeatCount = getFreeSeatCount(req.user?.metadata)
+
+		if (exceedsFreeSeatLimit(uniqueSelectedUids, freeSeatCount)) {
+			return res.status(400).json({
+				error: `Je kunt maximaal ${freeSeatCount} persoon/personen selecteren op basis van je vrije plaatsen.`
+			})
+		}
 
 		const users = await getAllUsers()
 		const allMarkers = buildRideMarkers(users, currentUserUid)
@@ -474,7 +535,8 @@ export const postRideRoutePreview = async (req, res) => {
 			route,
 			markers: [currentUserMarker, ...orderedSelectedMarkers].filter(
 				Boolean
-			)
+			),
+			freeSeatCount
 		})
 	} catch (error) {
 		console.error('Error recalculating ride route:', error)
@@ -482,4 +544,126 @@ export const postRideRoutePreview = async (req, res) => {
 			error: 'Er is een fout opgetreden bij het herberekenen van de route. Probeer het later opnieuw.'
 		})
 	}
+}
+
+/**
+ * @brief  Confirm and persist selected ride route.
+ * @details  Recalculates the optimized route with selected passengers and stores a compact confirmation payload.
+ * @param {object} req - Express request object.
+ * @param {object} res - Express response object.
+ * @returns {Promise<object>} Express response.
+ */
+export const postRideRouteConfirm = async (req, res) => {
+	try {
+		const selectedUids = Array.isArray(req.body?.selectedUids)
+			? req.body.selectedUids
+					.map((uid) => `${uid || ''}`.trim())
+					.filter(Boolean)
+			: []
+
+		const uniqueSelectedUids = Array.from(new Set(selectedUids))
+		const currentUserUid = req.user?.uid
+		const freeSeatCount = getFreeSeatCount(req.user?.metadata)
+
+		if (exceedsFreeSeatLimit(uniqueSelectedUids, freeSeatCount)) {
+			return res.status(400).json({
+				error: `Je kunt maximaal ${freeSeatCount} persoon/personen selecteren op basis van je vrije plaatsen.`
+			})
+		}
+
+		const userCoords = req.user?.metadata?.coords
+		if (
+			!hasValidCoordinates(userCoords) ||
+			!hasValidCoordinates(SCHOOL_DESTINATION)
+		) {
+			return res.status(400).json({
+				error: 'Ongeldige route-eindpunten voor bevestiging.'
+			})
+		}
+
+		const users = await getAllUsers()
+		const allMarkers = buildRideMarkers(users, currentUserUid)
+		const selectedMarkers = allMarkers.filter(
+			(marker) =>
+				marker.uid &&
+				marker.uid !== currentUserUid &&
+				uniqueSelectedUids.includes(marker.uid)
+		)
+
+		const orderedSelectedMarkers = optimizeWaypointOrder(
+			userCoords,
+			SCHOOL_DESTINATION,
+			selectedMarkers
+		)
+
+		const route = await calculateRoute(
+			userCoords,
+			SCHOOL_DESTINATION,
+			orderedSelectedMarkers.map((marker) => ({
+				latitude: marker.latitude,
+				longitude: marker.longitude
+			}))
+		)
+
+		const routeMetrics = getRouteMetrics(route)
+		const confirmationPayload = {
+			confirmedAt: new Date().toISOString(),
+			selectedPassengerUids: orderedSelectedMarkers
+				.map((marker) => marker.uid)
+				.filter(Boolean),
+			selectedPassengerCount: orderedSelectedMarkers.length,
+			freeSeatCount,
+			routeSummary: routeMetrics
+				? {
+						distanceKm: Number(routeMetrics.distanceKm.toFixed(2)),
+						durationMinutes: Math.round(
+							routeMetrics.durationMinutes
+						)
+					}
+				: null
+		}
+
+		await db
+			.ref(`users/${currentUserUid}/rideSelection`)
+			.set(confirmationPayload)
+
+		return res.status(200).json({
+			message: 'Route bevestigd.',
+			confirmation: confirmationPayload
+		})
+	} catch (error) {
+		console.error('Error confirming ride route:', error)
+		return res.status(500).json({
+			error: 'Er is een fout opgetreden bij het bevestigen van de route. Probeer het later opnieuw.'
+		})
+	}
+}
+
+const filterUsers = (users, currentUser) => {
+	if (!Array.isArray(users)) {
+		return []
+	}
+
+	return users.filter((user) => {
+		if (!user?.uid) return false
+		if (!hasValidCoordinates(user?.coords)) return false
+		if (currentUser?.uid && user.uid === currentUser.uid) return true
+
+		const day = new Date().getDay()
+		const userSchedule = user?.schedule || {}
+		const userStart = userSchedule[day]?.start
+		const userEnd = userSchedule[day]?.end
+
+		const currentSchedule = currentUser?.metadata?.schedule || {}
+		const currentStart = currentSchedule[day]?.start
+		const currentEnd = currentSchedule[day]?.end
+
+		console.log(
+			`Comparing user ${user.uid} schedule (${userStart}-${userEnd}) with current user schedule (${currentStart}-${currentEnd})`
+		)
+
+		if (userStart == currentStart) return true
+
+		return false
+	})
 }

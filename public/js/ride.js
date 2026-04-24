@@ -32,6 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		'[data-recalculate-route]'
 	)
 	const resetButton = routeForm.querySelector('[data-reset-route]')
+	const confirmButton = routeForm.querySelector('[data-confirm-route]')
 	const statusElement = routeForm.querySelector('[data-route-status]')
 	const suggestionCheckboxes = Array.from(
 		routeForm
@@ -41,12 +42,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	const routePreviewEndpoint =
 		mapElement.dataset.routePreviewEndpoint || '/ride/route-preview'
+	const routeConfirmEndpoint =
+		mapElement.dataset.routeConfirmEndpoint || '/ride/route-confirm'
+	const maxSelections = Number(mapElement.dataset.maxSelections || 0)
 	const initialMarkers = parseJsonDataset(mapElement.dataset.markers, [])
 	const initialRoute = parseJsonDataset(mapElement.dataset.route, null)
 
 	const setBusyState = (isBusy) => {
 		if (recalculateButton) recalculateButton.disabled = isBusy
 		if (resetButton) resetButton.disabled = isBusy
+		if (confirmButton) confirmButton.disabled = isBusy
 		for (const checkbox of suggestionCheckboxes) {
 			checkbox.disabled = isBusy
 		}
@@ -66,6 +71,27 @@ document.addEventListener('DOMContentLoaded', () => {
 			.filter((checkbox) => checkbox.checked)
 			.map((checkbox) => checkbox.value)
 			.filter(Boolean)
+	}
+
+	const enforceSelectionLimit = (changedCheckbox) => {
+		if (!Number.isFinite(maxSelections) || maxSelections < 0) {
+			return true
+		}
+
+		const selectedCount = getSelectedUids().length
+		if (selectedCount <= maxSelections) {
+			return true
+		}
+
+		if (changedCheckbox) {
+			changedCheckbox.checked = false
+		}
+
+		if (statusElement) {
+			statusElement.textContent = `Je kunt maximaal ${maxSelections} persoon/personen selecteren op basis van je vrije plaatsen.`
+		}
+
+		return false
 	}
 
 	const recalculateRoute = async () => {
@@ -118,7 +144,53 @@ document.addEventListener('DOMContentLoaded', () => {
 		}
 	}
 
+	const confirmRoute = async () => {
+		const selectedUids = getSelectedUids()
+		if (!enforceSelectionLimit()) return
+
+		setBusyState(true)
+		if (statusElement) {
+			statusElement.textContent = 'Route wordt bevestigd...'
+		}
+
+		try {
+			const response = await fetch(routeConfirmEndpoint, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ selectedUids })
+			})
+
+			const payload = await response.json()
+			if (!response.ok) {
+				throw new Error(payload?.error || 'Routebevestiging mislukt.')
+			}
+
+			if (statusElement) {
+				statusElement.textContent =
+					payload?.message || 'Route bevestigd.'
+			}
+		} catch (error) {
+			if (statusElement) {
+				statusElement.textContent =
+					error?.message ||
+					'Kon de route niet bevestigen. Probeer opnieuw.'
+			}
+		} finally {
+			setBusyState(false)
+		}
+	}
+
 	recalculateButton?.addEventListener('click', recalculateRoute)
+	confirmButton?.addEventListener('click', confirmRoute)
+
+	for (const checkbox of suggestionCheckboxes) {
+		checkbox.addEventListener('change', (event) => {
+			enforceSelectionLimit(event.currentTarget)
+		})
+	}
+
 	resetButton?.addEventListener('click', () => {
 		for (const checkbox of suggestionCheckboxes) {
 			checkbox.checked = false

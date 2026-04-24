@@ -1,6 +1,7 @@
 <%
     const mapMarkersJson = JSON.stringify(locals.mapMarkers) || '[]';
     const routeJson = JSON.stringify(locals.route) || 'null';
+    const freeSeatCount = Number.isFinite(Number(locals.freeSeatCount)) ? Number(locals.freeSeatCount) : 0;
 %>
 
 <!DOCTYPE html>
@@ -40,6 +41,8 @@
                             data-route='<%= routeJson %>'
                             data-school-marker="true"
                             data-route-preview-endpoint="/ride/route-preview"
+                            data-route-confirm-endpoint="/ride/route-confirm"
+                            data-max-selections="<%= freeSeatCount %>"
                             class="ride-map-canvas w-full mt-6 theme-pill border theme-border"
                             data-empty-state-behavior="show-message"
                             data-center="true"
@@ -49,6 +52,7 @@
                     <article class="theme-panel p-6 lg:col-span-1 h-full flex flex-col max-h-130 ride-suggestion-panel">
                         <h2 class="text-xl font-extrabold theme-text-primary">Suggesties</h2>
                         <p class="theme-text-muted text-sm mt-1">Selecteer een of meerdere personen en herbereken de route om hun locatie op de kaart te tonen.</p>
+                        <p class="theme-text-muted text-xs mt-2">Vrije plaatsen: <span class="theme-text-primary font-semibold"><%= freeSeatCount %></span></p>
                         <form class="mt-4 space-y-3 theme-pill border theme-border theme-surface p-3" data-route-form>
                             <div class="flex gap-2 flex-wrap">
                                 <button type="button" class="theme-btn-primary px-3.5 py-2 text-sm" data-recalculate-route>
@@ -56,6 +60,9 @@
                                 </button>
                                 <button type="button" class="theme-btn-secondary px-3.5 py-2 text-sm" data-reset-route>
                                     Reset
+                                </button>
+                                <button type="button" class="theme-btn-primary px-3.5 py-2 text-sm" data-confirm-route>
+                                    Bevestig route
                                 </button>
                             </div>
                             <p class="text-xs theme-text-muted leading-relaxed" data-route-status>Kies minstens 1 suggestie en klik op herberekenen.</p>
