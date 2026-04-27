@@ -4,7 +4,7 @@
  * @details  This script defines the AppMap class which initializes Leaflet maps on elements with the `data-map` attribute. It derives the initial center from dataset markers, optional school marker coordinates, or a Belgian fallback center. It then creates a map instance, adds tile layers, and renders markers with custom icons and popups. The map is constrained to Belgian boundaries and includes proper attribution.
  */
 
-const schoolMarkerConfig = window.__RITJE_SCHOOL_MARKER_DATA__ || null
+const schoolConfig = window.__RITJE_SCHOOL_MARKER_DATA__ || null
 
 class AppMap {
 	static MAP_BOUNDS_BELGIUM = [
@@ -495,7 +495,24 @@ class AppMap {
 	}
 
 	getSchoolMarkerData() {
-		return schoolMarkerConfig
+		const data = {
+			latitude: schoolConfig?.coords?.lat,
+			longitude: schoolConfig?.coords?.lon,
+			title: schoolConfig?.title,
+			lines: [
+				`${schoolConfig?.address?.street || ''} ${schoolConfig?.address?.houseNumber || ''}`.trim(),
+				`${schoolConfig?.address?.postalCode || ''} ${schoolConfig?.address?.city || ''}`.trim()
+			],
+			mapsUrl:
+				schoolConfig?.mapsUrl ||
+				this.generateGoogleMapsLink(
+					schoolConfig?.coords?.lat,
+					schoolConfig?.coords?.lon
+				),
+			icon: 'fa-school'
+		}
+		console.log('School marker data:', data)
+		return data
 	}
 
 	/**
