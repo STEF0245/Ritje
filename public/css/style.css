@@ -118,7 +118,6 @@
 	appearance: none;
 	-webkit-appearance: none;
 	-moz-appearance: none;
-	width: 100%;
 	padding: 0.625rem 2.25rem 0.625rem 0.75rem;
 	border-radius: 0.5rem;
 	border: 1px solid color-mix(in srgb, var(--ride-border) 88%, transparent);
@@ -544,13 +543,6 @@
 	pointer-events: none;
 }
 
-.ride-map-canvas {
-	height: clamp(18rem, 58vh, 34rem);
-	min-height: 18rem;
-	position: relative;
-	z-index: 1;
-}
-
 .ride-suggestion-panel {
 	position: relative;
 }
@@ -563,10 +555,11 @@
 
 .ride-suggestion-item:hover {
 	border-color: var(--ride-accent-soft);
-	background: color-mix(in srgb, var(--ride-bg-800) 94%, transparent);
+	background: var(--ride-bg-800);
 }
 
 .ride-suggestion-item:has(input:checked) {
+	background-color: #0f172abf;
 	border-color: var(--ride-accent);
 }
 

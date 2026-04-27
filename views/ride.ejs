@@ -1,8 +1,6 @@
 <%
     const mapMarkersJson = JSON.stringify(locals.mapMarkers) || '[]';
     const routeJson = JSON.stringify(locals.route) || 'null';
-    const freeSeatCount = Number.isFinite(Number(locals.freeSeatCount)) ? Number(locals.freeSeatCount) : 0;
-    const totalSeatCount = Number.isFinite(Number(locals.totalSeatCount)) ? Number(locals.totalSeatCount) : 0;
     const schedule = locals.user?.metadata?.schedule || {};
 
     function getLabel(hour, isEnd) {
@@ -52,7 +50,7 @@
                             <p class="theme-text-muted text-sm mt-1">Bekijk uw route, ontvang suggesties en bevestig uw rit.</p>
                         </div>
                         <div class="flex items-center gap-3">
-                            <select class="theme-select w-auto" aria-label="Selecteer tijdslot">
+                            <select class="theme-select w-fit" aria-label="Selecteer tijdslot" id="time" name="time">
                                 <% for (const index in schedule || []) { %>
                                     <% const day = schedule[index]; %>
                                     <option disabled class="theme-text-muted"><%= getDayLabel(index) %></option>
@@ -60,10 +58,6 @@
                                     <option value="<%= index %>_end">Einde (<%= getLabel(day?.end, true) %>)</option>
                                 <% } %>
                             </select>
-                            <div>
-                                <label for="seat-count" class="theme-text-muted text-sm">Aantal zitplaatsen:</label>
-                                <input id="seat-count" type="number" min="0" class="theme-input w-20" value="<%= totalSeatCount %>" aria-label="Aantal zitplaatsen" />
-                            </div>
                         </div>
                     </div>
                 </article>
@@ -81,10 +75,7 @@
                             data-markers='<%= mapMarkersJson %>'
                             data-route='<%= routeJson %>'
                             data-school-marker="true"
-                            data-route-preview-endpoint="/ride/route-preview"
-                            data-route-confirm-endpoint="/ride/route-confirm"
-                            data-max-selections="<%= freeSeatCount %>"
-                            class="ride-map-canvas w-full mt-6 theme-pill border theme-border"
+                            class="w-full h-125 mt-6 theme-pill border theme-border"
                             data-empty-state-behavior="show-message"
                             data-center="true"
                         ></div>
@@ -93,50 +84,33 @@
                     <article class="theme-panel p-6 lg:col-span-1 h-full flex flex-col max-h-130 ride-suggestion-panel">
                         <h2 class="text-xl font-extrabold theme-text-primary">Suggesties</h2>
                         <p class="theme-text-muted text-sm mt-1">Selecteer een of meerdere personen en herbereken de route om hun locatie op de kaart te tonen.</p>
-                        <p class="theme-text-muted text-xs mt-2">Vrije plaatsen: <span class="theme-text-primary font-semibold"><%= freeSeatCount %></span></p>
-                        <form class="mt-4 space-y-3 theme-pill border theme-border theme-surface p-3" data-route-form>
-                            <div class="flex gap-2 flex-wrap">
-                                <button type="button" class="theme-btn-primary px-3.5 py-2 text-sm" data-recalculate-route>
-                                    Herbereken route
-                                </button>
-                                <button type="button" class="theme-btn-secondary px-3.5 py-2 text-sm" data-reset-route>
-                                    Reset
-                                </button>
-                                <button type="button" class="theme-btn-primary px-3.5 py-2 text-sm" data-confirm-route>
-                                    Bevestig route
-                                </button>
-                            </div>
-                            <p class="text-xs theme-text-muted leading-relaxed" data-route-status>Kies minstens 1 suggestie en klik op herberekenen.</p>
-                        </form>
                         <div class="mt-6 flex-1 overflow-y-auto">
                             <% if (locals.suggestionMarkers && locals.suggestionMarkers.length > 0) { %>
                                 <ul class="space-y-3">
                                     <% locals.suggestionMarkers.forEach((ride, index) => { %>
-                                        <li class="theme-pill p-4 border theme-border theme-surface ride-suggestion-item">
-                                            <label class="flex items-start gap-3 cursor-pointer w-full">
-                                                <input
-                                                    type="checkbox"
-                                                    class="ride-suggestion-check hidden"
-                                                    data-suggestion-checkbox
-                                                    value="<%= ride.uid || '' %>"
-                                                    aria-label="Selecteer <%= ride.title || `persoon ${index + 1}` %>"
-                                                />
-                                                <span class="min-w-0 flex-1">
-                                                    <h4 class="text-base font-semibold theme-text-primary leading-tight"><%= ride.title || 'Onbekende persoon' %></h4>
-                                                    <p class="text-sm theme-text-muted"><%= ride.lines[1] || 'Onbekend adres' %></p>
-                                                    <% if (Number.isFinite(ride.detourDistanceKm) && Number.isFinite(ride.detourDurationMinutes)) { %>
-                                                        <div class="mt-2 flex flex-wrap gap-2">
-                                                            <span class="theme-pill border theme-border px-2 py-1 text-xs theme-text-muted">
-                                                                +<%= ride.detourDistanceKm.toFixed(1) %> km
-                                                            </span>
-                                                            <span class="theme-pill border theme-border px-2 py-1 text-xs theme-text-muted">
-                                                                +<%= Math.round(ride.detourDurationMinutes) %> min
-                                                            </span>
-                                                        </div>
-                                                    <% } %>
-                                                </span>
-                                            </label>
-                                        </li>
+                                        <label class="theme-pill p-4 border theme-border theme-surface ride-suggestion-item cursor-pointer block">
+                                            <input
+                                                type="checkbox"
+                                                class="ride-suggestion-check hidden"
+                                                data-suggestion-checkbox
+                                                value="<%= ride.uid || '' %>"
+                                                aria-label="Selecteer <%= ride.title || `persoon ${index + 1}` %>"
+                                            />
+                                            <span class="min-w-0 flex-1">
+                                                <h4 class="text-base font-semibold theme-text-primary leading-tight"><%= ride.title || 'Onbekende persoon' %></h4>
+                                                <p class="text-sm theme-text-muted"><%= ride.lines[1] || 'Onbekend adres' %></p>
+                                                <% if (Number.isFinite(ride.detourDistanceKm) && Number.isFinite(ride.detourDurationMinutes)) { %>
+                                                    <div class="mt-2 flex flex-wrap gap-2">
+                                                        <span class="theme-pill border theme-border px-2 py-1 text-xs theme-text-muted">
+                                                            +<%= Math.round(ride.detourDistanceKm * 10) / 10 %> km
+                                                        </span>
+                                                        <span class="theme-pill border theme-border px-2 py-1 text-xs theme-text-muted">
+                                                            +<%= Math.round(ride.detourDurationMinutes) %> min
+                                                        </span>
+                                                    </div>
+                                                <% } %>
+                                            </span>
+                                        </label>
                                     <% }) %>
                                 </ul>
                             <% } else { %>
