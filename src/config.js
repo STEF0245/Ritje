@@ -120,13 +120,13 @@ const config = {
 	},
 
 	school: {
+		icon: 'fa-school',
+		mapsUrl:
+			'https://www.google.com/maps/place/Denis+Voetsstraat+21,+2260+Westerlo',
+		title: 'SILA Westerlo Bovenschool',
 		coords: {
-			lat:
-				Number.parseFloat(process.env.SCHOOL_DESTINATION_LAT) ||
-				51.08839307348528,
-			lon:
-				Number.parseFloat(process.env.SCHOOL_DESTINATION_LON) ||
-				4.911829081837887
+			lat: 51.08839307348528,
+			lon: 4.911829081837887
 		},
 		address: {
 			street: 'Denis Voetsstraat',

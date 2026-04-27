@@ -142,6 +142,7 @@ if (!config.isProduction) {
 app.use(requireAuth)
 app.use((req, res, next) => {
 	res.locals.user = req.user
+	res.locals.schoolMarkerData = config.school
 	const flashNotification = req.cookies.flashNotification
 	if (flashNotification) {
 		try {

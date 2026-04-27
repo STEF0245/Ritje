@@ -43,8 +43,5 @@ const geoapifyLimiter = buildProviderLimiter(
 
 router.post('/forward-geocode', geoapifyLimiter, forwardGeocodeController)
 router.post('/reverse-geocode', geoapifyLimiter, reverseGeocodeController)
-router.get('/school-location', (req, res) => {
-	res.json(config.school)
-})
 
 export default router
