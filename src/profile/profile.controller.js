@@ -198,8 +198,7 @@ export const profileEditController = async (req, res) => {
 			return res.redirect('/profile')
 		}
 
-		const updates = {
-			updatedAt: new Date()
+		const updates = {}
 		}
 
 		if (schedule) {

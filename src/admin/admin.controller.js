@@ -347,7 +347,6 @@ export const postUserNewPage = async (req, res) => {
 			createdAt:
 				createdAuthUser.metadata.creationTime ||
 				new Date().toISOString(),
-			updatedAt: new Date()
 		}
 
 		try {
@@ -642,7 +641,6 @@ export const postUserEditPage = async (req, res) => {
 				latitude: result.lat,
 				longitude: result.lon
 			},
-			updatedAt: new Date()
 		})
 
 		return res.redirect(`/admin/users/${encodeURIComponent(uid)}`)
