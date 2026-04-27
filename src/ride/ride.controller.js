@@ -447,6 +447,7 @@ export const getRidePage = async (req, res) => {
 			mapMarkers: initialMapMarkers,
 			suggestionMarkers: suggestionMarkersWithDetour,
 			freeSeatCount,
+			totalSeatCount,
 			mapCenter,
 			route: standardRoute
 		})
