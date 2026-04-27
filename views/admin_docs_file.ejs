@@ -8,21 +8,13 @@
 			<%- include('partials/admin_nav', { selected: { docs: true } }) %>
 
 			<section class="max-w-6xl mx-auto px-4 md:px-6 py-8 md:py-10 space-y-6">
-				<div class="flex flex-wrap items-center justify-between gap-3">
-					<div>
-						<p class="theme-kicker">Ritje Admin</p>
-						<h1 class="theme-heading theme-accent-text">Bestandsdocumentatie</h1>
-					</div>
-					<a href="/admin/docs" class="theme-btn-secondary px-3 py-2 text-sm">Terug naar structuur</a>
-				</div>
-
 				<% if (!file || !group) { %>
 					<article class="theme-panel p-8 md:p-10 text-center">
 						<h2 class="text-xl font-extrabold theme-text-primary">Bestand niet gevonden</h2>
 						<p class="theme-subtext">Ga terug naar het overzicht en kies een geldig bestand.</p>
 					</article>
 				<% } else { %>
-					<article class="theme-panel p-5 md:p-6 space-y-2">
+					<article class="theme-panel p-5 md:p-6 space-y-2 relative">
 						<p class="theme-kicker"><%= group.label %></p>
 						<h2 class="text-xl md:text-2xl font-black theme-text-primary break-all"><%= file.name %></h2>
 						<p class="theme-text-muted text-sm font-mono break-all"><%= group.rootLabel %>/<%= file.relativePath %></p>
@@ -31,6 +23,7 @@
 							<span class="theme-surface border theme-border rounded-md px-2 py-1"><%= file.lineCount %> regels</span>
 							<span class="theme-surface border theme-border rounded-md px-2 py-1"><%= (file.documentationSections || []).length %> doc blokken</span>
 						</div>
+						<a href="/admin/docs" class="theme-btn-secondary px-3 py-2 text-sm absolute top-4 right-4">Terug naar structuur</a>
 					</article>
 
 					<article class="theme-panel p-5 md:p-6">
