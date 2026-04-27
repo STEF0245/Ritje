@@ -112,6 +112,13 @@
 			}]
 		: []
 	const mapMarkersJson = JSON.stringify(mapMarkers)
+
+	const ridePreferences = metadata?.rides || {}
+	const seatsTotal = ridePreferences?.seats?.total || null
+	const maxDetour = ridePreferences?.detour || null
+	const maxDetourDuration = maxDetour?.duration || null
+	const maxDetourDistance = maxDetour?.distance || null
+	const waitingTime = ridePreferences?.wait || null
 %>
 
 <!DOCTYPE html>
@@ -255,6 +262,34 @@
 							<% } else { %>
 								<p class="theme-text-muted">Je hebt nog geen uurrooster ingesteld.</p>
 							<% } %>
+						</div>
+					</article>
+
+					<article class="theme-panel p-6 lg:col-span-2 lg:col-start-2">
+						<h2 class="text-xl font-extrabold theme-text-primary">Ritvoorkeuren</h2>
+						<p class="theme-text-muted text-sm mt-1">Overzicht van je ritvoorkeuren.</p>
+
+						<div class="mt-6 space-y-4">
+							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<div class="theme-surface theme-pill border theme-border p-4">
+									<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Maximale afwijking (afstand)</p>
+									<p class="theme-text-primary font-semibold mt-1"><%= maxDetourDistance || 'Onbeperkt' %></p>
+								</div>
+								<div class="theme-surface theme-pill border theme-border p-4">
+									<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Maximale afwijking (duur)</p>
+									<p class="theme-text-primary font-semibold mt-1"><%= maxDetourDuration || 'Onbeperkt' %></p>
+								</div>
+							</div>
+							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<div class="theme-surface theme-pill border theme-border p-4">
+									<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Zitplaatsen</p>
+									<p class="theme-text-primary font-semibold mt-1"><%= seatsTotal || '-' %></p>
+								</div>
+								<div class="theme-surface theme-pill border theme-border p-4">
+									<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Wachttijd</p>
+									<p class="theme-text-primary font-semibold mt-1"><%= waitingTime || 'Geen' %></p>
+								</div>
+							</div>
 						</div>
 					</article>
 				</div>
