@@ -117,7 +117,9 @@ export const requireAdmin = (req, res, next) => {
 	if (req.user?.isAdmin) {
 		return next()
 	}
-	return res.status(403).json({ message: 'Admin access required' })
+	const error = new Error('Toegang geweigerd')
+	error.statusCode = 403
+	throw error
 }
 
 export default requireAuth

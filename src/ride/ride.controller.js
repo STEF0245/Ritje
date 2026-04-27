@@ -12,7 +12,7 @@ import {
 	findMarkersOnRoute
 } from '../location/location.service.js'
 
-const SCHOOL_DESTINATION = config.ride.schoolDestination
+const SCHOOL_DESTINATION = config.school.coords
 const MAX_EXACT_OPTIMIZATION_WAYPOINTS = 8
 
 const toNonNegativeInteger = (value) => {

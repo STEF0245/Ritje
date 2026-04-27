@@ -25,7 +25,7 @@ export const sendErrorResponse = ({
 	message,
 	title = 'Er ging iets mis'
 }) => {
-	if (req.accepts('html')) {
+	try {
 		return respondWithNotification(res, {
 			type: 'error',
 			label: 'Fout',
@@ -40,18 +40,18 @@ export const sendErrorResponse = ({
 				}
 			}
 		})
+	} catch (err) {
+		try {
+			return res.status(status).json({
+				error: {
+					status,
+					message
+				}
+			})
+		} catch (err) {
+			return res.status(status).type('text/plain').send(message)
+		}
 	}
-
-	if (req.accepts('json')) {
-		return res.status(status).json({
-			error: {
-				status,
-				message
-			}
-		})
-	}
-
-	return res.status(status).type('text/plain').send(message)
 }
 
 /**

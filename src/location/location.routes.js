@@ -11,6 +11,7 @@ import {
 	reverseGeocodeController
 } from '../location/location.controller.js'
 import { RATE_LIMIT_CONFIG, getProvider } from '../location/location.service.js'
+import config from '../config.js'
 
 const router = express.Router()
 
@@ -42,5 +43,8 @@ const geoapifyLimiter = buildProviderLimiter(
 
 router.post('/forward-geocode', geoapifyLimiter, forwardGeocodeController)
 router.post('/reverse-geocode', geoapifyLimiter, reverseGeocodeController)
+router.get('/school-location', (req, res) => {
+	res.json(config.school)
+})
 
 export default router

@@ -119,16 +119,20 @@ const config = {
 		}
 	},
 
-	ride: {
-		schoolDestination: {
-			latitude: parseNumberWithFallback(
-				process.env.SCHOOL_DESTINATION_LAT,
-				51.08839307348528
-			),
-			longitude: parseNumberWithFallback(
-				process.env.SCHOOL_DESTINATION_LON,
+	school: {
+		coords: {
+			lat:
+				Number.parseFloat(process.env.SCHOOL_DESTINATION_LAT) ||
+				51.08839307348528,
+			lon:
+				Number.parseFloat(process.env.SCHOOL_DESTINATION_LON) ||
 				4.911829081837887
-			)
+		},
+		address: {
+			street: 'Denis Voetsstraat',
+			houseNumber: '21',
+			postalCode: '2260',
+			city: 'Westerlo'
 		}
 	},
 
