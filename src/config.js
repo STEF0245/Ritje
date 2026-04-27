@@ -34,9 +34,7 @@ const optionalEnvVars = [
 	'GEOAPIFY_API_KEY',
 	'GEOAPIFY_USER_AGENT',
 	'GEOAPIFY_RATE_LIMIT_WINDOW_MS',
-	'GEOAPIFY_RATE_LIMIT_MAX',
-	'SCHOOL_DESTINATION_LAT',
-	'SCHOOL_DESTINATION_LON'
+	'GEOAPIFY_RATE_LIMIT_MAX'
 ]
 
 const parseNumberWithFallback = (value, fallback) => {
