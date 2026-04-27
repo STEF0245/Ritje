@@ -13,7 +13,6 @@ import {
 } from '../location/location.service.js'
 
 const SCHOOL_DESTINATION = config.school.coords
-const MAX_EXACT_OPTIMIZATION_WAYPOINTS = 8
 
 const toNonNegativeInteger = (value) => {
 	const parsed = Number(value)
@@ -26,37 +25,54 @@ const getNestedValue = (source, path = []) => {
 	return path.reduce((current, key) => current?.[key], source)
 }
 
-const getFreeSeatCount = (metadata = {}) => {
-	const freeSeatPaths = [['seats', 'free']]
-
-	for (const path of freeSeatPaths) {
-		const resolved = toNonNegativeInteger(getNestedValue(metadata, path))
-		if (resolved !== null) return resolved
+const getRideSettings = (preferences = {}) => {
+	return {
+		seats: {
+			total:
+				toNonNegativeInteger(
+					getNestedValue(preferences, ['seats', 'total'])
+				) || 1,
+			free:
+				toNonNegativeInteger(
+					getNestedValue(preferences, ['seats', 'free'])
+				) || 0
+		},
+		detour: {
+			distance: toNonNegativeInteger(
+				getNestedValue(preferences, ['detour', 'distance'])
+			),
+			duration: toNonNegativeInteger(
+				getNestedValue(preferences, ['detour', 'duration'])
+			)
+		}
 	}
-
-	const totalSeatPaths = [['seats', 'total']]
-
-	for (const path of totalSeatPaths) {
-		const total = toNonNegativeInteger(getNestedValue(metadata, path))
-		if (total !== null) return Math.max(0, total - 1)
-	}
-
-	return 0
 }
 
-const getTotalSeatCount = (metadata = {}) => {
-	const totalSeatPaths = [['seats', 'total']]
+const checkSuggestionWithPreferences = (marker, preferences = {}) => {
+	const detourDistance = Number(marker?.detour?.distance)
+	const detourDuration = Number(marker?.detour?.duration)
+	const limitDistance = Number(preferences?.detour?.distance)
+	const limitDuration = Number(preferences?.detour?.duration)
+	const hasLimitDistance = Number.isFinite(limitDistance)
+	const hasLimitDuration = Number.isFinite(limitDuration)
+	const hasMetricsDistance = Number.isFinite(detourDistance)
+	const hasMetricsDuration = Number.isFinite(detourDuration)
 
-	for (const path of totalSeatPaths) {
-		const total = toNonNegativeInteger(getNestedValue(metadata, path))
-		if (total !== null) return total
-	}
+	if (
+		hasLimitDistance &&
+		hasMetricsDistance &&
+		detourDistance > limitDistance
+	)
+		return false
 
-	return 0
-}
+	if (
+		hasLimitDuration &&
+		hasMetricsDuration &&
+		detourDuration > limitDuration
+	)
+		return false
 
-const exceedsFreeSeatLimit = (selectedUids = [], freeSeatCount = 0) => {
-	return selectedUids.length > freeSeatCount
+	return true
 }
 
 /**
@@ -412,8 +428,9 @@ export const getRidePage = async (req, res) => {
 		const mapMarkers = buildRideMarkers(filteredUsers, req.user?.uid)
 		const mapCenter = getRideMapCenter(mapMarkers)
 		const currentUserUid = req.user?.uid
-		const freeSeatCount = getFreeSeatCount(req.user?.metadata)
-		const totalSeatCount = getTotalSeatCount(req.user?.metadata)
+		const rideSettings = getRideSettings(req.user?.metadata)
+		const freeSeatCount = rideSettings.freeSeatCount
+		const totalSeatCount = rideSettings.totalSeatCount
 		const currentUserMarker = mapMarkers.find(
 			(marker) => marker.uid === currentUserUid
 		)
@@ -440,14 +457,19 @@ export const getRidePage = async (req, res) => {
 					standardRoute
 				)
 			: suggestionMarkers
+		const annotatedSuggestionMarkers = annotateSuggestionsWithRideSettings(
+			suggestionMarkersWithDetour,
+			rideSettings
+		)
 		const initialMapMarkers = currentUserMarker ? [currentUserMarker] : []
 
 		res.render('ride', {
 			title: 'Ritje',
 			mapMarkers: initialMapMarkers,
-			suggestionMarkers: suggestionMarkersWithDetour,
+			suggestionMarkers: annotatedSuggestionMarkers,
 			freeSeatCount,
 			totalSeatCount,
+			rideSettings,
 			mapCenter,
 			route: standardRoute
 		})
@@ -460,176 +482,6 @@ export const getRidePage = async (req, res) => {
 			status: 500,
 			view: 'ride',
 			title: 'Ritje'
-		})
-	}
-}
-
-/**
- * @brief  Recalculate ride route with selected suggestion waypoints.
- * @details  Uses current user coordinates as origin, school destination as destination, and selected suggestion coordinates as ordered waypoints.
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
- * @returns {Promise<object>} Express response.
- */
-export const postRideRoutePreview = async (req, res) => {
-	try {
-		const selectedUids = Array.isArray(req.body?.selectedUids)
-			? req.body.selectedUids
-					.map((uid) => `${uid || ''}`.trim())
-					.filter(Boolean)
-			: []
-
-		const uniqueSelectedUids = Array.from(new Set(selectedUids))
-		const currentUserUid = req.user?.uid
-		const freeSeatCount = getFreeSeatCount(req.user?.metadata)
-
-		if (exceedsFreeSeatLimit(uniqueSelectedUids, freeSeatCount)) {
-			return res.status(400).json({
-				error: `Je kunt maximaal ${freeSeatCount} persoon/personen selecteren op basis van je vrije plaatsen.`
-			})
-		}
-
-		const users = await getAllUsers()
-		const allMarkers = buildRideMarkers(users, currentUserUid)
-
-		const currentUserMarker = allMarkers.find(
-			(marker) => marker.uid === currentUserUid
-		)
-		const selectedMarkers = allMarkers.filter(
-			(marker) =>
-				marker.uid &&
-				marker.uid !== currentUserUid &&
-				uniqueSelectedUids.includes(marker.uid)
-		)
-
-		const userCoords = req.user?.metadata?.coords
-		if (
-			!hasValidCoordinates(userCoords) ||
-			!hasValidCoordinates(SCHOOL_DESTINATION)
-		) {
-			return res.status(400).json({
-				error: 'Ongeldige route-eindpunten voor herberekening.'
-			})
-		}
-
-		const orderedSelectedMarkers = optimizeWaypointOrder(
-			userCoords,
-			SCHOOL_DESTINATION,
-			selectedMarkers
-		)
-		const route = await calculateRoute(
-			userCoords,
-			SCHOOL_DESTINATION,
-			orderedSelectedMarkers.map((marker) => ({
-				latitude: marker.latitude,
-				longitude: marker.longitude
-			}))
-		)
-
-		return res.status(200).json({
-			route,
-			markers: [currentUserMarker, ...orderedSelectedMarkers].filter(
-				Boolean
-			),
-			freeSeatCount
-		})
-	} catch (error) {
-		console.error('Error recalculating ride route:', error)
-		return res.status(500).json({
-			error: 'Er is een fout opgetreden bij het herberekenen van de route. Probeer het later opnieuw.'
-		})
-	}
-}
-
-/**
- * @brief  Confirm and persist selected ride route.
- * @details  Recalculates the optimized route with selected passengers and stores a compact confirmation payload.
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
- * @returns {Promise<object>} Express response.
- */
-export const postRideRouteConfirm = async (req, res) => {
-	try {
-		const selectedUids = Array.isArray(req.body?.selectedUids)
-			? req.body.selectedUids
-					.map((uid) => `${uid || ''}`.trim())
-					.filter(Boolean)
-			: []
-
-		const uniqueSelectedUids = Array.from(new Set(selectedUids))
-		const currentUserUid = req.user?.uid
-		const freeSeatCount = getFreeSeatCount(req.user?.metadata)
-
-		if (exceedsFreeSeatLimit(uniqueSelectedUids, freeSeatCount)) {
-			return res.status(400).json({
-				error: `Je kunt maximaal ${freeSeatCount} persoon/personen selecteren op basis van je vrije plaatsen.`
-			})
-		}
-
-		const userCoords = req.user?.metadata?.coords
-		if (
-			!hasValidCoordinates(userCoords) ||
-			!hasValidCoordinates(SCHOOL_DESTINATION)
-		) {
-			return res.status(400).json({
-				error: 'Ongeldige route-eindpunten voor bevestiging.'
-			})
-		}
-
-		const users = await getAllUsers()
-		const allMarkers = buildRideMarkers(users, currentUserUid)
-		const selectedMarkers = allMarkers.filter(
-			(marker) =>
-				marker.uid &&
-				marker.uid !== currentUserUid &&
-				uniqueSelectedUids.includes(marker.uid)
-		)
-
-		const orderedSelectedMarkers = optimizeWaypointOrder(
-			userCoords,
-			SCHOOL_DESTINATION,
-			selectedMarkers
-		)
-
-		const route = await calculateRoute(
-			userCoords,
-			SCHOOL_DESTINATION,
-			orderedSelectedMarkers.map((marker) => ({
-				latitude: marker.latitude,
-				longitude: marker.longitude
-			}))
-		)
-
-		const routeMetrics = getRouteMetrics(route)
-		const confirmationPayload = {
-			confirmedAt: new Date().toISOString(),
-			selectedPassengerUids: orderedSelectedMarkers
-				.map((marker) => marker.uid)
-				.filter(Boolean),
-			selectedPassengerCount: orderedSelectedMarkers.length,
-			freeSeatCount,
-			routeSummary: routeMetrics
-				? {
-						distanceKm: Number(routeMetrics.distanceKm.toFixed(2)),
-						durationMinutes: Math.round(
-							routeMetrics.durationMinutes
-						)
-					}
-				: null
-		}
-
-		await db
-			.ref(`users/${currentUserUid}/rideSelection`)
-			.set(confirmationPayload)
-
-		return res.status(200).json({
-			message: 'Route bevestigd.',
-			confirmation: confirmationPayload
-		})
-	} catch (error) {
-		console.error('Error confirming ride route:', error)
-		return res.status(500).json({
-			error: 'Er is een fout opgetreden bij het bevestigen van de route. Probeer het later opnieuw.'
 		})
 	}
 }
