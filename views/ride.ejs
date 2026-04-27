@@ -2,6 +2,39 @@
     const mapMarkersJson = JSON.stringify(locals.mapMarkers) || '[]';
     const routeJson = JSON.stringify(locals.route) || 'null';
     const freeSeatCount = Number.isFinite(Number(locals.freeSeatCount)) ? Number(locals.freeSeatCount) : 0;
+    const totalSeatCount = Number.isFinite(Number(locals.totalSeatCount)) ? Number(locals.totalSeatCount) : 0;
+    const schedule = locals.user?.metadata?.schedule || {};
+
+    function getLabel(hour, isEnd) {
+        if (!hour) return 'Onbekend tijdstip';
+		const hourMap = {
+			'1': ['8:25', '9:15'],
+			'2': ['9:15', '10:20'],
+			'3': ['10:20', '11:10'],
+			'4': ['11:10', '12:00'],
+			'5': ['13:00', '13:50'],
+			'6': ['13:50', '14:40'],
+			'7': ['14:55', '15:45'],
+			'8': ['15:45', '16:35']
+		}
+		if (!hour) return null
+		const hourNumber = Number(hour)
+		if (isNaN(hourNumber) || hourNumber < 1 || hourNumber > 8)
+			return null
+		const [start, end] = hourMap[hour] || []
+		return isEnd ? end : start
+	}
+
+    function getDayLabel(day) {
+        const dayMap = {
+            '1': 'Maandag',
+            '2': 'Dinsdag',
+            '3': 'Woensdag',
+            '4': 'Donderdag',
+            '5': 'Vrijdag'
+        }
+        return dayMap[day] || `Dag ${day}`
+    }
 %>
 
 <!DOCTYPE html>
@@ -13,16 +46,24 @@
         <main class="theme-main flex-1">
             <section class="max-w-6xl mx-auto" data-ride-page>
                 <article class="theme-panel p-6 mb-6 ride-hero-panel">
-                    <div class="flex items-start justify-between gap-4 flex-wrap">
+                    <div class="flex flex-col gap-4">
                         <div>
-                            <p class="theme-kicker">Ritplanner</p>
-                            <h1 class="text-2xl font-black theme-text-primary mt-2">Plan een slimmere route</h1>
-                            <p class="theme-text-muted text-sm mt-2 max-w-2xl">
-                                Kies een of meerdere collega&apos;s in de suggesties. We berekenen daarna de route opnieuw en tonen meteen hoeveel omweg elke ophaling kost.
-                            </p>
+                            <h1 class="text-2xl font-extrabold theme-text-primary">Uw rit plannen</h1>
+                            <p class="theme-text-muted text-sm mt-1">Bekijk uw route, ontvang suggesties en bevestig uw rit.</p>
                         </div>
-                        <div class="theme-pill border theme-border theme-surface px-3 py-2 text-xs tracking-[0.08em] uppercase theme-text-muted">
-                            Live route
+                        <div class="flex items-center gap-3">
+                            <select class="theme-select w-auto" aria-label="Selecteer tijdslot">
+                                <% for (const index in schedule || []) { %>
+                                    <% const day = schedule[index]; %>
+                                    <option disabled class="theme-text-muted"><%= getDayLabel(index) %></option>
+                                    <option value="<%= index %>_start">Start (<%= getLabel(day?.start, false) %>)</option>
+                                    <option value="<%= index %>_end">Einde (<%= getLabel(day?.end, true) %>)</option>
+                                <% } %>
+                            </select>
+                            <div>
+                                <label for="seat-count" class="theme-text-muted text-sm">Aantal zitplaatsen:</label>
+                                <input id="seat-count" type="number" min="0" class="theme-input w-20" value="<%= totalSeatCount %>" aria-label="Aantal zitplaatsen" />
+                            </div>
                         </div>
                     </div>
                 </article>

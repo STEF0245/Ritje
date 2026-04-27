@@ -27,36 +27,29 @@ const getNestedValue = (source, path = []) => {
 }
 
 const getFreeSeatCount = (metadata = {}) => {
-	const freeSeatPaths = [
-		['vehicle', 'freeSeats'],
-		['vehicle', 'availableSeats'],
-		['vehicle', 'seatsFree'],
-		['vehicle', 'seatsAvailable'],
-		['vehicle', 'passengerSeats'],
-		['freeSeats'],
-		['availableSeats'],
-		['seatsFree'],
-		['seatsAvailable'],
-		['passengerSeats']
-	]
+	const freeSeatPaths = [['seats', 'free']]
 
 	for (const path of freeSeatPaths) {
 		const resolved = toNonNegativeInteger(getNestedValue(metadata, path))
 		if (resolved !== null) return resolved
 	}
 
-	const totalSeatPaths = [
-		['vehicle', 'seats'],
-		['vehicle', 'seatCount'],
-		['vehicle', 'capacity'],
-		['vehicleSeats'],
-		['seatCount'],
-		['capacity']
-	]
+	const totalSeatPaths = [['seats', 'total']]
 
 	for (const path of totalSeatPaths) {
 		const total = toNonNegativeInteger(getNestedValue(metadata, path))
 		if (total !== null) return Math.max(0, total - 1)
+	}
+
+	return 0
+}
+
+const getTotalSeatCount = (metadata = {}) => {
+	const totalSeatPaths = [['seats', 'total']]
+
+	for (const path of totalSeatPaths) {
+		const total = toNonNegativeInteger(getNestedValue(metadata, path))
+		if (total !== null) return total
 	}
 
 	return 0
@@ -420,6 +413,7 @@ export const getRidePage = async (req, res) => {
 		const mapCenter = getRideMapCenter(mapMarkers)
 		const currentUserUid = req.user?.uid
 		const freeSeatCount = getFreeSeatCount(req.user?.metadata)
+		const totalSeatCount = getTotalSeatCount(req.user?.metadata)
 		const currentUserMarker = mapMarkers.find(
 			(marker) => marker.uid === currentUserUid
 		)
