@@ -113,12 +113,11 @@
 		: []
 	const mapMarkersJson = JSON.stringify(mapMarkers)
 
-	const ridePreferences = metadata?.rides || {}
+	const ridePreferences = metadata?.preferences || {}
 	const seatsTotal = ridePreferences?.seats?.total || null
 	const maxDetour = ridePreferences?.detour || null
 	const maxDetourDuration = maxDetour?.duration || null
 	const maxDetourDistance = maxDetour?.distance || null
-	const waitingTime = ridePreferences?.wait || null
 %>
 
 <!DOCTYPE html>
@@ -284,10 +283,6 @@
 								<div class="theme-surface theme-pill border theme-border p-4">
 									<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Zitplaatsen</p>
 									<p class="theme-text-primary font-semibold mt-1"><%= seatsTotal || '-' %></p>
-								</div>
-								<div class="theme-surface theme-pill border theme-border p-4">
-									<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Wachttijd</p>
-									<p class="theme-text-primary font-semibold mt-1"><%= waitingTime || 'Geen' %></p>
 								</div>
 							</div>
 						</div>

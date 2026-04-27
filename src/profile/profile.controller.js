@@ -115,6 +115,17 @@ const areAddressesEquivalent = (left, right) => {
 	)
 }
 
+const getPositiveInteger = (value) => {
+	if (value === null || value === undefined) return null
+	const raw = String(value).trim()
+	if (!raw) return null
+	const number = Number(raw)
+	if (!Number.isInteger(number) || number < 0) {
+		throw new Error('INVALID_POSITIVE_INTEGER')
+	}
+	return number
+}
+
 /**
  * @brief  Render the profile overview page.
  * @details  Responds with the profile page for the currently authenticated user.
@@ -185,6 +196,27 @@ export const profileEditController = async (req, res) => {
 		})
 	}
 
+	let ridePreferences
+	try {
+		ridePreferences = {
+			seats: {
+				total: getPositiveInteger(req.body.seatsTotal)
+			},
+			detour: {
+				distance: getPositiveInteger(req.body.maxDetourDistance),
+				duration: getPositiveInteger(req.body.maxDetourDuration)
+			}
+		}
+	} catch (error) {
+		return renderProfileEditError(res, {
+			status: 400,
+			label: 'Ongeldige ritvoorkeuren',
+			message:
+				'Controleer of de waarden voor zitplaatsen, wachttijd en maximale afwijking geldig zijn.',
+			formData: req.body
+		})
+	}
+
 	try {
 		const userSnapshot = await db.ref(`users/${userId}`).once('value')
 		const existingUser = userSnapshot.val() || {}
@@ -199,6 +231,9 @@ export const profileEditController = async (req, res) => {
 		}
 
 		const updates = {}
+
+		if (ridePreferences) {
+			updates.preferences = ridePreferences
 		}
 
 		if (schedule) {
