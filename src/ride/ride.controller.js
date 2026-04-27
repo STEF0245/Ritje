@@ -75,6 +75,13 @@ const checkSuggestionWithPreferences = (marker, preferences = {}) => {
 	return true
 }
 
+const annotateSuggestionsWithPreferences = (markers, preferences) => {
+	return markers.map((marker) => ({
+		...marker,
+		matchesPreferences: checkSuggestionWithPreferences(marker, preferences)
+	}))
+}
+
 /**
  * @brief  Check whether a coordinate pair is valid.
  * @param {{latitude?: number|string, longitude?: number|string}|null|undefined} point - Coordinate pair candidate.
@@ -457,7 +464,7 @@ export const getRidePage = async (req, res) => {
 					standardRoute
 				)
 			: suggestionMarkers
-		const annotatedSuggestionMarkers = annotateSuggestionsWithRideSettings(
+		const annotatedSuggestionMarkers = annotateSuggestionsWithPreferences(
 			suggestionMarkersWithDetour,
 			rideSettings
 		)
@@ -491,25 +498,23 @@ const filterUsers = (users, currentUser) => {
 		return []
 	}
 
+	const day = new Date().getDay()
+	const currentSchedule = currentUser?.metadata?.schedule || {}
+	const currentStart = currentSchedule[day]?.start
+	const currentEnd = currentSchedule[day]?.end
+	if (!currentStart || !currentEnd) return false
+
 	return users.filter((user) => {
 		if (!user?.uid) return false
 		if (!hasValidCoordinates(user?.coords)) return false
 		if (currentUser?.uid && user.uid === currentUser.uid) return true
 
-		const day = new Date().getDay()
 		const userSchedule = user?.schedule || {}
 		const userStart = userSchedule[day]?.start
 		const userEnd = userSchedule[day]?.end
+		if (!userStart || !userEnd) return false
 
-		const currentSchedule = currentUser?.metadata?.schedule || {}
-		const currentStart = currentSchedule[day]?.start
-		const currentEnd = currentSchedule[day]?.end
-
-		console.log(
-			`Comparing user ${user.uid} schedule (${userStart}-${userEnd}) with current user schedule (${currentStart}-${currentEnd})`
-		)
-
-		if (userStart == currentStart) return true
+		if (userStart == currentStart || userEnd == currentEnd) return true
 
 		return false
 	})
