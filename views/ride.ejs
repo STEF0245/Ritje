@@ -3,8 +3,27 @@
     const routeJson = JSON.stringify(locals.route) || 'null';
     const schedule = locals.user?.metadata?.schedule || {};
 
-    function getLabel(hour, isEnd) {
-        if (!hour) return 'Onbekend tijdstip';
+
+    const weekdays = [
+		{ key: '1', label: 'Maandag', legacyKey: 'monday' },
+		{ key: '2', label: 'Dinsdag', legacyKey: 'tuesday' },
+		{ key: '3', label: 'Woensdag', legacyKey: 'wednesday' },
+		{ key: '4', label: 'Donderdag', legacyKey: 'thursday' },
+		{ key: '5', label: 'Vrijdag', legacyKey: 'friday' }
+	]
+
+    const normalizeHourNumber = (value) => {
+		if (value === null || value === undefined) return null
+		if (typeof value === 'string' && value.trim() === '') return null
+		const numeric = Number(value)
+		if (!Number.isInteger(numeric)) return null
+		if (numeric >= 1 && numeric <= 8) return numeric
+		if (numeric >= 0 && numeric <= 7) return numeric + 1
+		return null
+	}
+
+
+	const resolveHourLabel = (hour, isStart) => {
 		const hourMap = {
 			'1': ['8:25', '9:15'],
 			'2': ['9:15', '10:20'],
@@ -20,19 +39,66 @@
 		if (isNaN(hourNumber) || hourNumber < 1 || hourNumber > 8)
 			return null
 		const [start, end] = hourMap[hour] || []
-		return isEnd ? end : start
+		return isStart ? start : end
 	}
 
-    function getDayLabel(day) {
-        const dayMap = {
-            '1': 'Maandag',
-            '2': 'Dinsdag',
-            '3': 'Woensdag',
-            '4': 'Donderdag',
-            '5': 'Vrijdag'
-        }
-        return dayMap[day] || `Dag ${day}`
-    }
+	const getActiveHours = (hours) => {
+		if (Array.isArray(hours)) {
+			return hours
+				.map((isActive, index) => (Boolean(isActive) ? String(index + 1) : null))
+				.filter(Boolean)
+		}
+		if (hours && typeof hours === 'object') {
+			if (
+				Object.prototype.hasOwnProperty.call(hours, 'start') &&
+				Object.prototype.hasOwnProperty.call(hours, 'end')
+			) {
+				const start = normalizeHourNumber(hours.start)
+				const end = normalizeHourNumber(hours.end)
+				if (!start || !end || end < start) return []
+				return Array.from(
+					{ length: end - start + 1 },
+					(_, idx) => String(start + idx)
+				)
+			}
+
+			return Object.entries(hours)
+				.filter(([, isActive]) => Boolean(isActive))
+				.map(([hour]) => normalizeHourNumber(hour))
+				.filter((hour) => hour !== null)
+				.map((hour) => String(hour))
+				.filter((hour, index, list) => list.indexOf(hour) === index)
+				.sort((a, b) => Number(a) - Number(b))
+		}
+		return []
+	}
+
+    const resolveDayHours = (dayKey, legacyKey) => {
+		if (Object.prototype.hasOwnProperty.call(schedule, dayKey)) {
+			return schedule[dayKey]
+		}
+		if (legacyKey && Object.prototype.hasOwnProperty.call(schedule, legacyKey)) {
+			return schedule[legacyKey]
+		}
+		return null
+	}
+
+	const computeStartEnd = (dayHours) => {
+		if (!dayHours) return { startHour: null, endHour: null }
+
+		// explicit object with start/end
+		if (typeof dayHours === 'object' && Object.prototype.hasOwnProperty.call(dayHours, 'start') && Object.prototype.hasOwnProperty.call(dayHours, 'end')) {
+			const start = normalizeHourNumber(dayHours.start)
+			const end = normalizeHourNumber(dayHours.end)
+			if (!start || !end || end < start) return { startHour: null, endHour: null }
+			return { startHour: String(start), endHour: String(end) }
+		}
+
+		// fallback to active hours (array or map)
+		const active = getActiveHours(dayHours)
+		if (!active || active.length === 0) return { startHour: null, endHour: null }
+		return { startHour: active[0], endHour: active[active.length - 1] }
+	}
 %>
 
 <!DOCTYPE html>
@@ -50,14 +116,34 @@
                             <p class="theme-text-muted text-sm mt-1">Bekijk uw route, ontvang suggesties en bevestig uw rit.</p>
                         </div>
                         <div class="flex items-center gap-3">
-                            <select class="theme-select w-fit" aria-label="Selecteer tijdslot" id="time" name="time">
-                                <% for (const index in schedule || []) { %>
-                                    <% const day = schedule[index]; %>
-                                    <option disabled class="theme-text-muted"><%= getDayLabel(index) %></option>
-                                    <option value="<%= index %>_start">Start (<%= getLabel(day?.start, false) %>)</option>
-                                    <option value="<%= index %>_end">Einde (<%= getLabel(day?.end, true) %>)</option>
-                                <% } %>
-                            </select>
+							<% const hasAnySchedule = Boolean(schedule && schedule.length > 0) %>
+							<% if (hasAnySchedule) { %>
+								<div class="flex flex-row items-center gap-4 w-full">
+									<% weekdays.forEach(({ key, label, legacyKey }) => {
+                                        const startHour = schedule[key] && schedule[key].start || null
+										const endHour = schedule[key] && schedule[key].end || null
+										const startLabel = resolveHourLabel(startHour, true)
+										const endLabel = resolveHourLabel(endHour, false)
+										const isAvailable = Boolean(startLabel && endLabel)
+									%>
+                                        <div class="theme-surface theme-pill border theme-border p-4">
+                                            <h3 class="text-xs uppercase tracking-[0.12em] theme-text-muted"><%= label %></h3>
+                                            <% if (isAvailable) { %>
+                                                <div class="flex flex-row gap-2 mt-2">
+													<input ride-input type="radio" name="day_time" id="<%= key %>_start" class="hidden" />
+                                                    <label ride-label for="<%= key %>_start" class="theme-pill border theme-border px-4 py-2 text-xs theme-text-muted cursor-pointer"><%= startLabel %></label>
+													<input ride-input type="radio" name="day_time" id="<%= key %>_end" class="hidden" />
+                                                    <label ride-label for="<%= key %>_end" class="theme-pill border theme-border px-4 py-2 text-xs theme-text-muted cursor-pointer"><%= endLabel %></label>
+                                                </div>
+                                            <% } else { %>
+                                                <p class="theme-text-muted text-xs">Niet beschikbaar</p>
+                                            <% } %>
+                                        </div>
+									<% }) %>
+								</div>
+							<% } else { %>
+								<p class="theme-text-muted">Je hebt nog geen uurrooster ingesteld.</p>
+							<% } %>
                         </div>
                     </div>
                 </article>
