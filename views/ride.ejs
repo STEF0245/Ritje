@@ -46,47 +46,50 @@
         return candidate
     }
 
-    const isFirstUpcoming = (dayKey, hourIndex, isStart) => {
-        if (!dayKey || !hourIndex) return false
-        const now = new Date()
-        const occurrences = []
-        weekdays.forEach(({ key }) => {
-            const ds = schedule[key]
-            if (!ds) return
-            if (ds.start) {
-                const d = getNextOccurrenceFor(key, ds.start, true)
-                if (d && d >= now) occurrences.push(d)
-            }
-            if (ds.end) {
-                const d = getNextOccurrenceFor(key, ds.end, false)
-                if (d && d >= now) occurrences.push(d)
-            }
-        })
-        if (occurrences.length === 0) return false
-        const next = occurrences.reduce((a, b) => (a < b ? a : b))
-        const candidate = getNextOccurrenceFor(dayKey, hourIndex, isStart)
-        return candidate && next && candidate.getTime() === next.getTime()
-    }
 
     const daySchedules = weekdays.map(({ key, label }) => {
         const daySchedule = schedule[key] || null
         const startLabel = resolveHourLabel(daySchedule?.start, true)
         const endLabel = resolveHourLabel(daySchedule?.end, false)
+        const startNextDate = daySchedule?.start ? getNextOccurrenceFor(key, daySchedule.start, true) : null
+        const endNextDate = daySchedule?.end ? getNextOccurrenceFor(key, daySchedule.end, false) : null
 
         return {
             key,
             label,
             start: {
                 label: startLabel,
-                nextUp: isFirstUpcoming(key, daySchedule?.start, true)
+                nextDate: startNextDate,
+                nextUp: false
             },
             end: {
                 label: endLabel,
-                nextUp: isFirstUpcoming(key, daySchedule?.end, false)
+                nextDate: endNextDate,
+                nextUp: false
             },
             isAvailable: Boolean(startLabel && endLabel),
         }
     })
+
+    // find earliest upcoming date among all starts/ends and mark it
+    {
+        const now = new Date()
+        let earliest = null
+        daySchedules.forEach((ds) => {
+            if (ds.start.nextDate && ds.start.nextDate >= now) {
+                if (!earliest || ds.start.nextDate < earliest) earliest = ds.start.nextDate
+            }
+            if (ds.end.nextDate && ds.end.nextDate >= now) {
+                if (!earliest || ds.end.nextDate < earliest) earliest = ds.end.nextDate
+            }
+        })
+        if (earliest) {
+            daySchedules.forEach((ds) => {
+                ds.start.nextUp = ds.start.nextDate && ds.start.nextDate.getTime() === earliest.getTime()
+                ds.end.nextUp = ds.end.nextDate && ds.end.nextDate.getTime() === earliest.getTime()
+            })
+        }
+    }
 
 	const hasAnySchedule = daySchedules.some(({ isAvailable }) => isAvailable)
 %>
