@@ -69,7 +69,6 @@ class AppMap {
 		const hasSchoolMarker = this.element.dataset.schoolMarker === 'true'
 		if (
 			!hasDatasetMarkers &&
-			!hasSchoolMarker &&
 			this.shouldShowEmptyMessage()
 		) {
 			this.showNoCoordinatesMessage()
@@ -86,7 +85,7 @@ class AppMap {
 		this.markers = markers
 		this.addAttribution()
 
-		if (this.element.dataset.schoolMarker === 'true') {
+		if (hasSchoolMarker) {
 			this.addSchoolMarker()
 		}
 
