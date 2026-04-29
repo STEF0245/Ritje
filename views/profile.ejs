@@ -15,11 +15,11 @@
 
 	const schedule = metadata?.schedule || {}
 	const weekdays = [
-		{ key: '1', label: 'Maandag', legacyKey: 'monday' },
-		{ key: '2', label: 'Dinsdag', legacyKey: 'tuesday' },
-		{ key: '3', label: 'Woensdag', legacyKey: 'wednesday' },
-		{ key: '4', label: 'Donderdag', legacyKey: 'thursday' },
-		{ key: '5', label: 'Vrijdag', legacyKey: 'friday' }
+		{ key: '1', label: 'Maandag' },
+		{ key: '2', label: 'Dinsdag' },
+		{ key: '3', label: 'Woensdag' },
+		{ key: '4', label: 'Donderdag' },
+		{ key: '5', label: 'Vrijdag' }
 	]
 
 	const resolveHourLabel = (hour, isStart) => {
@@ -82,12 +82,9 @@
 		return []
 	}
 
-	const resolveDayHours = (dayKey, legacyKey) => {
+	const resolveDayHours = (dayKey) => {
 		if (Object.prototype.hasOwnProperty.call(schedule, dayKey)) {
 			return schedule[dayKey]
-		}
-		if (legacyKey && Object.prototype.hasOwnProperty.call(schedule, legacyKey)) {
-			return schedule[legacyKey]
 		}
 		return null
 	}
@@ -236,16 +233,16 @@
 
 						<div class="mt-6 space-y-4">
 							<%
-								const hasAnySchedule = weekdays.some(({ key, legacyKey }) => {
-									const dayHours = resolveDayHours(key, legacyKey)
+								const hasAnySchedule = weekdays.some(({ key }) => {
+									const dayHours = resolveDayHours(key)
 									return getActiveHours(dayHours).length > 0
 								})
 							%>
 							<% if (hasAnySchedule) { %>
 								<div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-4">
-									<% weekdays.forEach(({ key, label, legacyKey }) => { %>
+									<% weekdays.forEach(({ key, label }) => { %>
 										<%
-											const dayHours = resolveDayHours(key, legacyKey)
+											const dayHours = resolveDayHours(key)
 											const activeHours = getActiveHours(dayHours)
 											const first = activeHours[0] || null
 											const last = activeHours[activeHours.length - 1] || null

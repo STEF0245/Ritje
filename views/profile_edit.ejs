@@ -24,13 +24,6 @@
 		const city = safeFormData?.city || address?.city || ''
 
 		const schedule = metadata?.schedule || {}
-		const legacyDayKeyByNumeric = {
-			'1': 'monday',
-			'2': 'tuesday',
-			'3': 'wednesday',
-			'4': 'thursday',
-			'5': 'friday'
-		}
 		const weekdays = [
 			{ key: '1', label: 'Maandag' },
 			{ key: '2', label: 'Dinsdag' },
@@ -83,13 +76,6 @@
 		const resolveDayHours = (dayKey) => {
 			if (Object.prototype.hasOwnProperty.call(schedule, dayKey)) {
 				return schedule[dayKey]
-			}
-			const legacyDayKey = legacyDayKeyByNumeric[dayKey]
-			if (
-				legacyDayKey &&
-				Object.prototype.hasOwnProperty.call(schedule, legacyDayKey)
-			) {
-				return schedule[legacyDayKey]
 			}
 			return {}
 		}
