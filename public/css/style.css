@@ -743,3 +743,9 @@
 	border-top-style: solid;
 	border-top-color: inherit;
 }
+
+[ride-input]:checked + [ride-label] {
+	background-color: #0f172abf;
+	border-color: var(--ride-accent);
+	color: var(--ride-text);
+}
