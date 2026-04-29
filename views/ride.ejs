@@ -28,20 +28,65 @@
 		const [start, end] = hourMap[key] || []
 		return isStart ? start : end
 	}
+    const getNextOccurrenceFor = (dayKey, hourIndex, isStart) => {
+        if (!dayKey || !hourIndex) return null
+        const timeStr = resolveHourLabel(hourIndex, isStart)
+        if (!timeStr) return null
+        const [hh, mm] = timeStr.split(':').map((v) => parseInt(v, 10))
+        const now = new Date()
+        const today = now.getDay() // 0 (Sun) .. 6 (Sat)
+        const targetDay = Number(dayKey) // our day keys use 1..5 for Mon..Fri
+        let daysAhead = (targetDay - today + 7) % 7
+        const candidate = new Date(now)
+        candidate.setDate(now.getDate() + daysAhead)
+        candidate.setHours(hh || 0, mm || 0, 0, 0)
+        if (candidate <= now) {
+            candidate.setDate(candidate.getDate() + 7)
+        }
+        return candidate
+    }
 
-	const daySchedules = weekdays.map(({ key, label }) => {
-		const daySchedule = schedule[key] || null
-		const startLabel = resolveHourLabel(daySchedule?.start, true)
-		const endLabel = resolveHourLabel(daySchedule?.end, false)
+    const isFirstUpcoming = (dayKey, hourIndex, isStart) => {
+        if (!dayKey || !hourIndex) return false
+        const now = new Date()
+        const occurrences = []
+        weekdays.forEach(({ key }) => {
+            const ds = schedule[key]
+            if (!ds) return
+            if (ds.start) {
+                const d = getNextOccurrenceFor(key, ds.start, true)
+                if (d && d >= now) occurrences.push(d)
+            }
+            if (ds.end) {
+                const d = getNextOccurrenceFor(key, ds.end, false)
+                if (d && d >= now) occurrences.push(d)
+            }
+        })
+        if (occurrences.length === 0) return false
+        const next = occurrences.reduce((a, b) => (a < b ? a : b))
+        const candidate = getNextOccurrenceFor(dayKey, hourIndex, isStart)
+        return candidate && next && candidate.getTime() === next.getTime()
+    }
 
-		return {
-			key,
-			label,
-			startLabel,
-			endLabel,
-			isAvailable: Boolean(startLabel && endLabel)
-		}
-	})
+    const daySchedules = weekdays.map(({ key, label }) => {
+        const daySchedule = schedule[key] || null
+        const startLabel = resolveHourLabel(daySchedule?.start, true)
+        const endLabel = resolveHourLabel(daySchedule?.end, false)
+
+        return {
+            key,
+            label,
+            start: {
+                label: startLabel,
+                nextUp: isFirstUpcoming(key, daySchedule?.start, true)
+            },
+            end: {
+                label: endLabel,
+                nextUp: isFirstUpcoming(key, daySchedule?.end, false)
+            },
+            isAvailable: Boolean(startLabel && endLabel),
+        }
+    })
 
 	const hasAnySchedule = daySchedules.some(({ isAvailable }) => isAvailable)
 %>
@@ -63,15 +108,15 @@
                         <div class="flex items-center gap-3">
 							<% if (hasAnySchedule) { %>
 								<div class="flex flex-row items-center gap-4 w-full">
-									<% daySchedules.forEach(({ key, label, startLabel, endLabel, isAvailable }) => { %>
+									<% daySchedules.forEach(({ key, label, start, end, isAvailable }) => { %>
                                         <div class="theme-surface theme-pill border theme-border p-4">
                                             <h3 class="text-xs uppercase tracking-[0.12em] theme-text-muted"><%= label %></h3>
                                             <% if (isAvailable) { %>
                                                 <div class="flex flex-row gap-2 mt-2">
-													<input ride-input type="radio" name="day_time" id="<%= key %>_start" class="hidden" />
-                                                    <label ride-label for="<%= key %>_start" class="theme-pill border theme-border px-4 py-2 text-xs theme-text-muted cursor-pointer"><%= startLabel %></label>
-													<input ride-input type="radio" name="day_time" id="<%= key %>_end" class="hidden" />
-                                                    <label ride-label for="<%= key %>_end" class="theme-pill border theme-border px-4 py-2 text-xs theme-text-muted cursor-pointer"><%= endLabel %></label>
+													<input ride-input type="radio" name="day_time" id="<%= key %>_start" class="hidden" <%= start.nextUp ? 'checked' : '' %> />
+                                                    <label ride-label for="<%= key %>_start" class="theme-pill border theme-border px-4 py-2 text-xs theme-text-muted cursor-pointer"><%= start.label %></label>
+													<input ride-input type="radio" name="day_time" id="<%= key %>_end" class="hidden" <%= end.nextUp ? 'checked' : '' %> />
+                                                    <label ride-label for="<%= key %>_end" class="theme-pill border theme-border px-4 py-2 text-xs theme-text-muted cursor-pointer"><%= end.label %></label>
                                                 </div>
                                             <% } else { %>
                                                 <p class="theme-text-muted text-xs">Niet beschikbaar</p>
