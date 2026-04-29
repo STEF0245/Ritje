@@ -22,7 +22,7 @@
 		{ key: '5', label: 'Vrijdag', legacyKey: 'friday' }
 	]
 
-	const resolveHourLabel = (hour, first) => {
+	const resolveHourLabel = (hour, isStart) => {
 		const hourMap = {
 			'1': ['8:25', '9:15'],
 			'2': ['9:15', '10:20'],
@@ -38,7 +38,7 @@
 		if (isNaN(hourNumber) || hourNumber < 1 || hourNumber > 8)
 			return null
 		const [start, end] = hourMap[hour] || []
-		return first ? start : end
+		return isStart ? start : end
 	}
 
 	const normalizeHourNumber = (value) => {
