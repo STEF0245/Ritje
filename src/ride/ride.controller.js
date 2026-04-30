@@ -12,15 +12,6 @@ import {
 	findMarkersOnRoute
 } from '../location/location.service.js'
 
-const SCHOOL_DESTINATION = {
-	latitude: Number(
-		config.school?.coords?.latitude ?? config.school?.coords?.lat
-	),
-	longitude: Number(
-		config.school?.coords?.longitude ?? config.school?.coords?.lon
-	)
-}
-
 const toNonNegativeInteger = (value) => {
 	const parsed = Number(value)
 	if (!Number.isFinite(parsed)) return null
@@ -32,17 +23,26 @@ const getNestedValue = (source, path = []) => {
 	return path.reduce((current, key) => current?.[key], source)
 }
 
+const normalizeCoordinates = (point) => {
+	const latitude = Number(point?.latitude ?? point?.lat)
+	const longitude = Number(point?.longitude ?? point?.lon)
+
+	if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+		return null
+	}
+
+	return { latitude, longitude }
+}
+
+const SCHOOL_DESTINATION = normalizeCoordinates(config.school?.coords)
+
 const getRideSettings = (preferences = {}) => {
 	return {
 		seats: {
 			total:
 				toNonNegativeInteger(
 					getNestedValue(preferences, ['seats', 'total'])
-				) || 1,
-			free:
-				toNonNegativeInteger(
-					getNestedValue(preferences, ['seats', 'free'])
-				) || 0
+				) || 1
 		},
 		detour: {
 			distance: toNonNegativeInteger(
