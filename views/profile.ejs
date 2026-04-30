@@ -269,17 +269,17 @@
 							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 								<div class="theme-surface theme-pill border theme-border p-4">
 									<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Maximale afwijking (afstand)</p>
-									<p class="theme-text-primary font-semibold mt-1"><%= maxDetourDistance || 'Onbeperkt' %></p>
+									<p class="theme-text-primary font-semibold mt-1"><%= maxDetourDistance ? maxDetourDistance + ' km' : 'Onbeperkt' %></p>
 								</div>
 								<div class="theme-surface theme-pill border theme-border p-4">
 									<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Maximale afwijking (duur)</p>
-									<p class="theme-text-primary font-semibold mt-1"><%= maxDetourDuration || 'Onbeperkt' %></p>
+									<p class="theme-text-primary font-semibold mt-1"><%= maxDetourDuration ? maxDetourDuration + ' min' : 'Onbeperkt' %></p>
 								</div>
 							</div>
 							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 								<div class="theme-surface theme-pill border theme-border p-4">
 									<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Zitplaatsen</p>
-									<p class="theme-text-primary font-semibold mt-1"><%= seatsTotal || '-' %></p>
+									<p class="theme-text-primary font-semibold mt-1"><%= seatsTotal ? seatsTotal : '-' %></p>
 								</div>
 							</div>
 						</div>
