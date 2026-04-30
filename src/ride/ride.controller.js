@@ -38,11 +38,7 @@ const getRideSettings = (preferences = {}) => {
 			total:
 				toNonNegativeInteger(
 					getNestedValue(preferences, ['seats', 'total'])
-				) || 1,
-			free:
-				toNonNegativeInteger(
-					getNestedValue(preferences, ['seats', 'free'])
-				) || 0
+				) || 1
 		},
 		detour: {
 			distance: toNonNegativeInteger(
@@ -613,29 +609,18 @@ export const getRidePage = async (req, res) => {
 		const mapCenter = getRideMapCenter(mapMarkers)
 		const currentUserUid = req.user?.uid
 		const rideSettings = getRideSettings(req.user?.metadata)
-		const freeSeatCount = rideSettings.freeSeatCount
-		const totalSeatCount = rideSettings.totalSeatCount
 		const currentUserMarker = mapMarkers.find(
 			(marker) => marker.uid === currentUserUid
 		)
 		const originCoords = resolveSuggestionOrigin(req)
-		const annotatedSuggestionMarkers = await buildRideSuggestionsV2({
-			markers: mapMarkers,
-			currentUser: req.user,
-			originCoords,
-			rideSettings
-		})
 		const initialMapMarkers = currentUserMarker ? [currentUserMarker] : []
 		const route = originCoords
 			? await calculateRoute(originCoords, SCHOOL_DESTINATION)
 			: null
 
 		res.render('ride', {
-			title: 'Ritje',
+			title: 'Ritten',
 			mapMarkers: initialMapMarkers,
-			suggestionMarkers: annotatedSuggestionMarkers,
-			freeSeatCount,
-			totalSeatCount,
 			rideSettings,
 			mapCenter,
 			route
@@ -648,7 +633,7 @@ export const getRidePage = async (req, res) => {
 				'Er is een fout opgetreden bij het laden van de ritpagina. Probeer het later opnieuw.',
 			status: 500,
 			view: 'ride',
-			title: 'Ritje'
+			title: 'Ritten'
 		})
 	}
 }
