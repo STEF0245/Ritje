@@ -13,12 +13,8 @@ import {
 } from '../location/location.service.js'
 
 const SCHOOL_DESTINATION = {
-	latitude: Number(
-		config.school?.coords?.latitude ?? config.school?.coords?.lat
-	),
-	longitude: Number(
-		config.school?.coords?.longitude ?? config.school?.coords?.lon
-	)
+	latitude: Number(config.school?.coords?.lat),
+	longitude: Number(config.school?.coords?.lon)
 }
 
 const toNonNegativeInteger = (value) => {
@@ -61,20 +57,9 @@ const checkSuggestionWithPreferences = (marker, preferences = {}) => {
 	const hasMetricsDistance = Number.isFinite(detourDistance)
 	const hasMetricsDuration = Number.isFinite(detourDuration)
 
-	if (
-		hasLimitDistance &&
-		hasMetricsDistance &&
-		detourDistance > limitDistance
-	)
-		return false
-
-	if (
-		hasLimitDuration &&
-		hasMetricsDuration &&
-		detourDuration > limitDuration
-	)
-		return false
-
+	if (!hasMetricsDistance && !hasMetricsDuration) return true
+	if (detourDistance > limitDistance) return false
+	if (detourDuration > limitDuration) return false
 	return true
 }
 
@@ -83,18 +68,6 @@ const annotateSuggestionsWithPreferences = (markers, preferences) => {
 		...marker,
 		matchesPreferences: checkSuggestionWithPreferences(marker, preferences)
 	}))
-}
-
-const withDetourFields = (marker, detourDistanceKm, detourDurationMinutes) => {
-	return {
-		...marker,
-		detourDistanceKm,
-		detourDurationMinutes,
-		detour: {
-			distance: detourDistanceKm,
-			duration: detourDurationMinutes
-		}
-	}
 }
 
 /**
@@ -183,10 +156,11 @@ const buildDetourFallbackMetrics = (origin, destination, waypoint) => {
 	const directDistanceKm = getDistanceInKm(origin, destination)
 	const routeWithWaypointKm = getPathCostInKm(origin, destination, [waypoint])
 	const detourDistanceKm = Math.max(0, routeWithWaypointKm - directDistanceKm)
+	const detourDurationMinutes = estimateMinutesFromDistance(detourDistanceKm)
 
 	return {
 		detourDistanceKm,
-		detourDurationMinutes: estimateMinutesFromDistance(detourDistanceKm)
+		detourDurationMinutes
 	}
 }
 
@@ -278,224 +252,6 @@ const optimizeWaypointOrder = (origin, destination, waypoints = []) => {
 	}
 
 	return optimizeWaypointOrderGreedy(origin, waypoints)
-}
-
-/**
- * @brief  Extract route distance/time metrics from GeoJSON route.
- * @param {object|null} route - GeoJSON route payload.
- * @returns {{distanceKm: number, durationMinutes: number}|null} Route metrics.
- */
-const getRouteMetrics = (route) => {
-	const feature = route?.features?.[0] || null
-	const properties = feature?.properties || route?.properties || route || null
-	const distanceMeters = Number(
-		properties?.distance ??
-			properties?.total_distance ??
-			properties?.summary?.distance ??
-			feature?.properties?.distance
-	)
-	const durationSeconds = Number(
-		properties?.time ??
-			properties?.total_time ??
-			properties?.summary?.time ??
-			feature?.properties?.time
-	)
-
-	if (!Number.isFinite(distanceMeters) || !Number.isFinite(durationSeconds)) {
-		console.warn('[ride:suggestions] route metrics missing', {
-			hasRoute: Boolean(route),
-			featureKeys: feature ? Object.keys(feature) : [],
-			propertyKeys: properties ? Object.keys(properties) : [],
-			distanceMeters,
-			durationSeconds,
-			routePreview: route
-				? {
-						keys: Object.keys(route),
-						type: route?.type,
-						featureCount: Array.isArray(route?.features)
-							? route.features.length
-							: null
-					}
-				: null
-		})
-		return null
-	}
-
-	return {
-		distanceKm: distanceMeters / 1000,
-		durationMinutes: durationSeconds / 60
-	}
-}
-
-/**
- * @brief  Enrich suggestions with additional detour metrics.
- * @param {Array<object>} suggestionMarkers - Route suggestion markers.
- * @param {{latitude: number, longitude: number}} userCoords - Current user coordinates.
- * @param {object|null} baseRoute - Baseline route without pickups.
- * @returns {Promise<Array<object>>} Suggestion markers with extra km/min values.
- */
-const enrichSuggestionsWithDetourMetrics = async (
-	suggestionMarkers,
-	userCoords,
-	baseRoute
-) => {
-	const baseMetrics = getRouteMetrics(baseRoute)
-	console.log('[ride:suggestions] detour enrichment start', {
-		suggestionCount: suggestionMarkers.length,
-		userCoords,
-		hasBaseMetrics: Boolean(baseMetrics),
-		baseMetrics
-	})
-	// If we don't have baseline route metrics (no user origin), still try
-	// to compute per-marker route metrics by routing from the marker to
-	// the school. This provides sensible detour estimates instead of nulls.
-	const hasBaseMetrics = Boolean(baseMetrics)
-
-	const enrichedSuggestions = await Promise.all(
-		suggestionMarkers.map(async (marker) => {
-			try {
-				console.log('[ride:suggestions] evaluating marker', {
-					uid: marker?.uid,
-					latitude: marker?.latitude,
-					longitude: marker?.longitude,
-					hasBaseMetrics
-				})
-
-				let pickupRoute = null
-				let pickupMetrics = null
-
-				if (hasBaseMetrics) {
-					pickupRoute = await calculateRoute(
-						userCoords,
-						SCHOOL_DESTINATION,
-						[
-							{
-								latitude: marker.latitude,
-								longitude: marker.longitude
-							}
-						]
-					)
-					pickupMetrics = getRouteMetrics(pickupRoute)
-					console.log('[ride:suggestions] route with base metrics', {
-						uid: marker?.uid,
-						pickupMetrics,
-						baseMetrics
-					})
-					if (!pickupMetrics) {
-						const fallbackMetrics = buildDetourFallbackMetrics(
-							userCoords,
-							SCHOOL_DESTINATION,
-							{
-								latitude: marker.latitude,
-								longitude: marker.longitude
-							}
-						)
-						console.warn(
-							'[ride:suggestions] using fallback detour metrics',
-							{
-								uid: marker?.uid,
-								fallbackMetrics
-							}
-						)
-						return {
-							...withDetourFields(
-								marker,
-								fallbackMetrics.detourDistanceKm,
-								fallbackMetrics.detourDurationMinutes
-							)
-						}
-					}
-
-					const detourDistanceKm = Math.max(
-						0,
-						pickupMetrics.distanceKm - baseMetrics.distanceKm
-					)
-					const detourDurationMinutes = Math.max(
-						0,
-						pickupMetrics.durationMinutes -
-							baseMetrics.durationMinutes
-					)
-
-					return {
-						...withDetourFields(
-							marker,
-							detourDistanceKm,
-							detourDurationMinutes
-						)
-					}
-				}
-
-				// Fallback: compute a direct route from the candidate marker to the school
-				pickupRoute = await calculateRoute(
-					{ latitude: marker.latitude, longitude: marker.longitude },
-					SCHOOL_DESTINATION
-				)
-				pickupMetrics = getRouteMetrics(pickupRoute)
-				console.log('[ride:suggestions] fallback route metrics', {
-					uid: marker?.uid,
-					pickupMetrics
-				})
-				if (!pickupMetrics) {
-					const fallbackMetrics = buildDetourFallbackMetrics(
-						userCoords,
-						SCHOOL_DESTINATION,
-						{
-							latitude: marker.latitude,
-							longitude: marker.longitude
-						}
-					)
-					console.warn(
-						'[ride:suggestions] using direct-route fallback metrics',
-						{
-							uid: marker?.uid,
-							fallbackMetrics
-						}
-					)
-					return {
-						...withDetourFields(
-							marker,
-							fallbackMetrics.detourDistanceKm,
-							fallbackMetrics.detourDurationMinutes
-						)
-					}
-				}
-
-				return {
-					...withDetourFields(
-						marker,
-						pickupMetrics.distanceKm,
-						pickupMetrics.durationMinutes
-					)
-				}
-			} catch {
-				console.warn(
-					'[ride:suggestions] detour calculation failed for marker',
-					{
-						uid: marker?.uid,
-						latitude: marker?.latitude,
-						longitude: marker?.longitude
-					}
-				)
-				return marker
-			}
-		})
-	)
-
-	return enrichedSuggestions.sort((first, second) => {
-		const firstDistance = Number(first?.detourDistanceKm)
-		const secondDistance = Number(second?.detourDistanceKm)
-
-		if (
-			!Number.isFinite(firstDistance) &&
-			!Number.isFinite(secondDistance)
-		) {
-			return 0
-		}
-		if (!Number.isFinite(firstDistance)) return 1
-		if (!Number.isFinite(secondDistance)) return -1
-
-		return firstDistance - secondDistance
-	})
 }
 
 /**
@@ -680,15 +436,13 @@ const normalizeDetourMarker = (
 	detourDurationMinutes
 ) => ({
 	...marker,
-	detourDistanceKm,
-	detourDurationMinutes,
 	detour: {
 		distance: detourDistanceKm,
 		duration: detourDurationMinutes
 	}
 })
 
-const getRouteMetricsV2 = (route) => {
+const getRouteMetrics = (route) => {
 	const feature = route?.features?.[0] || null
 	const properties = feature?.properties || route?.properties || route || null
 	const distanceMeters = Number(
@@ -710,7 +464,7 @@ const getRouteMetricsV2 = (route) => {
 	}
 }
 
-const buildRideSuggestionsV2 = async ({
+const buildRideSuggestions = async ({
 	markers,
 	currentUser,
 	originCoords,
@@ -723,7 +477,7 @@ const buildRideSuggestionsV2 = async ({
 	const baseRoute = originCoords
 		? await calculateRoute(originCoords, SCHOOL_DESTINATION)
 		: null
-	const baseMetrics = getRouteMetricsV2(baseRoute)
+	const baseMetrics = getRouteMetrics(baseRoute)
 	const visibleMarkers = baseRoute
 		? findMarkersOnRoute(markers, baseRoute, SCHOOL_DESTINATION)
 		: markers
@@ -748,7 +502,7 @@ const buildRideSuggestionsV2 = async ({
 						}
 					]
 				)
-				const pickupMetrics = getRouteMetricsV2(pickupRoute)
+				const pickupMetrics = getRouteMetrics(pickupRoute)
 
 				if (!pickupMetrics) {
 					return normalizeDetourMarker(marker, null, null)
@@ -815,7 +569,7 @@ export const getRideSuggestions = async (req, res) => {
 		const mapMarkers = buildRideMarkers(filteredUsers, req.user?.uid)
 		const originCoords = resolveSuggestionOrigin(req)
 		const rideSettings = getRideSettings(req.user?.metadata)
-		const suggestionMarkers = await buildRideSuggestionsV2({
+		const suggestionMarkers = await buildRideSuggestions({
 			markers: mapMarkers,
 			currentUser: req.user,
 			originCoords,
@@ -824,7 +578,7 @@ export const getRideSuggestions = async (req, res) => {
 
 		return res.json(suggestionMarkers)
 	} catch (error) {
-		console.error('Error fetching ride suggestions V2:', error)
+		console.error('Error fetching ride suggestions:', error)
 		return res.status(500).json({
 			error: 'Er is een fout opgetreden bij het ophalen van rit suggesties. Probeer het later opnieuw.'
 		})
