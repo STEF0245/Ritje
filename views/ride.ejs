@@ -59,11 +59,13 @@
             label,
             start: {
                 label: startLabel,
+                value: daySchedule?.start || null,
                 nextDate: startNextDate,
                 nextUp: false
             },
             end: {
                 label: endLabel,
+                value: daySchedule?.end || null,
                 nextDate: endNextDate,
                 nextUp: false
             },
@@ -116,10 +118,10 @@
                                             <h3 class="text-xs uppercase tracking-[0.12em] theme-text-muted"><%= label %></h3>
                                             <% if (isAvailable) { %>
                                                 <div class="flex flex-row gap-2 mt-2">
-													<input ride-input type="radio" name="day_time" id="<%= key %>_start" class="hidden" <%= start.nextUp ? 'checked' : '' %> />
-                                                    <label ride-label for="<%= key %>_start" class="theme-pill border theme-border px-4 py-2 text-xs theme-text-muted cursor-pointer"><%= start.label %></label>
-													<input ride-input type="radio" name="day_time" id="<%= key %>_end" class="hidden" <%= end.nextUp ? 'checked' : '' %> />
-                                                    <label ride-label for="<%= key %>_end" class="theme-pill border theme-border px-4 py-2 text-xs theme-text-muted cursor-pointer"><%= end.label %></label>
+													<input ride-input type="radio" name="day_time" id="<%= key %>_<%= start.value %>" class="hidden" <%= start.nextUp ? 'checked' : '' %> />
+                                                    <label ride-label for="<%= key %>_<%= start.value %>" class="theme-pill border theme-border px-4 py-2 text-xs theme-text-muted cursor-pointer"><%= start.label %></label>
+													<input ride-input type="radio" name="day_time" id="<%= key %>_<%= end.value %>" class="hidden" <%= end.nextUp ? 'checked' : '' %> />
+                                                    <label ride-label for="<%= key %>_<%= end.value %>" class="theme-pill border theme-border px-4 py-2 text-xs theme-text-muted cursor-pointer"><%= end.label %></label>
                                                 </div>
                                             <% } else { %>
                                                 <p class="theme-text-muted text-xs">Niet beschikbaar</p>

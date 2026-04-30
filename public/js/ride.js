@@ -7,7 +7,9 @@ document
 	.querySelector('[input-radio-group]')
 	.addEventListener('change', (e) => {
 		if (e.target.matches('[ride-input]')) {
-			updateMapPreview(e.target.id)
+			const id = e.target.id
+			const [day, hour] = id.split('_')
+			console.log(`Selected schedule: ${day} at ${hour}`)
 		}
 	})
 
