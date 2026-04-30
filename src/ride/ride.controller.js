@@ -12,7 +12,14 @@ import {
 	findMarkersOnRoute
 } from '../location/location.service.js'
 
-const SCHOOL_DESTINATION = config.school.coords
+const SCHOOL_DESTINATION = {
+	latitude: Number(
+		config.school?.coords?.latitude ?? config.school?.coords?.lat
+	),
+	longitude: Number(
+		config.school?.coords?.longitude ?? config.school?.coords?.lon
+	)
+}
 
 const toNonNegativeInteger = (value) => {
 	const parsed = Number(value)
@@ -82,6 +89,18 @@ const annotateSuggestionsWithPreferences = (markers, preferences) => {
 	}))
 }
 
+const withDetourFields = (marker, detourDistanceKm, detourDurationMinutes) => {
+	return {
+		...marker,
+		detourDistanceKm,
+		detourDurationMinutes,
+		detour: {
+			distance: detourDistanceKm,
+			duration: detourDurationMinutes
+		}
+	}
+}
+
 /**
  * @brief  Check whether a coordinate pair is valid.
  * @param {{latitude?: number|string, longitude?: number|string}|null|undefined} point - Coordinate pair candidate.
@@ -146,6 +165,33 @@ const getPathCostInKm = (origin, destination, waypoints = []) => {
 	}
 
 	return totalDistance
+}
+
+const estimateMinutesFromDistance = (distanceKm, referenceMetrics = null) => {
+	if (referenceMetrics) {
+		const minutesPerKm =
+			referenceMetrics.distanceKm > 0
+				? referenceMetrics.durationMinutes / referenceMetrics.distanceKm
+				: null
+
+		if (Number.isFinite(minutesPerKm) && minutesPerKm > 0) {
+			return distanceKm * minutesPerKm
+		}
+	}
+
+	// Conservative fallback when the API does not return usable timing.
+	return distanceKm * 1.5
+}
+
+const buildDetourFallbackMetrics = (origin, destination, waypoint) => {
+	const directDistanceKm = getDistanceInKm(origin, destination)
+	const routeWithWaypointKm = getPathCostInKm(origin, destination, [waypoint])
+	const detourDistanceKm = Math.max(0, routeWithWaypointKm - directDistanceKm)
+
+	return {
+		detourDistanceKm,
+		detourDurationMinutes: estimateMinutesFromDistance(detourDistanceKm)
+	}
 }
 
 /**
@@ -244,10 +290,38 @@ const optimizeWaypointOrder = (origin, destination, waypoints = []) => {
  * @returns {{distanceKm: number, durationMinutes: number}|null} Route metrics.
  */
 const getRouteMetrics = (route) => {
-	const distanceMeters = Number(route?.features?.[0]?.properties?.distance)
-	const durationSeconds = Number(route?.features?.[0]?.properties?.time)
+	const feature = route?.features?.[0] || null
+	const properties = feature?.properties || route?.properties || route || null
+	const distanceMeters = Number(
+		properties?.distance ??
+			properties?.total_distance ??
+			properties?.summary?.distance ??
+			feature?.properties?.distance
+	)
+	const durationSeconds = Number(
+		properties?.time ??
+			properties?.total_time ??
+			properties?.summary?.time ??
+			feature?.properties?.time
+	)
 
 	if (!Number.isFinite(distanceMeters) || !Number.isFinite(durationSeconds)) {
+		console.warn('[ride:suggestions] route metrics missing', {
+			hasRoute: Boolean(route),
+			featureKeys: feature ? Object.keys(feature) : [],
+			propertyKeys: properties ? Object.keys(properties) : [],
+			distanceMeters,
+			durationSeconds,
+			routePreview: route
+				? {
+						keys: Object.keys(route),
+						type: route?.type,
+						featureCount: Array.isArray(route?.features)
+							? route.features.length
+							: null
+					}
+				: null
+		})
 		return null
 	}
 
@@ -270,44 +344,142 @@ const enrichSuggestionsWithDetourMetrics = async (
 	baseRoute
 ) => {
 	const baseMetrics = getRouteMetrics(baseRoute)
-	if (!baseMetrics) {
-		return suggestionMarkers
-	}
+	console.log('[ride:suggestions] detour enrichment start', {
+		suggestionCount: suggestionMarkers.length,
+		userCoords,
+		hasBaseMetrics: Boolean(baseMetrics),
+		baseMetrics
+	})
+	// If we don't have baseline route metrics (no user origin), still try
+	// to compute per-marker route metrics by routing from the marker to
+	// the school. This provides sensible detour estimates instead of nulls.
+	const hasBaseMetrics = Boolean(baseMetrics)
 
 	const enrichedSuggestions = await Promise.all(
 		suggestionMarkers.map(async (marker) => {
 			try {
-				const pickupRoute = await calculateRoute(
-					userCoords,
-					SCHOOL_DESTINATION,
-					[
+				console.log('[ride:suggestions] evaluating marker', {
+					uid: marker?.uid,
+					latitude: marker?.latitude,
+					longitude: marker?.longitude,
+					hasBaseMetrics
+				})
+
+				let pickupRoute = null
+				let pickupMetrics = null
+
+				if (hasBaseMetrics) {
+					pickupRoute = await calculateRoute(
+						userCoords,
+						SCHOOL_DESTINATION,
+						[
+							{
+								latitude: marker.latitude,
+								longitude: marker.longitude
+							}
+						]
+					)
+					pickupMetrics = getRouteMetrics(pickupRoute)
+					console.log('[ride:suggestions] route with base metrics', {
+						uid: marker?.uid,
+						pickupMetrics,
+						baseMetrics
+					})
+					if (!pickupMetrics) {
+						const fallbackMetrics = buildDetourFallbackMetrics(
+							userCoords,
+							SCHOOL_DESTINATION,
+							{
+								latitude: marker.latitude,
+								longitude: marker.longitude
+							}
+						)
+						console.warn(
+							'[ride:suggestions] using fallback detour metrics',
+							{
+								uid: marker?.uid,
+								fallbackMetrics
+							}
+						)
+						return {
+							...withDetourFields(
+								marker,
+								fallbackMetrics.detourDistanceKm,
+								fallbackMetrics.detourDurationMinutes
+							)
+						}
+					}
+
+					const detourDistanceKm = Math.max(
+						0,
+						pickupMetrics.distanceKm - baseMetrics.distanceKm
+					)
+					const detourDurationMinutes = Math.max(
+						0,
+						pickupMetrics.durationMinutes -
+							baseMetrics.durationMinutes
+					)
+
+					return {
+						...withDetourFields(
+							marker,
+							detourDistanceKm,
+							detourDurationMinutes
+						)
+					}
+				}
+
+				// Fallback: compute a direct route from the candidate marker to the school
+				pickupRoute = await calculateRoute(
+					{ latitude: marker.latitude, longitude: marker.longitude },
+					SCHOOL_DESTINATION
+				)
+				pickupMetrics = getRouteMetrics(pickupRoute)
+				console.log('[ride:suggestions] fallback route metrics', {
+					uid: marker?.uid,
+					pickupMetrics
+				})
+				if (!pickupMetrics) {
+					const fallbackMetrics = buildDetourFallbackMetrics(
+						userCoords,
+						SCHOOL_DESTINATION,
 						{
 							latitude: marker.latitude,
 							longitude: marker.longitude
 						}
-					]
-				)
-				const pickupMetrics = getRouteMetrics(pickupRoute)
-
-				if (!pickupMetrics) {
-					return marker
+					)
+					console.warn(
+						'[ride:suggestions] using direct-route fallback metrics',
+						{
+							uid: marker?.uid,
+							fallbackMetrics
+						}
+					)
+					return {
+						...withDetourFields(
+							marker,
+							fallbackMetrics.detourDistanceKm,
+							fallbackMetrics.detourDurationMinutes
+						)
+					}
 				}
-
-				const detourDistanceKm = Math.max(
-					0,
-					pickupMetrics.distanceKm - baseMetrics.distanceKm
-				)
-				const detourDurationMinutes = Math.max(
-					0,
-					pickupMetrics.durationMinutes - baseMetrics.durationMinutes
-				)
 
 				return {
-					...marker,
-					detourDistanceKm,
-					detourDurationMinutes
+					...withDetourFields(
+						marker,
+						pickupMetrics.distanceKm,
+						pickupMetrics.durationMinutes
+					)
 				}
 			} catch {
+				console.warn(
+					'[ride:suggestions] detour calculation failed for marker',
+					{
+						uid: marker?.uid,
+						latitude: marker?.latitude,
+						longitude: marker?.longitude
+					}
+				)
 				return marker
 			}
 		})
@@ -431,7 +603,12 @@ const getRideMapCenter = (markers = []) => {
 export const getRidePage = async (req, res) => {
 	try {
 		const users = await getAllUsers()
-		const filteredUsers = filterUsers(users, req.user)
+		const filteredUsers = filterUsersByDayAndHour(
+			users,
+			req.user,
+			new Date().getDay(),
+			new Date().getHours()
+		)
 		const mapMarkers = buildRideMarkers(filteredUsers, req.user?.uid)
 		const mapCenter = getRideMapCenter(mapMarkers)
 		const currentUserUid = req.user?.uid
@@ -441,34 +618,17 @@ export const getRidePage = async (req, res) => {
 		const currentUserMarker = mapMarkers.find(
 			(marker) => marker.uid === currentUserUid
 		)
-
-		const userCoords = req.user?.metadata?.coords
-		const hasValidRouteEndpoints =
-			hasValidCoordinates(userCoords) &&
-			hasValidCoordinates(SCHOOL_DESTINATION)
-
-		const standardRoute = hasValidRouteEndpoints
-			? await calculateRoute(userCoords, SCHOOL_DESTINATION)
-			: null
-
-		const visibleMarkers = standardRoute
-			? findMarkersOnRoute(mapMarkers, standardRoute, SCHOOL_DESTINATION)
-			: mapMarkers
-		const suggestionMarkers = visibleMarkers.filter(
-			(marker) => marker.uid && marker.uid !== currentUserUid
-		)
-		const suggestionMarkersWithDetour = hasValidRouteEndpoints
-			? await enrichSuggestionsWithDetourMetrics(
-					suggestionMarkers,
-					userCoords,
-					standardRoute
-				)
-			: suggestionMarkers
-		const annotatedSuggestionMarkers = annotateSuggestionsWithPreferences(
-			suggestionMarkersWithDetour,
+		const originCoords = resolveSuggestionOrigin(req)
+		const annotatedSuggestionMarkers = await buildRideSuggestionsV2({
+			markers: mapMarkers,
+			currentUser: req.user,
+			originCoords,
 			rideSettings
-		)
+		})
 		const initialMapMarkers = currentUserMarker ? [currentUserMarker] : []
+		const route = originCoords
+			? await calculateRoute(originCoords, SCHOOL_DESTINATION)
+			: null
 
 		res.render('ride', {
 			title: 'Ritje',
@@ -478,7 +638,7 @@ export const getRidePage = async (req, res) => {
 			totalSeatCount,
 			rideSettings,
 			mapCenter,
-			route: standardRoute
+			route
 		})
 	} catch (error) {
 		console.error('Error rendering ride page:', error)
@@ -493,29 +653,195 @@ export const getRidePage = async (req, res) => {
 	}
 }
 
-const filterUsers = (users, currentUser) => {
-	if (!Array.isArray(users)) {
-		return []
-	}
-
-	const day = new Date().getDay()
-	const currentSchedule = currentUser?.metadata?.schedule || {}
-	const currentStart = currentSchedule[day]?.start
-	const currentEnd = currentSchedule[day]?.end
-	if (!currentStart || !currentEnd) return false
+const filterUsersByDayAndHour = (users, currentUser, day, hour) => {
+	if (!Array.isArray(users)) return []
 
 	return users.filter((user) => {
 		if (!user?.uid) return false
 		if (!hasValidCoordinates(user?.coords)) return false
 		if (currentUser?.uid && user.uid === currentUser.uid) return true
-
 		const userSchedule = user?.schedule || {}
 		const userStart = userSchedule[day]?.start
 		const userEnd = userSchedule[day]?.end
 		if (!userStart || !userEnd) return false
-
-		if (userStart == currentStart || userEnd == currentEnd) return true
+		if (userStart == hour || userEnd == hour) return true
 
 		return false
 	})
+}
+
+const resolveSuggestionOrigin = (req) => {
+	const queryLatitude = Number(req.query?.lat)
+	const queryLongitude = Number(req.query?.lon)
+
+	if (Number.isFinite(queryLatitude) && Number.isFinite(queryLongitude)) {
+		return { latitude: queryLatitude, longitude: queryLongitude }
+	}
+
+	const userCoords = req.user?.metadata?.coords
+	if (hasValidCoordinates(userCoords)) {
+		return {
+			latitude: Number(userCoords.latitude),
+			longitude: Number(userCoords.longitude)
+		}
+	}
+
+	return null
+}
+
+const normalizeDetourMarker = (
+	marker,
+	detourDistanceKm,
+	detourDurationMinutes
+) => ({
+	...marker,
+	detourDistanceKm,
+	detourDurationMinutes,
+	detour: {
+		distance: detourDistanceKm,
+		duration: detourDurationMinutes
+	}
+})
+
+const getRouteMetricsV2 = (route) => {
+	const feature = route?.features?.[0] || null
+	const properties = feature?.properties || route?.properties || route || null
+	const distanceMeters = Number(
+		properties?.distance ??
+			properties?.total_distance ??
+			properties?.summary?.distance
+	)
+	const durationSeconds = Number(
+		properties?.time ?? properties?.total_time ?? properties?.summary?.time
+	)
+
+	if (!Number.isFinite(distanceMeters) || !Number.isFinite(durationSeconds)) {
+		return null
+	}
+
+	return {
+		distanceKm: distanceMeters / 1000,
+		durationMinutes: durationSeconds / 60
+	}
+}
+
+const buildRideSuggestionsV2 = async ({
+	markers,
+	currentUser,
+	originCoords,
+	rideSettings
+}) => {
+	if (!Array.isArray(markers) || markers.length === 0) {
+		return []
+	}
+
+	const baseRoute = originCoords
+		? await calculateRoute(originCoords, SCHOOL_DESTINATION)
+		: null
+	const baseMetrics = getRouteMetricsV2(baseRoute)
+	const visibleMarkers = baseRoute
+		? findMarkersOnRoute(markers, baseRoute, SCHOOL_DESTINATION)
+		: markers
+	const candidateMarkers = visibleMarkers.filter(
+		(marker) => marker.uid && marker.uid !== currentUser?.uid
+	)
+
+	const enrichedMarkers = await Promise.all(
+		candidateMarkers.map(async (marker) => {
+			if (!originCoords) {
+				return normalizeDetourMarker(marker, null, null)
+			}
+
+			try {
+				const pickupRoute = await calculateRoute(
+					originCoords,
+					SCHOOL_DESTINATION,
+					[
+						{
+							latitude: marker.latitude,
+							longitude: marker.longitude
+						}
+					]
+				)
+				const pickupMetrics = getRouteMetricsV2(pickupRoute)
+
+				if (!pickupMetrics) {
+					return normalizeDetourMarker(marker, null, null)
+				}
+
+				const detourDistanceKm = baseMetrics
+					? Math.max(
+							0,
+							pickupMetrics.distanceKm - baseMetrics.distanceKm
+						)
+					: pickupMetrics.distanceKm
+				const detourDurationMinutes = baseMetrics
+					? Math.max(
+							0,
+							pickupMetrics.durationMinutes -
+								baseMetrics.durationMinutes
+						)
+					: pickupMetrics.durationMinutes
+
+				return normalizeDetourMarker(
+					marker,
+					detourDistanceKm,
+					detourDurationMinutes
+				)
+			} catch {
+				return normalizeDetourMarker(marker, null, null)
+			}
+		})
+	)
+
+	const sortedMarkers = enrichedMarkers.sort((first, second) => {
+		const firstDistance = Number(first?.detourDistanceKm)
+		const secondDistance = Number(second?.detourDistanceKm)
+
+		if (
+			!Number.isFinite(firstDistance) &&
+			!Number.isFinite(secondDistance)
+		) {
+			return 0
+		}
+		if (!Number.isFinite(firstDistance)) return 1
+		if (!Number.isFinite(secondDistance)) return -1
+
+		return firstDistance - secondDistance
+	})
+
+	return annotateSuggestionsWithPreferences(sortedMarkers, rideSettings)
+}
+
+export const getRideSuggestions = async (req, res) => {
+	try {
+		const parsedDay = toNonNegativeInteger(req.query.day)
+		const parsedHour = toNonNegativeInteger(req.query.hour)
+		const day = parsedDay ?? new Date().getDay()
+		const hour = parsedHour ?? new Date().getHours()
+
+		const users = await getAllUsers()
+		const filteredUsers = filterUsersByDayAndHour(
+			users,
+			req.user,
+			day,
+			hour
+		)
+		const mapMarkers = buildRideMarkers(filteredUsers, req.user?.uid)
+		const originCoords = resolveSuggestionOrigin(req)
+		const rideSettings = getRideSettings(req.user?.metadata)
+		const suggestionMarkers = await buildRideSuggestionsV2({
+			markers: mapMarkers,
+			currentUser: req.user,
+			originCoords,
+			rideSettings
+		})
+
+		return res.json(suggestionMarkers)
+	} catch (error) {
+		console.error('Error fetching ride suggestions V2:', error)
+		return res.status(500).json({
+			error: 'Er is een fout opgetreden bij het ophalen van rit suggesties. Probeer het later opnieuw.'
+		})
+	}
 }

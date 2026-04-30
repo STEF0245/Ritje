@@ -162,6 +162,8 @@
                             <% if (locals.suggestionMarkers && locals.suggestionMarkers.length > 0) { %>
                                 <ul class="space-y-3">
                                     <% locals.suggestionMarkers.forEach((ride, index) => { %>
+                                            <% const detourDistance = ride.detour?.distance ?? ride.detourDistanceKm; %>
+                                            <% const detourDuration = ride.detour?.duration ?? ride.detourDurationMinutes; %>
                                         <label class="theme-pill p-4 border theme-border theme-surface ride-suggestion-item cursor-pointer block">
                                             <input
                                                 type="checkbox"
@@ -173,13 +175,13 @@
                                             <span class="min-w-0 flex-1">
                                                 <h4 class="text-base font-semibold theme-text-primary leading-tight"><%= ride.title || 'Onbekende persoon' %></h4>
                                                 <p class="text-sm theme-text-muted"><%= ride.lines[1] || 'Onbekend adres' %></p>
-                                                <% if (Number.isFinite(ride.detourDistanceKm) && Number.isFinite(ride.detourDurationMinutes)) { %>
+                                                    <% if (Number.isFinite(detourDistance) && Number.isFinite(detourDuration)) { %>
                                                     <div class="mt-2 flex flex-wrap gap-2">
                                                         <span class="theme-pill border theme-border px-2 py-1 text-xs theme-text-muted">
-                                                            +<%= Math.round(ride.detourDistanceKm * 10) / 10 %> km
+                                                                +<%= Math.round(detourDistance * 10) / 10 %> km
                                                         </span>
                                                         <span class="theme-pill border theme-border px-2 py-1 text-xs theme-text-muted">
-                                                            +<%= Math.round(ride.detourDurationMinutes) %> min
+                                                                +<%= Math.round(detourDuration) %> min
                                                         </span>
                                                     </div>
                                                 <% } %>
