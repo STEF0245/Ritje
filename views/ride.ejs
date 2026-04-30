@@ -1,6 +1,7 @@
 <%
     const mapMarkersJson = JSON.stringify(locals.mapMarkers) || '[]';
     const routeJson = JSON.stringify(locals.route) || 'null';
+    const suggestionMarkers = locals.suggestionMarkers || [];
     const schedule = locals.user?.metadata?.schedule || {};
 
     const weekdays = [
@@ -158,10 +159,10 @@
                     <article class="theme-panel p-6 lg:col-span-1 h-full flex flex-col max-h-130 ride-suggestion-panel">
                         <h2 class="text-xl font-extrabold theme-text-primary">Suggesties</h2>
                         <p class="theme-text-muted text-sm mt-1">Selecteer een of meerdere personen en herbereken de route om hun locatie op de kaart te tonen.</p>
-                        <div class="mt-6 flex-1 overflow-y-auto">
-                            <% if (locals.suggestionMarkers && locals.suggestionMarkers.length > 0) { %>
+                        <div class="mt-6 flex-1 overflow-y-auto" data-ride-suggestions>
+                            <% if (suggestionMarkers.length > 0) { %>
                                 <ul class="space-y-3">
-                                    <% locals.suggestionMarkers.forEach((ride, index) => { %>
+                                    <% suggestionMarkers.forEach((ride, index) => { %>
                                             <% const detourDistance = ride.detour?.distance ?? ride.detourDistanceKm; %>
                                             <% const detourDuration = ride.detour?.duration ?? ride.detourDurationMinutes; %>
                                         <label class="theme-pill p-4 border theme-border theme-surface ride-suggestion-item cursor-pointer block">
