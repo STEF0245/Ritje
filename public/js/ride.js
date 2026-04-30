@@ -142,3 +142,10 @@ function renderSuggestions(suggestions = []) {
 	suggestionsContainer.appendChild(list)
 }
 
+window.addEventListener('DOMContentLoaded', () => {
+	const initialChecked = radioGroup.querySelector('[ride-input]:checked')
+	if (initialChecked) {
+		const [day, hour] = initialChecked.id.split('_')
+		updateSuggestions(day, hour)
+	}
+})
