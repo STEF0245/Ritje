@@ -5,11 +5,16 @@
  */
 
 import express from 'express'
-import { getRidePage, getRideSuggestions } from './ride.controller.js'
+import {
+	getRidePage,
+	getRideSuggestions,
+	recalculateRoute
+} from './ride.controller.js'
 
 const router = express.Router()
 
 router.get('/', getRidePage)
 router.get('/suggestions', getRideSuggestions)
+router.post('/recalculate', recalculateRoute)
 
 export default router

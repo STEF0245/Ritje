@@ -5,6 +5,7 @@
 
 const radioGroup = document.querySelector('[input-radio-group]')
 const suggestionsContainer = document.querySelector('[data-ride-suggestions]')
+const recalculateButton = document.getElementById('routeRecalculate')
 let activeSuggestionRequest = null
 
 if (radioGroup) {
@@ -15,6 +16,59 @@ if (radioGroup) {
 			updateSuggestions(day, hour)
 		}
 	})
+}
+
+if (suggestionsContainer) {
+	suggestionsContainer.addEventListener('change', (e) => {
+		if (e.target.matches('[data-suggestion-checkbox]')) {
+			toggleRecalculateButton()
+		}
+	})
+}
+
+if (recalculateButton) {
+	recalculateButton.addEventListener('click', () => {
+		const selectedSuggestions = suggestionsContainer.querySelectorAll(
+			'[data-suggestion-checkbox]:checked'
+		)
+		const selectedIds = Array.from(selectedSuggestions).map(
+			(checkbox) => checkbox.value
+		)
+		console.log('Selected suggestion IDs:', selectedIds)
+		recalculateRouteWithSuggestions(selectedIds)
+	})
+}
+
+async function toggleRecalculateButton() {
+	if (!recalculateButton) return
+
+	const anyChecked = suggestionsContainer.querySelector(
+		'[data-suggestion-checkbox]:checked'
+	)
+	recalculateButton.classList.toggle('hidden!', !anyChecked)
+	console.log(
+		'Recalculate button visibility:',
+		!anyChecked ? 'hidden' : 'visible'
+	)
+}
+
+async function recalculateRouteWithSuggestions(suggestionIds) {
+	try {
+		const response = await fetch('/ride/recalculate', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({ suggestionIds })
+		})
+		if (!response.ok) {
+			throw new Error(`HTTP ${response.status}`)
+		}
+		const result = await response.json()
+		console.log('Route recalculation result:', result)
+	} catch (error) {
+		console.error('Error recalculating route:', error)
+	}
 }
 
 async function updateSuggestions(day, hour) {
