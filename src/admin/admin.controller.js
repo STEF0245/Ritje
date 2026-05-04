@@ -80,11 +80,48 @@ const mapFormDataToUser = (formData = {}, includePassword = false) => {
  * @returns {{email: string, phoneNumber: string, photoURL: string, name: {first: string, last: string, full: string}, address: {city: string, street: string, houseNumber: string, postalCode: string}, password: string}} Normalized new-user form data.
  */
 const mapFormDataToNewUser = (formData = {}) => {
-	return mapFormDataToUser(formData, true)
+	const mapped = mapFormDataToUser(formData, true)
+	mapped.schedule = parseScheduleFromForm(formData)
+	return mapped
 }
 
 const mapFormDataToEditUser = (formData = {}) => {
-	return mapFormDataToUser(formData, false)
+	const mapped = mapFormDataToUser(formData, false)
+	mapped.schedule = parseScheduleFromForm(formData)
+	return mapped
+}
+
+/**
+ * @brief  Parse and normalize schedule data from form submission.
+ * @details  Extracts schedule fields for weekdays 1-5, validates hour indices, and builds the nested schedule structure.
+ * @param {object} formData - Raw form body submitted by the client.
+ * @returns {object} Normalized schedule object with keys 1-5 mapping to {start, end} objects.
+ */
+const parseScheduleFromForm = (formData = {}) => {
+	const schedule = {}
+	const weekdays = ['1', '2', '3', '4', '5']
+
+	weekdays.forEach((dayKey) => {
+		const startStr = formData[`schedule_${dayKey}_start`]
+		const endStr = formData[`schedule_${dayKey}_end`]
+
+		const start = startStr ? Number(startStr) : null
+		const end = endStr ? Number(endStr) : null
+
+		// Only add schedule if both start and end are valid hour indices
+		if (
+			Number.isInteger(start) &&
+			start >= 1 &&
+			start <= 8 &&
+			Number.isInteger(end) &&
+			end >= 1 &&
+			end <= 8
+		) {
+			schedule[dayKey] = { start, end }
+		}
+	})
+
+	return schedule
 }
 
 /**
@@ -344,9 +381,10 @@ export const postUserNewPage = async (req, res) => {
 				latitude: result.lat,
 				longitude: result.lon
 			},
+			schedule: parseScheduleFromForm(req.body),
 			createdAt:
 				createdAuthUser.metadata.creationTime ||
-				new Date().toISOString(),
+				new Date().toISOString()
 		}
 
 		try {
@@ -641,6 +679,7 @@ export const postUserEditPage = async (req, res) => {
 				latitude: result.lat,
 				longitude: result.lon
 			},
+			schedule: parseScheduleFromForm(req.body)
 		})
 
 		return res.redirect(`/admin/users/${encodeURIComponent(uid)}`)

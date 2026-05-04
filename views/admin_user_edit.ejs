@@ -17,6 +17,7 @@
         const houseNumber = profile?.address?.houseNumber || ''
         const postalCode = profile?.address?.postalCode || ''
         const photoURL = profile?.photoURL || ''
+        const schedule = profile?.schedule || {}
         const targetUid = userUid || '-'
         const createdAt = profile?.createdAt
             ? new Date(profile.createdAt).toLocaleString('nl-BE', {
@@ -37,6 +38,80 @@
               })
             : 'Onbekend'
         const isEmailVerified = Boolean(profile?.emailVerified)
+
+		const weekdays = [
+			{ key: '1', label: 'Maandag' },
+			{ key: '2', label: 'Dinsdag' },
+			{ key: '3', label: 'Woensdag' },
+			{ key: '4', label: 'Donderdag' },
+			{ key: '5', label: 'Vrijdag' }
+		]
+
+		const getActiveHours = (hours) => {
+			const normalizeHourNumber = (value) => {
+				if (value === null || value === undefined) return null
+				if (typeof value === 'string' && value.trim() === '') return null
+				const numeric = Number(value)
+				if (!Number.isInteger(numeric)) return null
+				if (numeric >= 1 && numeric <= 8) return numeric
+				if (numeric >= 0 && numeric <= 7) return numeric + 1
+				return null
+			}
+
+			if (Array.isArray(hours)) {
+				return hours
+					.map((isActive, index) => (Boolean(isActive) ? String(index + 1) : null))
+					.filter(Boolean)
+			}
+			if (hours && typeof hours === 'object') {
+				if (
+					Object.prototype.hasOwnProperty.call(hours, 'start') &&
+					Object.prototype.hasOwnProperty.call(hours, 'end')
+				) {
+					const start = normalizeHourNumber(hours.start)
+					const end = normalizeHourNumber(hours.end)
+					if (!start || !end || end < start) return []
+					return Array.from(
+						{ length: end - start + 1 },
+						(_, idx) => String(start + idx)
+					)
+				}
+
+				return Object.entries(hours)
+					.filter(([, isActive]) => Boolean(isActive))
+					.map(([hour]) => normalizeHourNumber(hour))
+					.filter((hour) => hour !== null)
+					.map((hour) => String(hour))
+					.filter((hour, index, list) => list.indexOf(hour) === index)
+					.sort((a, b) => Number(a) - Number(b))
+			}
+			return []
+		}
+
+		const resolveDayHours = (dayKey) => {
+			if (Object.prototype.hasOwnProperty.call(schedule, dayKey)) {
+				return schedule[dayKey]
+			}
+			return {}
+		}
+
+		const normalizeHourValue = (value) => {
+			if (value === null || value === undefined) return ''
+			const hour = Number(String(value).trim())
+			if (!Number.isInteger(hour) || hour < 1 || hour > 8) return ''
+			return String(hour)
+		}
+
+		const hourOptions = [
+			{ value: '1', labels: { first: '08:25', last: '09:15' } },
+			{ value: '2', labels: { first: '09:15', last: '10:05' } },
+			{ value: '3', labels: { first: '10:20', last: '11:10' } },
+			{ value: '4', labels: { first: '11:10', last: '12:00' } },
+			{ value: '5', labels: { first: '13:00', last: '13:50' } },
+			{ value: '6', labels: { first: '13:50', last: '14:40' } },
+			{ value: '7', labels: { first: '14:55', last: '15:45' } },
+			{ value: '8', labels: { first: '15:45', last: '16:35' } }
+		]
     %>
 
     <body class="theme-body min-h-screen flex flex-col">
@@ -69,7 +144,7 @@
 						<h2 class="text-xl font-extrabold theme-text-primary">Profielgegevens</h2>
 						<p class="theme-text-muted text-sm mt-1">Werk account- en adresgegevens van deze gebruiker bij.</p>
 
-						<form method="post" action="/admin/users/<%= encodeURIComponent(targetUid) %>/edit" class="mt-6 space-y-4">
+						<form id="profile-edit-form" method="post" action="/admin/users/<%= encodeURIComponent(targetUid) %>/edit" class="mt-6 space-y-4">
 							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 								<div class="theme-surface theme-pill border theme-border p-4 pt-3">
 									<label for="firstName" class="text-xs uppercase tracking-[0.12em] theme-text-muted">Voornaam</label>
@@ -123,6 +198,57 @@
 								<button type="submit" class="theme-btn-primary px-5 py-3 cursor-pointer">Opslaan</button>
 							</div>
 						</form>
+					</article>
+
+					<article class="theme-panel p-6 lg:col-span-2 lg:col-start-2">
+						<h2 class="text-xl font-extrabold theme-text-primary">Uurrooster</h2>
+						<p class="theme-text-muted text-sm mt-1">Overzicht van je uurrooster.</p>
+
+						<div class="mt-6 space-y-4">
+							<div class="theme-surface theme-pill border theme-border p-4">
+								<p class="text-xs uppercase tracking-[0.12em] theme-text-muted">Beschikbaarheid per dag</p>
+								<div class="mt-4 space-y-3">
+									<% weekdays.forEach(({ key: dayKey, label: fixedDayLabel }, index) => { %>
+										<%
+											const dayHours = resolveDayHours(dayKey)
+											const dayLabel = fixedDayLabel
+											const activeHours = getActiveHours(dayHours)
+											const rawFirst = activeHours[0]
+											const first = normalizeHourValue(rawFirst)
+											const rawLast = activeHours[activeHours.length - 1]
+											const normalizedRawLast = normalizeHourValue(rawLast)
+											const last = first && normalizedRawLast && Number(normalizedRawLast) < Number(first) ? first : normalizedRawLast
+										%>
+										<div class="grid grid-cols-1 md:grid-cols-3 gap-3 theme-surface-strong theme-pill border theme-border p-3" data-schedule-row>
+											<div class="md:col-span-1 flex items-center">
+												<p class="theme-text-primary font-semibold"><%= dayLabel %></p>
+											</div>
+											<div class="md:col-span-1">
+												<label for="scheduleStart_<%= dayKey %>" class="text-xs uppercase tracking-[0.12em] theme-text-muted">Van</label>
+											<select id="scheduleStart_<%= dayKey %>" name="schedule_<%= dayKey %>_start" class="mt-2 theme-input w-full" form="profile-edit-form" data-schedule-start>
+													<option value="">Niet beschikbaar</option>
+													<% hourOptions.forEach((option) => { %>
+														<option value="<%= option.value %>" <%= first === option.value ? 'selected' : '' %>><%= option.labels.first %></option>
+													<% }) %>
+												</select>
+											</div>
+											<div class="md:col-span-1">
+												<label for="scheduleEnd_<%= dayKey %>" class="text-xs uppercase tracking-[0.12em] theme-text-muted">Tot</label>
+											<select id="scheduleEnd_<%= dayKey %>" name="schedule_<%= dayKey %>_end" class="mt-2 theme-input w-full" form="profile-edit-form" data-schedule-end>
+													<option value="">Niet beschikbaar</option>
+													<% hourOptions.forEach((option) => { %>
+														<option value="<%= option.value %>" <%= last === option.value ? 'selected' : '' %>><%= option.labels.last %></option>
+													<% }) %>
+												</select>
+											</div>
+										</div>
+									<% }) %>
+								</div>
+							</div>
+							<div class="flex justify-end pt-2">
+								<button type="submit" form="profile-edit-form" class="theme-btn-primary px-5 py-3 cursor-pointer">Opslaan</button>
+							</div>
+						</div>
 					</article>
 				</div>
 			</section>
