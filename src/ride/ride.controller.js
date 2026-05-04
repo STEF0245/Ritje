@@ -819,3 +819,66 @@ export const calculateRouteWithSuggestions = async (req, res) => {
 		})
 	}
 }
+
+export const saveRideRoute = async (req, res) => {
+	try {
+		const userUid = String(req.user?.uid || '')
+		if (!userUid) {
+			return res.status(401).json({
+				error: 'Je moet aangemeld zijn om een rit op te slaan.'
+			})
+		}
+
+		const day = toNonNegativeInteger(req.body?.day)
+		const hour = toNonNegativeInteger(req.body?.hour)
+		if (
+			day === null ||
+			hour === null ||
+			day < 1 ||
+			day > 5 ||
+			hour < 1 ||
+			hour > 8
+		) {
+			return res.status(400).json({
+				error: 'Ongeldige parameters: "day" en "hour" moeten geldige roosterwaarden bevatten.'
+			})
+		}
+
+		const route = req.body?.route
+		if (!route || typeof route !== 'object') {
+			return res.json({ saved: false, ignored: true })
+		}
+
+		const markers = Array.isArray(req.body?.markers) ? req.body.markers : []
+		const suggestionIds = normalizeSuggestionIds(req.body?.suggestionIds)
+		const slotKey = `${day}_${hour}`
+		const nowIso = new Date().toISOString()
+		const routeMetrics = getRouteMetrics(route)
+
+		const record = {
+			uid: userUid,
+			day,
+			hour,
+			slotKey,
+			suggestionIds,
+			route,
+			markers,
+			routeMetrics,
+			savedAt: nowIso,
+			updatedAt: nowIso
+		}
+
+		await db.ref(`rides/${userUid}/${slotKey}`).set(record)
+
+		return res.json({
+			saved: true,
+			slotKey,
+			savedAt: nowIso
+		})
+	} catch (error) {
+		console.error('Error saving ride route:', error)
+		return res.status(500).json({
+			error: 'Er is een fout opgetreden bij het opslaan van de rit. Probeer het later opnieuw.'
+		})
+	}
+}

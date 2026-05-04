@@ -8,7 +8,8 @@ import express from 'express'
 import {
 	getRidePage,
 	getRideSuggestions,
-	calculateRouteWithSuggestions
+	calculateRouteWithSuggestions,
+	saveRideRoute
 } from './ride.controller.js'
 
 const router = express.Router()
@@ -55,5 +56,6 @@ const calculateLimiter = (() => {
 router.get('/', getRidePage)
 router.get('/suggestions', getRideSuggestions)
 router.post('/calculate', calculateLimiter, calculateRouteWithSuggestions)
+router.post('/save', saveRideRoute)
 
 export default router

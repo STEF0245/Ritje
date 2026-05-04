@@ -6,7 +6,8 @@
 // ========== DOM ELEMENTS ==========
 const radioGroup = document.querySelector('[input-radio-group]')
 const suggestionsContainer = document.querySelector('[data-ride-suggestions]')
-const calculateButton = document.getElementById('routeCalculate')
+const calculateButton = document.getElementById('calculateRoute')
+const saveButton = document.getElementById('saveRoute')
 const mapContainer = document.querySelector('[data-map]')
 
 // ========== STATE ==========
@@ -15,10 +16,16 @@ let initialMarkers = []
 let activeSuggestionRequest = null
 let statusHideTimer = null
 let calculateInFlight = false
+let saveInFlight = false
+let hasCalculatedRoute = false
+let hasSavedRoute = false
 
 // ========== CONSTANTS ==========
 const seatLimit = Number(suggestionsContainer?.dataset.seatLimit || 1) || 1
 const defaultCalculateLabel = 'Route berekenen'
+const defaultSaveLabel = 'Route opslaan'
+const savedSaveLabel = 'Opgeslagen'
+const savingSaveLabel = 'Opslaan...'
 const statusAutoHideMs = {
 	info: 3500,
 	success: 3200,
@@ -33,7 +40,7 @@ if (radioGroup) {
 			const id = e.target.id
 			const [day, hour] = id.split('_')
 			updateSuggestions(day, hour)
-			updateButtonState()
+			updateCalculateButtonState()
 		}
 	})
 }
@@ -51,8 +58,15 @@ if (calculateButton) {
 	})
 }
 
+if (saveButton) {
+	saveButton.addEventListener('click', () => {
+		if (saveInFlight || !hasCalculatedRoute || hasSavedRoute) return
+		saveCurrentRideRoute()
+	})
+}
+
 // ========== BUTTON STATE MANAGEMENT ==========
-function updateButtonState() {
+function updateCalculateButtonState() {
 	if (!calculateButton) return
 
 	const { selectedCount } = getSelectionState()
@@ -64,6 +78,9 @@ function updateButtonState() {
 	setButtonEnabled(!calculateInFlight && hasSelection)
 
 	if (!shouldShow) {
+		hasCalculatedRoute = false
+		hasSavedRoute = false
+		updateSaveButtonState()
 		displayRouteOnMap(initialRoute, initialMarkers)
 	}
 }
@@ -75,6 +92,119 @@ function setButtonEnabled(enabled = true) {
 	calculateButton.classList.toggle('opacity-60', !enabled)
 }
 
+function updateSaveButtonState() {
+	if (!saveButton) return
+
+	const shouldShow = hasCalculatedRoute
+	saveButton.classList.toggle('hidden!', !shouldShow)
+
+	if (!shouldShow) {
+		saveButton.textContent = defaultSaveLabel
+		saveButton.disabled = true
+		saveButton.classList.add('opacity-60')
+		return
+	}
+
+	if (hasSavedRoute) {
+		saveButton.textContent = savedSaveLabel
+		saveButton.disabled = true
+		saveButton.classList.add('opacity-60')
+		return
+	}
+
+	saveButton.textContent = saveInFlight ? savingSaveLabel : defaultSaveLabel
+	saveButton.disabled = saveInFlight
+	saveButton.classList.toggle('opacity-60', saveInFlight)
+}
+
+function getSelectedScheduleSlot() {
+	const selected = radioGroup?.querySelector('[ride-input]:checked')
+	if (!selected?.id) return null
+
+	const [dayRaw, hourRaw] = selected.id.split('_')
+	const day = Number(dayRaw)
+	const hour = Number(hourRaw)
+
+	if (!Number.isInteger(day) || !Number.isInteger(hour)) {
+		return null
+	}
+
+	return { day, hour }
+}
+
+function getSelectedSuggestionIds() {
+	if (!suggestionsContainer) return []
+
+	const selectedSuggestions = suggestionsContainer.querySelectorAll(
+		'[data-suggestion-checkbox]:checked'
+	)
+
+	return Array.from(selectedSuggestions)
+		.map((checkbox) => checkbox.value)
+		.filter(Boolean)
+}
+
+function parseJsonDataset(value, fallback) {
+	try {
+		return JSON.parse(value)
+	} catch {
+		return fallback
+	}
+}
+
+async function saveCurrentRideRoute() {
+	if (!mapContainer) return
+
+	const slot = getSelectedScheduleSlot()
+	if (!slot) return
+
+	const route = parseJsonDataset(mapContainer.dataset.route || 'null', null)
+	if (!route) {
+		// Requested behavior: silently ignore save when no calculated route exists.
+		return
+	}
+
+	const markers = parseJsonDataset(mapContainer.dataset.markers || '[]', [])
+	const suggestionIds = getSelectedSuggestionIds()
+
+	try {
+		saveInFlight = true
+		updateSaveButtonState()
+
+		const response = await fetch('/ride/save', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({
+				day: slot.day,
+				hour: slot.hour,
+				suggestionIds,
+				route,
+				markers
+			})
+		})
+
+		if (!response.ok) {
+			throw new Error(`HTTP ${response.status}`)
+		}
+
+		const result = await response.json()
+		if (!result?.saved) {
+			return
+		}
+
+		hasSavedRoute = true
+		updateSaveButtonState()
+	} catch (error) {
+		console.error('Error saving ride route:', error)
+		showRideStatus('Rit opslaan is mislukt.', 'error')
+	} finally {
+		saveInFlight = false
+		updateSaveButtonState()
+	}
+}
+
 // ========== STATUS DISPLAY ==========
 function hideRideStatus() {
 	if (statusHideTimer) {
@@ -83,7 +213,7 @@ function hideRideStatus() {
 	}
 
 	calculateInFlight = false
-	updateButtonState()
+	updateCalculateButtonState()
 }
 
 function showRideStatus(message, tone = 'info', options = {}) {
@@ -161,6 +291,9 @@ async function calculateRouteWithSuggestions(suggestionIds) {
 		}
 
 		const result = await response.json()
+		hasCalculatedRoute = Boolean(result?.route)
+		hasSavedRoute = false
+		updateSaveButtonState()
 		displayRouteOnMap(result.route, result.markers, result.cached)
 		showRideStatus(
 			result.cached ? 'Opgehaald uit cache.' : 'Route geüpdatet.',
@@ -172,7 +305,7 @@ async function calculateRouteWithSuggestions(suggestionIds) {
 	} finally {
 		calculateInFlight = false
 		setButtonEnabled(true)
-		updateButtonState()
+		updateCalculateButtonState()
 	}
 }
 
@@ -201,6 +334,9 @@ function displayRouteOnMap(route, markers, cached = false) {
 // ========== SUGGESTIONS LOADING ==========
 async function updateSuggestions(day, hour) {
 	if (!suggestionsContainer) return
+	hasCalculatedRoute = false
+	hasSavedRoute = false
+	updateSaveButtonState()
 
 	if (activeSuggestionRequest) {
 		activeSuggestionRequest.abort()
@@ -332,8 +468,11 @@ function renderSuggestions(suggestions = []) {
 if (suggestionsContainer) {
 	suggestionsContainer.addEventListener('change', (event) => {
 		if (!event.target.matches('[data-suggestion-checkbox]')) return
+		hasCalculatedRoute = false
+		hasSavedRoute = false
+		updateSaveButtonState()
 		getSelectionState()
-		updateButtonState()
+		updateCalculateButtonState()
 	})
 }
 
@@ -360,4 +499,6 @@ window.addEventListener('DOMContentLoaded', () => {
 	} else {
 		getSelectionState()
 	}
+
+	updateSaveButtonState()
 })
