@@ -48,10 +48,9 @@ async function toggleRecalculateButton() {
 		'[data-suggestion-checkbox]:checked'
 	)
 	recalculateButton.classList.toggle('hidden!', !anyChecked)
-	console.log(
-		'Recalculate button visibility:',
-		!anyChecked ? 'hidden' : 'visible'
-	)
+	if (!anyChecked) {
+		recalculateRouteWithSuggestions([])
+	}
 }
 
 async function recalculateRouteWithSuggestions(suggestionIds) {
