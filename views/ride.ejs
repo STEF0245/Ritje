@@ -159,7 +159,7 @@
 
                     <article class="theme-panel p-6 lg:col-span-1 h-full flex flex-col max-h-130 ride-suggestion-panel">
                         <h2 class="text-xl font-extrabold theme-text-primary">Suggesties</h2>
-                        <p class="theme-text-muted text-sm mt-1">Selecteer een of meerdere personen en herbereken de route om hun locatie op de kaart te tonen.</p>
+                            <p class="theme-text-muted text-sm mt-1">Selecteer een of meerdere personen en bereken de route om hun locatie op de kaart te tonen.</p>
                         <div class="mt-4 flex-1 overflow-y-auto" data-ride-suggestions data-seat-limit="<%= seatLimit %>">
                             <% if (suggestionMarkers.length > 0) { %>
                                 <ul class="space-y-3">
@@ -195,7 +195,7 @@
                                 <p class="text-sm theme-text-muted">Er zijn momenteel geen suggesties beschikbaar.</p>
                             <% } %>
                         </div>
-                        <button id="routeRecalculate" class="theme-btn-primary px-4 py-2 mt-4 font-medium! hidden!">Herbereken route</button>
+                        <button id="routeCalculate" class="theme-btn-primary px-4 py-2 mt-4 font-medium! hidden!">Route berekenen</button>
                     </article>
 
                 </div>

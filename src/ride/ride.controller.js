@@ -717,7 +717,7 @@ export const getRideSuggestions = async (req, res) => {
 	}
 }
 
-export const recalculateRouteWithSuggestions = async (req, res) => {
+export const calculateRouteWithSuggestions = async (req, res) => {
 	try {
 		const originCoords = resolveSuggestionOrigin(req)
 		if (!originCoords) {
@@ -813,9 +813,9 @@ export const recalculateRouteWithSuggestions = async (req, res) => {
 			cached: false
 		})
 	} catch (error) {
-		console.error('Error recalculating ride route:', error)
+		console.error('Error calculating ride route:', error)
 		return res.status(500).json({
-			error: 'Er is een fout opgetreden bij het herberekenen van de route. Probeer het later opnieuw.'
+			error: 'Er is een fout opgetreden bij het berekenen van de route. Probeer het later opnieuw.'
 		})
 	}
 }

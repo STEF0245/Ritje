@@ -500,6 +500,16 @@
 	border-color: var(--ride-accent);
 }
 
+.ride-suggestion-item:has(input:disabled) {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.ride-suggestion-item:has(input:disabled):hover {
+	border-color: color-mix(in srgb, var(--ride-border) 88%, transparent);
+	background: color-mix(in srgb, var(--ride-bg-800) 88%, transparent);
+}
+
 .leaflet-popup.map-popup {
 	margin-bottom: 0.5rem !important;
 }

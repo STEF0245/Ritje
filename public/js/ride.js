@@ -3,92 +3,145 @@
  * @brief  Keeps the ride page map in sync with selected suggestion checkboxes.
  */
 
+// ========== DOM ELEMENTS ==========
 const radioGroup = document.querySelector('[input-radio-group]')
 const suggestionsContainer = document.querySelector('[data-ride-suggestions]')
-const recalculateButton = document.getElementById('routeRecalculate')
+const calculateButton = document.getElementById('routeCalculate')
 const mapContainer = document.querySelector('[data-map]')
-const map = mapContainer ? mapContainer._appMapInstance : null
+
+// ========== STATE ==========
 let initialRoute = null
 let initialMarkers = []
 let activeSuggestionRequest = null
+let statusHideTimer = null
+let calculateInFlight = false
 
+// ========== CONSTANTS ==========
+const seatLimit = Number(suggestionsContainer?.dataset.seatLimit || 1) || 1
+const defaultCalculateLabel = 'Route berekenen'
+const statusAutoHideMs = {
+	info: 3500,
+	success: 3200,
+	warning: 5000,
+	error: 6500
+}
+
+// ========== EVENT LISTENERS - INITIALIZATION ==========
 if (radioGroup) {
 	radioGroup.addEventListener('change', (e) => {
 		if (e.target.matches('[ride-input]')) {
 			const id = e.target.id
 			const [day, hour] = id.split('_')
 			updateSuggestions(day, hour)
-			toggleRecalculateButton()
+			updateButtonState()
 		}
 	})
 }
 
-if (suggestionsContainer) {
-	suggestionsContainer.addEventListener('change', (e) => {
-		if (e.target.matches('[data-suggestion-checkbox]')) {
-			toggleRecalculateButton()
-		}
-	})
-}
-
-if (recalculateButton) {
-	recalculateButton.addEventListener('click', () => {
+if (calculateButton) {
+	calculateButton.addEventListener('click', () => {
+		if (calculateInFlight) return
 		const selectedSuggestions = suggestionsContainer.querySelectorAll(
 			'[data-suggestion-checkbox]:checked'
 		)
 		const selectedIds = Array.from(selectedSuggestions).map(
 			(checkbox) => checkbox.value
 		)
-		console.log('Selected suggestion IDs:', selectedIds)
-		recalculateRouteWithSuggestions(selectedIds)
+		calculateRouteWithSuggestions(selectedIds)
 	})
 }
 
-async function toggleRecalculateButton() {
-	if (!recalculateButton) return
+// ========== BUTTON STATE MANAGEMENT ==========
+function updateButtonState() {
+	if (!calculateButton) return
 
-	const anyChecked = suggestionsContainer.querySelector(
-		'[data-suggestion-checkbox]:checked'
-	)
-	recalculateButton.classList.toggle('hidden!', !anyChecked)
-	if (!anyChecked) {
-		// Restore initial map state locally without calling the backend
+	const { selectedCount } = getSelectionState()
+	const hasSelection = selectedCount > 0
+	const shouldShow = hasSelection && !calculateInFlight
+
+	calculateButton.classList.toggle('hidden!', !shouldShow)
+	calculateButton.textContent = defaultCalculateLabel
+	setButtonEnabled(!calculateInFlight && hasSelection)
+
+	if (!shouldShow) {
 		displayRouteOnMap(initialRoute, initialMarkers)
-		return
 	}
 }
 
-let recalcInFlight = false
+function setButtonEnabled(enabled = true) {
+	if (!calculateButton) return
 
-function ensureRouteStatusElement() {
-	let el = document.getElementById('routeStatus')
-	if (!el && recalculateButton && recalculateButton.parentNode) {
-		el = document.createElement('span')
-		el.id = 'routeStatus'
-		el.className = 'text-sm theme-text-muted ml-3'
-		recalculateButton.parentNode.insertBefore(
-			el,
-			recalculateButton.nextSibling
-		)
-	}
-	return el
+	calculateButton.disabled = !enabled
+	calculateButton.classList.toggle('opacity-60', !enabled)
 }
 
-async function recalculateRouteWithSuggestions(suggestionIds) {
-	if (recalcInFlight) return
-	const statusEl = ensureRouteStatusElement()
+// ========== STATUS DISPLAY ==========
+function hideRideStatus() {
+	if (statusHideTimer) {
+		clearTimeout(statusHideTimer)
+		statusHideTimer = null
+	}
+
+	calculateInFlight = false
+	updateButtonState()
+}
+
+function showRideStatus(message, tone = 'info', options = {}) {
+	if (!calculateButton) return
+
+	if (statusHideTimer) {
+		clearTimeout(statusHideTimer)
+		statusHideTimer = null
+	}
+
+	const autoHideMs = Object.prototype.hasOwnProperty.call(
+		options,
+		'autoHideMs'
+	)
+		? options.autoHideMs
+		: statusAutoHideMs[tone]
+
+	setButtonEnabled(false)
+	calculateButton.textContent = message
+
+	if (typeof autoHideMs === 'number' && autoHideMs > 0) {
+		statusHideTimer = setTimeout(() => {
+			hideRideStatus()
+		}, autoHideMs)
+	}
+}
+
+// ========== SEAT SELECTION ==========
+function getSelectionState() {
+	if (!suggestionsContainer) {
+		return { selectedCount: 0 }
+	}
+
+	const checkboxes = Array.from(
+		suggestionsContainer.querySelectorAll('[data-suggestion-checkbox]')
+	)
+	const selectedCount = checkboxes.filter(
+		(checkbox) => checkbox.checked
+	).length
+	const limitReached = selectedCount >= seatLimit
+
+	for (const checkbox of checkboxes) {
+		checkbox.disabled = limitReached && !checkbox.checked
+	}
+
+	return { selectedCount }
+}
+
+// ========== ROUTE CALCULATION ==========
+async function calculateRouteWithSuggestions(suggestionIds) {
+	if (calculateInFlight || !suggestionIds.length) return
+
 	try {
-		recalcInFlight = true
-		if (recalculateButton) {
-			recalculateButton.disabled = true
-			recalculateButton.classList.add('opacity-60')
-		}
-		if (statusEl) statusEl.textContent = 'Herberekenen…'
-		setTimeout(() => {
-			if (statusEl) statusEl.textContent = ''
-		}, 2500)
+		calculateInFlight = true
+		setButtonEnabled(false)
+		showRideStatus('Route wordt berekend...', 'loading')
 
-		const response = await fetch('/ride/recalculate', {
+		const response = await fetch('/ride/calculate', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json'
@@ -98,9 +151,10 @@ async function recalculateRouteWithSuggestions(suggestionIds) {
 
 		if (!response.ok) {
 			if (response.status === 429) {
-				if (statusEl)
-					statusEl.textContent =
-						'Te veel verzoeken. Probeer het later.'
+				showRideStatus(
+					'Te veel verzoeken. Probeer het later opnieuw.',
+					'warning'
+				)
 				return
 			}
 			throw new Error(`HTTP ${response.status}`)
@@ -108,26 +162,21 @@ async function recalculateRouteWithSuggestions(suggestionIds) {
 
 		const result = await response.json()
 		displayRouteOnMap(result.route, result.markers, result.cached)
-		if (statusEl)
-			statusEl.textContent = result.cached
-				? 'Opgehaald uit cache'
-				: 'Route geüpdatet'
-		console.log('Route recalculation result:', result)
+		showRideStatus(
+			result.cached ? 'Opgehaald uit cache.' : 'Route geüpdatet.',
+			'success'
+		)
 	} catch (error) {
-		console.error('Error recalculating route:', error)
-		const statusEl2 = ensureRouteStatusElement()
-		if (statusEl2) statusEl2.textContent = 'Fout bij herberekenen'
+		console.error('Error calculating route:', error)
+		showRideStatus('Route berekenen is mislukt.', 'error')
 	} finally {
-		setTimeout(() => {
-			recalcInFlight = false
-			if (recalculateButton) {
-				recalculateButton.disabled = false
-				recalculateButton.classList.remove('opacity-60')
-			}
-		}, 800)
+		calculateInFlight = false
+		setButtonEnabled(true)
+		updateButtonState()
 	}
 }
 
+// ========== MAP MANAGEMENT ==========
 function displayRouteOnMap(route, markers, cached = false) {
 	if (!mapContainer) return
 
@@ -141,14 +190,15 @@ function displayRouteOnMap(route, markers, cached = false) {
 	mapInstance.setMarkers(normalizedMarkers, { center: true })
 	mapInstance.setRoute(route, { center: true })
 
-	// update a small status indicator if present
-	const statusEl = document.getElementById('routeStatus')
-	if (statusEl)
-		statusEl.textContent = cached
-			? 'Opgehaald uit cache'
-			: 'Route geüpdatet'
+	if (route) {
+		showRideStatus(
+			cached ? 'Opgehaald uit cache.' : 'Route geüpdatet.',
+			'success'
+		)
+	}
 }
 
+// ========== SUGGESTIONS LOADING ==========
 async function updateSuggestions(day, hour) {
 	if (!suggestionsContainer) return
 
@@ -175,11 +225,13 @@ async function updateSuggestions(day, hour) {
 
 		const suggestions = await response.json()
 		renderSuggestions(suggestions)
+		getSelectionState()
 	} catch (error) {
 		if (error.name === 'AbortError') {
 			return
 		}
 
+		showRideStatus('Suggesties konden niet worden geladen.', 'error')
 		suggestionsContainer.innerHTML =
 			'<p class="text-sm theme-text-muted">Suggesties konden niet worden geladen.</p>'
 	} finally {
@@ -190,6 +242,7 @@ async function updateSuggestions(day, hour) {
 	}
 }
 
+// ========== SUGGESTIONS RENDERING ==========
 function renderSuggestions(suggestions = []) {
 	if (!suggestionsContainer) return
 
@@ -197,7 +250,7 @@ function renderSuggestions(suggestions = []) {
 
 	if (!Array.isArray(suggestions) || suggestions.length === 0) {
 		suggestionsContainer.innerHTML =
-			'<p class="text-sm theme-text-muted">Er zijn momenteel geen suggesties beschikbaar.</p>'
+			'<p class="text-sm theme-text-muted">Er zijn geen suggesties beschikbaar.</p>'
 		return
 	}
 
@@ -272,12 +325,22 @@ function renderSuggestions(suggestions = []) {
 	}
 
 	suggestionsContainer.appendChild(list)
+	getSelectionState()
 }
 
+// ========== SUGGESTIONS CHANGE LISTENER ==========
+if (suggestionsContainer) {
+	suggestionsContainer.addEventListener('change', (event) => {
+		if (!event.target.matches('[data-suggestion-checkbox]')) return
+		getSelectionState()
+		updateButtonState()
+	})
+}
+
+// ========== PAGE INITIALIZATION ==========
 window.addEventListener('DOMContentLoaded', () => {
 	const initialChecked = radioGroup.querySelector('[ride-input]:checked')
 
-	// snapshot initial route/markers so we can restore without network calls
 	if (mapContainer) {
 		try {
 			initialMarkers = JSON.parse(mapContainer.dataset.markers || '[]')
@@ -290,8 +353,11 @@ window.addEventListener('DOMContentLoaded', () => {
 			initialRoute = null
 		}
 	}
+
 	if (initialChecked) {
 		const [day, hour] = initialChecked.id.split('_')
 		updateSuggestions(day, hour)
+	} else {
+		getSelectionState()
 	}
 })

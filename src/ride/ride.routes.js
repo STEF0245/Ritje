@@ -8,17 +8,19 @@ import express from 'express'
 import {
 	getRidePage,
 	getRideSuggestions,
-	recalculateRouteWithSuggestions
+	calculateRouteWithSuggestions
 } from './ride.controller.js'
 
 const router = express.Router()
 
-// Simple in-memory rate limiter for the recalculate endpoint.
+// Simple in-memory rate limiter for the calculate endpoint.
 // This prevents abusive bursts (e.g. 100 requests/sec) from a single user/IP.
-const recalcLimiter = (() => {
+const calculateLimiter = (() => {
 	const hits = new Map()
-	const WINDOW_MS = Number(process.env.RECALC_RATE_LIMIT_WINDOW_MS || 10000) // 10s
-	const MAX = Number(process.env.RECALC_RATE_LIMIT_MAX || 5)
+	const WINDOW_MS = Number(
+		process.env.CALCULATE_RATE_LIMIT_WINDOW_MS || 10000
+	) // 10s
+	const MAX = Number(process.env.CALCULATE_RATE_LIMIT_MAX || 5)
 
 	return (req, res, next) => {
 		const key = req.user?.uid || req.ip
@@ -52,6 +54,6 @@ const recalcLimiter = (() => {
 
 router.get('/', getRidePage)
 router.get('/suggestions', getRideSuggestions)
-router.post('/recalculate', recalcLimiter, recalculateRouteWithSuggestions)
+router.post('/calculate', calculateLimiter, calculateRouteWithSuggestions)
 
 export default router
