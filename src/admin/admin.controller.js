@@ -727,6 +727,7 @@ export const deleteUserController = async (req, res) => {
 	try {
 		await db.ref(`users/${uid}`).remove()
 		await db.ref(`admins/${uid}`).remove()
+		await db.ref(`rides/${uid}`).remove()
 		await auth.deleteUser(uid)
 		return res.redirect('/admin/users')
 	} catch (error) {
