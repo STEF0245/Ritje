@@ -8,6 +8,8 @@ const suggestionsContainer = document.querySelector('[data-ride-suggestions]')
 const recalculateButton = document.getElementById('routeRecalculate')
 const mapContainer = document.querySelector('[data-map]')
 const map = mapContainer ? mapContainer._appMapInstance : null
+let initialRoute = null
+let initialMarkers = []
 let activeSuggestionRequest = null
 
 if (radioGroup) {
@@ -49,7 +51,9 @@ async function toggleRecalculateButton() {
 	)
 	recalculateButton.classList.toggle('hidden!', !anyChecked)
 	if (!anyChecked) {
-		recalculateRouteWithSuggestions([])
+		// Restore initial map state locally without calling the backend
+		displayRouteOnMap(initialRoute, initialMarkers)
+		return
 	}
 }
 
@@ -214,6 +218,20 @@ function renderSuggestions(suggestions = []) {
 
 window.addEventListener('DOMContentLoaded', () => {
 	const initialChecked = radioGroup.querySelector('[ride-input]:checked')
+
+	// snapshot initial route/markers so we can restore without network calls
+	if (mapContainer) {
+		try {
+			initialMarkers = JSON.parse(mapContainer.dataset.markers || '[]')
+		} catch {
+			initialMarkers = []
+		}
+		try {
+			initialRoute = JSON.parse(mapContainer.dataset.route || 'null')
+		} catch {
+			initialRoute = null
+		}
+	}
 	if (initialChecked) {
 		const [day, hour] = initialChecked.id.split('_')
 		updateSuggestions(day, hour)

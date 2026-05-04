@@ -97,6 +97,8 @@ let cachedUsers = {
 
 const routeCache = new Map()
 
+// routeCache stores entries like { value, expiresAt }
+
 const getRideSettings = (preferences = {}) => {
 	return {
 		seats: {
@@ -752,6 +754,25 @@ export const recalculateRouteWithSuggestions = async (req, res) => {
 						selectedSuggestionIds.has(String(marker?.uid))
 					)
 				: suggestionMarkers
+		// Build a cache key for this origin + selection to avoid repeated routing calls
+		const originKey = `${originCoords.latitude.toFixed(5)},${originCoords.longitude.toFixed(5)}`
+		const idsKey = selectedSuggestionMarkers
+			.map((m) => String(m.uid || ''))
+			.filter(Boolean)
+			.sort()
+			.join(',')
+		const cacheKey = `route:${originKey}:ids:${idsKey || 'none'}`
+
+		const cached = routeCache.get(cacheKey)
+		if (cached && cached.expiresAt > Date.now()) {
+			return res.json({
+				route: cached.value,
+				markers: currentUserMarker
+					? [currentUserMarker, ...selectedSuggestionMarkers]
+					: selectedSuggestionMarkers
+			})
+		}
+
 		let routeWithSuggestions = baseRoute
 		if (selectedSuggestionMarkers.length > 0) {
 			const optimizedWaypoints = optimizeWaypointOrder(
@@ -763,6 +784,18 @@ export const recalculateRouteWithSuggestions = async (req, res) => {
 				SCHOOL_DESTINATION,
 				optimizedWaypoints
 			)
+			// cache the optimized route result briefly
+			routeCache.set(cacheKey, {
+				value: routeWithSuggestions,
+				expiresAt: Date.now() + ROUTE_CACHE_TTL_MS
+			})
+		} else {
+			// cache the base route for this origin as well (separate key used earlier by getBaseRoute),
+			// but also keep this combined key so repeated empty selections are cheap
+			routeCache.set(cacheKey, {
+				value: baseRoute,
+				expiresAt: Date.now() + ROUTE_CACHE_TTL_MS
+			})
 		}
 
 		return res.json({
