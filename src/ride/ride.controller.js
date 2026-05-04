@@ -1,7 +1,7 @@
 /**
  * @file Ride controller for handling ride page requests.
- * @brief  Provides the handler for rendering the main ride page.
- * @details  Responds to GET requests for the ride page by rendering the appropriate view with necessary data.
+ * @brief Provides the handlers for rendering the ride page and fetching ride suggestions.
+ * @details The page handler renders the initial ride view, and the JSON handler returns refreshed suggestions for a selected schedule slot.
  */
 
 import db from '../firebase/db.js'
@@ -11,11 +11,6 @@ import {
 	calculateRoute,
 	findMarkersOnRoute
 } from '../location/location.service.js'
-
-const SCHOOL_DESTINATION = {
-	latitude: Number(config.school?.coords?.lat),
-	longitude: Number(config.school?.coords?.lon)
-}
 
 const toNonNegativeInteger = (value) => {
 	const parsed = Number(value)
@@ -27,6 +22,34 @@ const toNonNegativeInteger = (value) => {
 const getNestedValue = (source, path = []) => {
 	return path.reduce((current, key) => current?.[key], source)
 }
+
+const normalizeCoordinates = (point) => {
+	const latitude = Number(point?.latitude ?? point?.lat)
+	const longitude = Number(point?.longitude ?? point?.lon)
+
+	if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+		return null
+	}
+
+	return { latitude, longitude }
+}
+
+const SCHOOL_DESTINATION = normalizeCoordinates(config.school?.coords)
+
+/**
+ * @brief Keeps recently loaded users and routes in memory to avoid repeated database and routing calls.
+ * @details The user cache is short-lived because location data changes more often than route geometry.
+ * @details Route results are cached per origin for a short period so repeated ride requests can reuse the same routing response.
+ */
+const USERS_CACHE_TTL_MS = 30 * 1000
+const ROUTE_CACHE_TTL_MS = 5 * 60 * 1000
+
+let cachedUsers = {
+	value: null,
+	expiresAt: 0
+}
+
+const routeCache = new Map()
 
 const getRideSettings = (preferences = {}) => {
 	return {
@@ -47,33 +70,11 @@ const getRideSettings = (preferences = {}) => {
 	}
 }
 
-const checkSuggestionWithPreferences = (marker, preferences = {}) => {
-	const detourDistance = Number(marker?.detour?.distance)
-	const detourDuration = Number(marker?.detour?.duration)
-	const limitDistance = Number(preferences?.detour?.distance)
-	const limitDuration = Number(preferences?.detour?.duration)
-	const hasLimitDistance = Number.isFinite(limitDistance)
-	const hasLimitDuration = Number.isFinite(limitDuration)
-	const hasMetricsDistance = Number.isFinite(detourDistance)
-	const hasMetricsDuration = Number.isFinite(detourDuration)
-
-	if (!hasMetricsDistance && !hasMetricsDuration) return true
-	if (detourDistance > limitDistance) return false
-	if (detourDuration > limitDuration) return false
-	return true
-}
-
-const annotateSuggestionsWithPreferences = (markers, preferences) => {
-	return markers.map((marker) => ({
-		...marker,
-		matchesPreferences: checkSuggestionWithPreferences(marker, preferences)
-	}))
-}
-
 /**
- * @brief  Check whether a coordinate pair is valid.
- * @param {{latitude?: number|string, longitude?: number|string}|null|undefined} point - Coordinate pair candidate.
- * @returns {boolean} True when latitude and longitude are finite numbers.
+ * @brief Checks if the given point has valid latitude and longitude coordinates.
+ * @param {latitude: number|string, longitude: number|string} point - The point to validate.
+ * @returns {boolean} - True if the point has valid coordinates, false otherwise.
+ * @details This is used before any marker or coordinate is included in map or suggestion calculations.
  */
 const hasValidCoordinates = (point) => {
 	const latitude = Number(point?.latitude)
@@ -82,10 +83,11 @@ const hasValidCoordinates = (point) => {
 }
 
 /**
- * @brief  Compute great-circle distance between two coordinates.
- * @param {{latitude: number, longitude: number}} start - Start coordinates.
- * @param {{latitude: number, longitude: number}} end - End coordinates.
- * @returns {number} Distance in kilometers.
+ * @brief Calculates the distance in kilometers between two geographic coordinates using the Haversine formula.
+ * @param {latitude: number, longitude: number} start - The starting coordinates.
+ * @param {latitude: number, longitude: number} end - The ending coordinates.
+ * @returns {number} - The distance in kilometers between the two points, or Infinity if the coordinates are invalid.
+ * @details The controller uses this as a fallback distance model when it needs a fast local estimate instead of a routing API result.
  */
 const getDistanceInKm = (start, end) => {
 	const toRadians = (degrees) => degrees * (Math.PI / 180)
@@ -119,151 +121,145 @@ const getDistanceInKm = (start, end) => {
 }
 
 /**
- * @brief  Calculate total path cost from origin through waypoints to destination.
- * @param {{latitude: number, longitude: number}} origin - Origin coordinates.
- * @param {{latitude: number, longitude: number}} destination - Destination coordinates.
- * @param {Array<{latitude: number, longitude: number}>} waypoints - Ordered waypoints.
- * @returns {number} Approximate path distance in kilometers.
+ * @brief Estimates the travel time in minutes based on distance and reference metrics.
+ * @param {number} distanceKm - The distance in kilometers.
+ * @param {{distanceKm?: number, durationMinutes?: number}|null|undefined} referenceMetrics - The reference metrics for estimation.
+ * @returns {number} - The estimated travel time in minutes.
+ * @details When route metrics are available, the estimate scales by the observed minutes-per-kilometer ratio; otherwise it falls back to a conservative default.
  */
-const getPathCostInKm = (origin, destination, waypoints = []) => {
-	const points = [origin, ...waypoints, destination]
-
-	let totalDistance = 0
-	for (let index = 0; index < points.length - 1; index += 1) {
-		totalDistance += getDistanceInKm(points[index], points[index + 1])
-	}
-
-	return totalDistance
-}
-
 const estimateMinutesFromDistance = (distanceKm, referenceMetrics = null) => {
-	if (referenceMetrics) {
-		const minutesPerKm =
-			referenceMetrics.distanceKm > 0
-				? referenceMetrics.durationMinutes / referenceMetrics.distanceKm
-				: null
-
+	const refDistanceKm = Number(referenceMetrics?.distanceKm)
+	const refDurationMinutes = Number(referenceMetrics?.durationMinutes)
+	if (refDistanceKm > 0) {
+		const minutesPerKm = refDurationMinutes / refDistanceKm
 		if (Number.isFinite(minutesPerKm) && minutesPerKm > 0) {
 			return distanceKm * minutesPerKm
 		}
 	}
 
-	// Conservative fallback when the API does not return usable timing.
 	return distanceKm * 1.5
 }
 
-const buildDetourFallbackMetrics = (origin, destination, waypoint) => {
-	const directDistanceKm = getDistanceInKm(origin, destination)
-	const routeWithWaypointKm = getPathCostInKm(origin, destination, [waypoint])
-	const detourDistanceKm = Math.max(0, routeWithWaypointKm - directDistanceKm)
-	const detourDurationMinutes = estimateMinutesFromDistance(detourDistanceKm)
+/**
+ * @brief Extracts distance and duration metrics from a route response.
+ * @details Supports multiple GeoJSON property shapes so the controller can work with different routing payloads.
+ * @param {object} route - Route payload returned by the routing API.
+ * @returns {{distanceKm: number, durationMinutes: number}|null} Normalized route metrics or null when unavailable.
+ * @details The parser accepts several common GeoJSON property names so small API shape changes do not break suggestion calculations.
+ */
+const getRouteMetrics = (route) => {
+	const feature = route?.features?.[0] || null
+	const properties = feature?.properties || route?.properties || route || null
+	const distanceMeters = Number(
+		properties?.distance ??
+			properties?.total_distance ??
+			properties?.summary?.distance
+	)
+	const durationSeconds = Number(
+		properties?.time ?? properties?.total_time ?? properties?.summary?.time
+	)
+
+	if (!Number.isFinite(distanceMeters) || !Number.isFinite(durationSeconds)) {
+		return null
+	}
 
 	return {
-		detourDistanceKm,
-		detourDurationMinutes
+		distanceKm: distanceMeters / 1000,
+		durationMinutes: durationSeconds / 60
 	}
 }
 
 /**
- * @brief  Find the best waypoint order by exhaustive search.
- * @param {{latitude: number, longitude: number}} origin - Origin coordinates.
- * @param {{latitude: number, longitude: number}} destination - Destination coordinates.
- * @param {Array<object>} waypoints - Unordered waypoint markers.
- * @returns {Array<object>} Optimized waypoint order.
+ * @brief Returns the school route from the current origin, using a short-lived cache to reduce routing API calls.
+ * @param {{latitude: number, longitude: number}|null} originCoords - Current starting point.
+ * @returns {Promise<object|null>} Cached or freshly calculated route payload.
+ * @details The route is cached by rounded origin coordinates so identical page updates can reuse the same response.
  */
-const optimizeWaypointOrderExact = (origin, destination, waypoints = []) => {
-	let bestOrder = [...waypoints]
-	let bestCost = Number.POSITIVE_INFINITY
-
-	const search = (remainingWaypoints, currentOrder) => {
-		if (remainingWaypoints.length === 0) {
-			const candidateCost = getPathCostInKm(
-				origin,
-				destination,
-				currentOrder
-			)
-			if (candidateCost < bestCost) {
-				bestCost = candidateCost
-				bestOrder = [...currentOrder]
-			}
-			return
-		}
-
-		for (let index = 0; index < remainingWaypoints.length; index += 1) {
-			const nextWaypoint = remainingWaypoints[index]
-			const nextRemaining = [
-				...remainingWaypoints.slice(0, index),
-				...remainingWaypoints.slice(index + 1)
-			]
-			search(nextRemaining, [...currentOrder, nextWaypoint])
-		}
+const getBaseRoute = async (originCoords) => {
+	if (!originCoords || !SCHOOL_DESTINATION) {
+		return null
 	}
 
-	search(waypoints, [])
-	return bestOrder
+	const cacheKey = `${originCoords.latitude.toFixed(5)},${originCoords.longitude.toFixed(5)}`
+	const cachedRoute = routeCache.get(cacheKey)
+	if (cachedRoute && cachedRoute.expiresAt > Date.now()) {
+		return cachedRoute.value
+	}
+
+	try {
+		const route = await calculateRoute(originCoords, SCHOOL_DESTINATION)
+		routeCache.set(cacheKey, {
+			value: route,
+			expiresAt: Date.now() + ROUTE_CACHE_TTL_MS
+		})
+		return route
+	} catch (error) {
+		console.error('Error calculating ride route:', error)
+		return null
+	}
 }
 
 /**
- * @brief  Find a near-optimal waypoint order with nearest-neighbor heuristic.
- * @param {{latitude: number, longitude: number}} origin - Origin coordinates.
- * @param {Array<object>} waypoints - Unordered waypoint markers.
- * @returns {Array<object>} Heuristic waypoint order.
+ * @brief Checks whether a candidate suggestion still fits the user's detour limits.
+ * @param {object} marker - Candidate ride marker.
+ * @param {{detour?: {distance?: number, duration?: number}}} preferences - User detour preferences.
+ * @returns {boolean} True when the marker is within the configured limits.
+ * @details A marker is treated as acceptable unless it exceeds one of the configured detour thresholds.
  */
-const optimizeWaypointOrderGreedy = (origin, waypoints = []) => {
-	const remaining = [...waypoints]
-	const ordered = []
-	let currentPoint = origin
+const checkSuggestionWithPreferences = (marker, preferences = {}) => {
+	const detourDistance = Number(marker?.detour?.distance)
+	const detourDuration = Number(marker?.detour?.duration)
+	const limitDistance = Number(preferences?.detour?.distance)
+	const limitDuration = Number(preferences?.detour?.duration)
 
-	while (remaining.length > 0) {
-		let nearestIndex = 0
-		let nearestDistance = Number.POSITIVE_INFINITY
-
-		for (let index = 0; index < remaining.length; index += 1) {
-			const candidate = remaining[index]
-			const candidateDistance = getDistanceInKm(currentPoint, candidate)
-			if (candidateDistance < nearestDistance) {
-				nearestDistance = candidateDistance
-				nearestIndex = index
-			}
-		}
-
-		const [selectedWaypoint] = remaining.splice(nearestIndex, 1)
-		ordered.push(selectedWaypoint)
-		currentPoint = selectedWaypoint
+	if (!Number.isFinite(detourDistance) && !Number.isFinite(detourDuration)) {
+		return true
 	}
 
-	return ordered
+	if (Number.isFinite(limitDistance) && detourDistance > limitDistance) {
+		return false
+	}
+
+	if (Number.isFinite(limitDuration) && detourDuration > limitDuration) {
+		return false
+	}
+
+	return true
 }
 
 /**
- * @brief  Build an optimized waypoint order for route preview.
- * @param {{latitude: number, longitude: number}} origin - Origin coordinates.
- * @param {{latitude: number, longitude: number}} destination - Destination coordinates.
- * @param {Array<object>} waypoints - Unordered waypoint markers.
- * @returns {Array<object>} Optimized waypoint markers.
+ * @brief Adds preference match metadata to each marker.
+ * @param {Array<object>} markers - Suggestion markers.
+ * @param {object} preferences - User ride preferences.
+ * @returns {Array<object>} Markers annotated with a preference match flag.
+ * @details The UI can use this flag to sort or visually distinguish suggestions that fit the user's limits.
  */
-const optimizeWaypointOrder = (origin, destination, waypoints = []) => {
-	if (!Array.isArray(waypoints) || waypoints.length <= 1) {
-		return Array.isArray(waypoints) ? [...waypoints] : []
-	}
-
-	if (waypoints.length <= MAX_EXACT_OPTIMIZATION_WAYPOINTS) {
-		return optimizeWaypointOrderExact(origin, destination, waypoints)
-	}
-
-	return optimizeWaypointOrderGreedy(origin, waypoints)
+const annotateSuggestionsWithPreferences = (markers, preferences) => {
+	return markers.map((marker) => ({
+		...marker,
+		matchesPreferences: checkSuggestionWithPreferences(marker, preferences)
+	}))
 }
 
 /**
- * @brief  Fetch all user profiles from Firebase.
- * @details  Returns an empty array when no users are found or when retrieval fails.
- * @returns {Promise<Array<object>>} User list.
+ * @brief Loads all user records once and reuses them briefly for repeated ride requests.
+ * @returns {Promise<Array<object>>} List of user records.
+ * @details The cache keeps ride page requests from repeatedly hitting Firebase when the same data is requested in a short time window.
  */
 const getAllUsers = async () => {
+	if (cachedUsers.value && cachedUsers.expiresAt > Date.now()) {
+		return cachedUsers.value
+	}
+
 	try {
 		const snapshot = await db.ref('users').once('value')
 		const users = snapshot.val()
-		return users ? Object.values(users) : []
+		const normalizedUsers = users ? Object.values(users) : []
+		cachedUsers = {
+			value: normalizedUsers,
+			expiresAt: Date.now() + USERS_CACHE_TTL_MS
+		}
+		return normalizedUsers
 	} catch (error) {
 		console.error('Error fetching user locations:', error)
 		return []
@@ -271,11 +267,11 @@ const getAllUsers = async () => {
 }
 
 /**
- * @brief  Build map marker payloads for the ride page.
- * @details  Converts users with valid coordinates into normalized marker objects including address lines and Google Maps links.
- * @param {Array<object>} [users=[]] - User list.
- * @param {string} uid - Logged-in user id to label the current user's marker.
- * @returns {Array<object>} Marker objects.
+ * @brief Converts user profiles into map markers with address labels and map links.
+ * @param {Array<object>} [users=[]] - User list to convert.
+ * @param {string|null} uid - Current user id used to label the home marker.
+ * @returns {Array<object>} Normalized marker objects.
+ * @details Each marker includes a Google Maps search link so the user can open the address directly from the ride page.
  */
 const buildRideMarkers = (users = [], uid) => {
 	return users
@@ -315,9 +311,10 @@ const buildRideMarkers = (users = [], uid) => {
 }
 
 /**
- * @brief  Calculate the average center of valid marker coordinates.
+ * @brief Computes the center point for a set of ride markers.
  * @param {Array<{latitude: number, longitude: number}>} [markers=[]] - Marker list.
- * @returns {{latitude: number, longitude: number}|null} Averaged center or null when unavailable.
+ * @returns {{latitude: number, longitude: number}|null} Average marker position or null when no valid marker exists.
+ * @details The computed center keeps the map focused on the current set of visible pickup markers.
  */
 const getRideMapCenter = (markers = []) => {
 	if (!Array.isArray(markers) || markers.length === 0) {
@@ -345,55 +342,14 @@ const getRideMapCenter = (markers = []) => {
 }
 
 /**
- * @brief  Render the main ride page.
- * @details  Responds to GET requests for the ride page by rendering the 'ride' template with a title and any necessary notifications.
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
- * @returns {object} Express response.
- * @throws {Error} If rendering the ride page fails, an error is thrown and a notification is created for the user.
+ * @brief Keeps only users that are available for the selected day and hour.
+ * @param {Array<object>} users - All known users.
+ * @param {object|null} currentUser - Logged-in user record.
+ * @param {number} day - Selected weekday index.
+ * @param {number} hour - Selected schedule slot.
+ * @returns {Array<object>} Filtered list of users.
+ * @details The current user is always retained so the page can still show their own marker even if no schedule match is found.
  */
-export const getRidePage = async (req, res) => {
-	try {
-		const users = await getAllUsers()
-		const filteredUsers = filterUsersByDayAndHour(
-			users,
-			req.user,
-			new Date().getDay(),
-			new Date().getHours()
-		)
-		const mapMarkers = buildRideMarkers(filteredUsers, req.user?.uid)
-		const mapCenter = getRideMapCenter(mapMarkers)
-		const currentUserUid = req.user?.uid
-		const rideSettings = getRideSettings(req.user?.metadata)
-		const currentUserMarker = mapMarkers.find(
-			(marker) => marker.uid === currentUserUid
-		)
-		const originCoords = resolveSuggestionOrigin(req)
-		const initialMapMarkers = currentUserMarker ? [currentUserMarker] : []
-		const route = originCoords
-			? await calculateRoute(originCoords, SCHOOL_DESTINATION)
-			: null
-
-		res.render('ride', {
-			title: 'Ritten',
-			mapMarkers: initialMapMarkers,
-			rideSettings,
-			mapCenter,
-			route
-		})
-	} catch (error) {
-		console.error('Error rendering ride page:', error)
-		return respondWithNotification(res, {
-			type: 'error',
-			message:
-				'Er is een fout opgetreden bij het laden van de ritpagina. Probeer het later opnieuw.',
-			status: 500,
-			view: 'ride',
-			title: 'Ritten'
-		})
-	}
-}
-
 const filterUsersByDayAndHour = (users, currentUser, day, hour) => {
 	if (!Array.isArray(users)) return []
 
@@ -401,9 +357,11 @@ const filterUsersByDayAndHour = (users, currentUser, day, hour) => {
 		if (!user?.uid) return false
 		if (!hasValidCoordinates(user?.coords)) return false
 		if (currentUser?.uid && user.uid === currentUser.uid) return true
+
 		const userSchedule = user?.schedule || {}
 		const userStart = userSchedule[day]?.start
 		const userEnd = userSchedule[day]?.end
+
 		if (!userStart || !userEnd) return false
 		if (userStart == hour || userEnd == hour) return true
 
@@ -411,6 +369,13 @@ const filterUsersByDayAndHour = (users, currentUser, day, hour) => {
 	})
 }
 
+/**
+ * @brief Resolves the origin coordinates used to calculate route suggestions.
+ * @details Prefers explicit query parameters and falls back to the current user's stored coordinates.
+ * @param {object} req - Express request object.
+ * @returns {{latitude: number, longitude: number}|null} Origin coordinates or null when unavailable.
+ * @details This allows the route preview and suggestion list to work both from manual coordinates and from the signed-in user's profile.
+ */
 const resolveSuggestionOrigin = (req) => {
 	const queryLatitude = Number(req.query?.lat)
 	const queryLongitude = Number(req.query?.lon)
@@ -430,6 +395,14 @@ const resolveSuggestionOrigin = (req) => {
 	return null
 }
 
+/**
+ * @brief Adds detour metrics to a marker object.
+ * @param {object} marker - Original marker.
+ * @param {number|null} detourDistanceKm - Extra distance in kilometers.
+ * @param {number|null} detourDurationMinutes - Extra duration in minutes.
+ * @returns {object} Marker with detour metadata.
+ * @details The detour fields are attached in the same shape the front end expects when rendering badges.
+ */
 const normalizeDetourMarker = (
 	marker,
 	detourDistanceKm,
@@ -442,122 +415,231 @@ const normalizeDetourMarker = (
 	}
 })
 
-const getRouteMetrics = (route) => {
-	const feature = route?.features?.[0] || null
-	const properties = feature?.properties || route?.properties || route || null
-	const distanceMeters = Number(
-		properties?.distance ??
-			properties?.total_distance ??
-			properties?.summary?.distance
+/**
+ * @brief Estimates the detour cost of picking up a marker before driving to school.
+ * @param {{latitude: number, longitude: number}} originCoords - Current route origin.
+ * @param {{latitude: number, longitude: number}} destinationCoords - Final destination.
+ * @param {{latitude: number, longitude: number}} marker - Candidate pickup location.
+ * @param {{distanceKm?: number, durationMinutes?: number}|null} referenceMetrics - Route metrics used for time estimation.
+ * @returns {{detourDistanceKm: number, detourDurationMinutes: number}} Detour metrics.
+ * @details The calculation compares the direct origin-to-destination path with the path that includes the pickup marker.
+ */
+const estimateDetourForMarker = (
+	originCoords,
+	destinationCoords,
+	marker,
+	referenceMetrics
+) => {
+	const directOriginToDestination = getDistanceInKm(
+		originCoords,
+		destinationCoords
 	)
-	const durationSeconds = Number(
-		properties?.time ?? properties?.total_time ?? properties?.summary?.time
+	const routeViaMarker =
+		getDistanceInKm(originCoords, marker) +
+		getDistanceInKm(marker, destinationCoords)
+	const detourDistanceKm = Math.max(
+		0,
+		routeViaMarker - directOriginToDestination
 	)
-
-	if (!Number.isFinite(distanceMeters) || !Number.isFinite(durationSeconds)) {
-		return null
-	}
+	const detourDurationMinutes = estimateMinutesFromDistance(
+		detourDistanceKm,
+		referenceMetrics
+	)
 
 	return {
-		distanceKm: distanceMeters / 1000,
-		durationMinutes: durationSeconds / 60
+		detourDistanceKm,
+		detourDurationMinutes
 	}
 }
 
+/**
+ * @brief Sorts suggestions so preferred and shorter detours appear first.
+ * @param {Array<object>} markers - Candidate suggestion list.
+ * @returns {Array<object>} Sorted suggestion markers.
+ * @details Preference matches are prioritized before shorter detours, with a stable name-based fallback for ties.
+ */
+const sortSuggestionMarkers = (markers) => {
+	return [...markers].sort((left, right) => {
+		const leftMatches = left?.matchesPreferences ? 1 : 0
+		const rightMatches = right?.matchesPreferences ? 1 : 0
+		if (leftMatches !== rightMatches) {
+			return rightMatches - leftMatches
+		}
+
+		const leftDistance = Number(left?.detour?.distance)
+		const rightDistance = Number(right?.detour?.distance)
+		if (
+			Number.isFinite(leftDistance) &&
+			Number.isFinite(rightDistance) &&
+			leftDistance !== rightDistance
+		) {
+			return leftDistance - rightDistance
+		}
+
+		const leftTitle = String(left?.title || '')
+		const rightTitle = String(right?.title || '')
+		return leftTitle.localeCompare(rightTitle, 'nl')
+	})
+}
+
+/**
+ * @brief Builds the final ride suggestions shown on the ride page.
+ * @details Reuses the route when possible, filters markers to those on the route, and attaches detour metadata.
+ * @param {{markers?: Array<object>, currentUser?: object|null, originCoords?: {latitude: number, longitude: number}|null, rideSettings?: object, baseRoute?: object|null}} options - Suggestion-building options.
+ * @returns {Promise<Array<object>>} Ordered suggestion markers.
+ * @details This is the central suggestion pipeline used by both the initial page render and the AJAX endpoint.
+ */
 const buildRideSuggestions = async ({
-	markers,
-	currentUser,
-	originCoords,
-	rideSettings
-}) => {
+	markers = [],
+	currentUser = null,
+	originCoords = null,
+	rideSettings = {},
+	baseRoute = null
+} = {}) => {
 	if (!Array.isArray(markers) || markers.length === 0) {
 		return []
 	}
 
-	const baseRoute = originCoords
-		? await calculateRoute(originCoords, SCHOOL_DESTINATION)
-		: null
-	const baseMetrics = getRouteMetrics(baseRoute)
-	const visibleMarkers = baseRoute
-		? findMarkersOnRoute(markers, baseRoute, SCHOOL_DESTINATION)
+	const currentUserUid = currentUser?.uid || null
+	const route =
+		baseRoute || (originCoords ? await getBaseRoute(originCoords) : null)
+	const routeMetrics = getRouteMetrics(route)
+	const routeMarkers = route
+		? findMarkersOnRoute(markers, route, SCHOOL_DESTINATION)
 		: markers
-	const candidateMarkers = visibleMarkers.filter(
-		(marker) => marker.uid && marker.uid !== currentUser?.uid
-	)
 
-	const enrichedMarkers = await Promise.all(
-		candidateMarkers.map(async (marker) => {
-			if (!originCoords) {
-				return normalizeDetourMarker(marker, null, null)
-			}
-
-			try {
-				const pickupRoute = await calculateRoute(
-					originCoords,
-					SCHOOL_DESTINATION,
-					[
-						{
-							latitude: marker.latitude,
-							longitude: marker.longitude
-						}
-					]
-				)
-				const pickupMetrics = getRouteMetrics(pickupRoute)
-
-				if (!pickupMetrics) {
-					return normalizeDetourMarker(marker, null, null)
+	return sortSuggestionMarkers(
+		routeMarkers
+			.filter((marker) => marker?.uid && marker.uid !== currentUserUid)
+			.map((marker) => {
+				if (!originCoords || !SCHOOL_DESTINATION) {
+					return {
+						...marker,
+						matchesPreferences: checkSuggestionWithPreferences(
+							marker,
+							rideSettings
+						)
+					}
 				}
 
-				const detourDistanceKm = baseMetrics
-					? Math.max(
-							0,
-							pickupMetrics.distanceKm - baseMetrics.distanceKm
-						)
-					: pickupMetrics.distanceKm
-				const detourDurationMinutes = baseMetrics
-					? Math.max(
-							0,
-							pickupMetrics.durationMinutes -
-								baseMetrics.durationMinutes
-						)
-					: pickupMetrics.durationMinutes
-
-				return normalizeDetourMarker(
+				const detour = estimateDetourForMarker(
+					originCoords,
+					SCHOOL_DESTINATION,
 					marker,
-					detourDistanceKm,
-					detourDurationMinutes
+					routeMetrics
 				)
-			} catch {
-				return normalizeDetourMarker(marker, null, null)
-			}
-		})
+
+				const detourMarker = normalizeDetourMarker(
+					marker,
+					detour.detourDistanceKm,
+					detour.detourDurationMinutes
+				)
+
+				return {
+					...detourMarker,
+					matchesPreferences: checkSuggestionWithPreferences(
+						detourMarker,
+						rideSettings
+					)
+				}
+			})
 	)
-
-	const sortedMarkers = enrichedMarkers.sort((first, second) => {
-		const firstDistance = Number(first?.detourDistanceKm)
-		const secondDistance = Number(second?.detourDistanceKm)
-
-		if (
-			!Number.isFinite(firstDistance) &&
-			!Number.isFinite(secondDistance)
-		) {
-			return 0
-		}
-		if (!Number.isFinite(firstDistance)) return 1
-		if (!Number.isFinite(secondDistance)) return -1
-
-		return firstDistance - secondDistance
-	})
-
-	return annotateSuggestionsWithPreferences(sortedMarkers, rideSettings)
 }
 
+/**
+ * @brief Assembles the full ride page payload for rendering and AJAX suggestions.
+ * @param {object} req - Express request object.
+ * @param {number} day - Selected weekday index.
+ * @param {number} hour - Selected schedule slot.
+ * @returns {Promise<object>} Render payload with map markers, route data, and suggestions.
+ * @details The payload is shared by the page render and the suggestions endpoint so both stay in sync.
+ */
+const buildRidePayload = async (req, day, hour) => {
+	const users = await getAllUsers()
+	const filteredUsers = filterUsersByDayAndHour(users, req.user, day, hour)
+	const mapMarkers = buildRideMarkers(filteredUsers, req.user?.uid)
+	const mapCenter = getRideMapCenter(mapMarkers)
+	const rideSettings = getRideSettings(req.user?.metadata)
+	const currentUserUid = req.user?.uid
+	const currentUserMarker = mapMarkers.find(
+		(marker) => marker.uid === currentUserUid
+	)
+	const originCoords = resolveSuggestionOrigin(req)
+
+	const baseRoute = originCoords ? await getBaseRoute(originCoords) : null
+	const suggestionMarkers = await buildRideSuggestions({
+		markers: mapMarkers,
+		currentUser: req.user,
+		originCoords,
+		rideSettings,
+		baseRoute
+	})
+
+	return {
+		mapMarkers: currentUserMarker ? [currentUserMarker] : [],
+		rideSettings,
+		mapCenter,
+		route: baseRoute,
+		suggestionMarkers
+	}
+}
+
+/**
+ * @brief Renders the ride page with the current user's route and suggestions.
+ * @param {object} req - Express request object.
+ * @param {object} res - Express response object.
+ * @returns {Promise<object>} Rendered ride page or error notification.
+ * @details The handler prepares the initial payload and falls back to a user-facing notification if rendering fails.
+ */
+export const getRidePage = async (req, res) => {
+	try {
+		const now = new Date()
+		const payload = await buildRidePayload(
+			req,
+			now.getDay(),
+			now.getHours()
+		)
+
+		return res.render('ride', {
+			title: 'Ritten',
+			...payload
+		})
+	} catch (error) {
+		console.error('Error rendering ride page:', error)
+		return respondWithNotification(res, {
+			type: 'error',
+			message:
+				'Er is een fout opgetreden bij het laden van de ritpagina. Probeer het later opnieuw.',
+			status: 500,
+			view: 'ride',
+			title: 'Ritten'
+		})
+	}
+}
+
+/**
+ * @brief Returns the suggestion list for the selected weekday and time slot.
+ * @param {object} req - Express request object.
+ * @param {object} res - Express response object.
+ * @returns {Promise<object>} JSON response containing ride suggestions.
+ * @details This endpoint is called by the ride page when the user changes the selected schedule slot.
+ */
 export const getRideSuggestions = async (req, res) => {
 	try {
-		const parsedDay = toNonNegativeInteger(req.query.day)
-		const parsedHour = toNonNegativeInteger(req.query.hour)
-		const day = parsedDay ?? new Date().getDay()
-		const hour = parsedHour ?? new Date().getHours()
+		const day = toNonNegativeInteger(req.query.day)
+		const hour = toNonNegativeInteger(req.query.hour)
+		if (day === null || hour === null)
+			return res.status(400).json({
+				error: 'Ongeldige parameters: "day" en "hour" moeten niet-negatieve gehele getallen zijn.'
+			})
+		if (hour < 1 || hour > 8)
+			return res.status(400).json({
+				error: 'Ongeldige parameter: "hour" moet een waarde tussen 1 en 8 hebben.'
+			})
+		if (day < 1 || day > 5)
+			return res.status(400).json({
+				error: 'Ongeldige parameter: "day" moet een waarde tussen 1 en 5 hebben.'
+			})
 
 		const users = await getAllUsers()
 		const filteredUsers = filterUsersByDayAndHour(
@@ -567,13 +649,15 @@ export const getRideSuggestions = async (req, res) => {
 			hour
 		)
 		const mapMarkers = buildRideMarkers(filteredUsers, req.user?.uid)
-		const originCoords = resolveSuggestionOrigin(req)
 		const rideSettings = getRideSettings(req.user?.metadata)
+		const originCoords = resolveSuggestionOrigin(req)
+		const baseRoute = originCoords ? await getBaseRoute(originCoords) : null
 		const suggestionMarkers = await buildRideSuggestions({
 			markers: mapMarkers,
 			currentUser: req.user,
 			originCoords,
-			rideSettings
+			rideSettings,
+			baseRoute
 		})
 
 		return res.json(suggestionMarkers)
