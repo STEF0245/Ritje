@@ -11,7 +11,6 @@ const setupEmailVerificationResend = async () => {
 		return
 	}
 
-	// Only allow clicking if email is not verified (has cursor-pointer class)
 	if (!verifiedSpan.classList.contains('cursor-pointer')) {
 		return
 	}
@@ -29,7 +28,6 @@ const setupEmailVerificationResend = async () => {
 	})
 }
 
-// Run when DOM is ready
 if (document.readyState === 'loading') {
 	document.addEventListener('DOMContentLoaded', setupEmailVerificationResend)
 } else {
