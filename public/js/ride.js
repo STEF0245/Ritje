@@ -13,6 +13,11 @@ const mapContainer = document.querySelector('[data-map]')
 // ========== STATE ==========
 let initialRoute = null
 let initialMarkers = []
+let currentRide = null
+let currentRideRoute = null
+let currentRideMarkers = []
+let baselineSuggestionSignature = ''
+let displayedSuggestionSignature = ''
 let activeSuggestionRequest = null
 let statusHideTimer = null
 let calculateInFlight = false
@@ -71,17 +76,40 @@ function updateCalculateButtonState() {
 
 	const { selectedCount } = getSelectionState()
 	const hasSelection = selectedCount > 0
-	const shouldShow = hasSelection && !calculateInFlight
+	const selectionSignature = getSelectedSuggestionSignature()
+	const matchesDisplayedRoute =
+		hasSelection && selectionSignature === displayedSuggestionSignature
+	const shouldRestoreSavedRide =
+		hasSelection &&
+		selectionSignature === baselineSuggestionSignature &&
+		currentRideRoute &&
+		displayedSuggestionSignature !== baselineSuggestionSignature
+	const shouldShow =
+		hasSelection &&
+		!calculateInFlight &&
+		!matchesDisplayedRoute &&
+		!shouldRestoreSavedRide
 
 	calculateButton.classList.toggle('hidden!', !shouldShow)
 	calculateButton.textContent = defaultCalculateLabel
-	setButtonEnabled(!calculateInFlight && hasSelection)
+	setButtonEnabled(shouldShow)
 
-	if (!shouldShow) {
+	if (!hasSelection) {
 		hasCalculatedRoute = false
 		hasSavedRoute = false
 		updateSaveButtonState()
 		displayRouteOnMap(initialRoute, initialMarkers)
+		displayedSuggestionSignature = ''
+		return
+	}
+
+	if (shouldRestoreSavedRide) {
+		displayRouteOnMap(currentRideRoute, currentRideMarkers)
+		displayedSuggestionSignature = baselineSuggestionSignature
+	}
+
+	if (matchesDisplayedRoute) {
+		calculateButton.disabled = true
 	}
 }
 
@@ -150,6 +178,30 @@ function parseJsonDataset(value, fallback) {
 	} catch {
 		return fallback
 	}
+}
+
+function normalizeSuggestionSignature(ids = []) {
+	if (!Array.isArray(ids)) return ''
+
+	return Array.from(new Set(ids.map((id) => String(id)).filter(Boolean)))
+		.sort()
+		.join('|')
+}
+
+function getSelectedSuggestionSignature() {
+	return normalizeSuggestionSignature(getSelectedSuggestionIds())
+}
+
+function setCurrentRideState(ride = null) {
+	currentRide = ride || null
+	currentRideRoute = currentRide?.route || null
+	currentRideMarkers = Array.isArray(currentRide?.markers)
+		? currentRide.markers
+		: []
+	baselineSuggestionSignature = normalizeSuggestionSignature(
+		currentRide?.suggestionIds
+	)
+	displayedSuggestionSignature = baselineSuggestionSignature
 }
 
 async function saveCurrentRideRoute() {
@@ -266,6 +318,14 @@ function getSelectionState() {
 async function calculateRouteWithSuggestions(suggestionIds) {
 	if (calculateInFlight || !suggestionIds.length) return
 
+	const selectionSignature = normalizeSuggestionSignature(suggestionIds)
+	if (
+		selectionSignature &&
+		selectionSignature === displayedSuggestionSignature
+	) {
+		return
+	}
+
 	try {
 		calculateInFlight = true
 		setButtonEnabled(false)
@@ -293,6 +353,7 @@ async function calculateRouteWithSuggestions(suggestionIds) {
 		const result = await response.json()
 		hasCalculatedRoute = Boolean(result?.route)
 		hasSavedRoute = false
+		displayedSuggestionSignature = selectionSignature
 		updateSaveButtonState()
 		displayRouteOnMap(result.route, result.markers, result.cached)
 		showRideStatus(
@@ -359,9 +420,14 @@ async function updateSuggestions(day, hour) {
 			throw new Error(`HTTP ${response.status}`)
 		}
 
-		const suggestions = await response.json()
-		renderSuggestions(suggestions)
+		const { suggestions, currentRide } = await response.json()
+		setCurrentRideState(currentRide)
+		renderSuggestions(suggestions, currentRide)
+		if (currentRide?.route) {
+			displayRouteOnMap(currentRideRoute, currentRideMarkers)
+		}
 		getSelectionState()
+		updateCalculateButtonState()
 	} catch (error) {
 		if (error.name === 'AbortError') {
 			return
@@ -379,7 +445,7 @@ async function updateSuggestions(day, hour) {
 }
 
 // ========== SUGGESTIONS RENDERING ==========
-function renderSuggestions(suggestions = []) {
+function renderSuggestions(suggestions = [], currentRide = null) {
 	if (!suggestionsContainer) return
 
 	suggestionsContainer.innerHTML = ''
@@ -413,6 +479,8 @@ function renderSuggestions(suggestions = []) {
 		input.setAttribute('data-suggestion-checkbox', '')
 		input.value = ride?.uid || ''
 		input.setAttribute('aria-label', `Selecteer ${title}`)
+		if (currentRide?.suggestionIds?.includes(ride?.uid))
+			input.checked = true
 
 		const content = document.createElement('span')
 		content.className = 'min-w-0 flex-1'
@@ -493,11 +561,16 @@ window.addEventListener('DOMContentLoaded', () => {
 		}
 	}
 
+	setCurrentRideState(
+		parseJsonDataset(suggestionsContainer?.dataset.currentRide || 'null', null)
+	)
+
 	if (initialChecked) {
 		const [day, hour] = initialChecked.id.split('_')
 		updateSuggestions(day, hour)
 	} else {
 		getSelectionState()
+		updateCalculateButtonState()
 	}
 
 	updateSaveButtonState()

@@ -160,7 +160,7 @@
                     <article class="theme-panel p-6 lg:col-span-1 h-full flex flex-col max-h-130 ride-suggestion-panel">
                         <h2 class="text-xl font-extrabold theme-text-primary">Suggesties</h2>
                             <p class="theme-text-muted text-sm mt-1">Selecteer een of meerdere personen en bereken de route om hun locatie op de kaart te tonen.</p>
-                        <div class="mt-4 flex-1 overflow-y-auto" data-ride-suggestions data-seat-limit="<%= seatLimit %>">
+                        <div class="mt-4 flex-1 overflow-y-auto" data-ride-suggestions data-seat-limit="<%= seatLimit %>" data-current-ride='<%= JSON.stringify(locals.currentRide || null) %>'>
                             <% if (suggestionMarkers.length > 0) { %>
                                 <ul class="space-y-3">
                                     <% suggestionMarkers.forEach((ride, index) => { %>
@@ -173,6 +173,7 @@
                                                 data-suggestion-checkbox
                                                 value="<%= ride.uid || '' %>"
                                                 aria-label="Selecteer <%= ride.title || `persoon ${index + 1}` %>"
+                                                <% if (locals.currentRide?.suggestionIds?.includes(ride.uid)) { %>checked<% } %>
                                             />
                                             <span class="min-w-0 flex-1">
                                                 <h4 class="text-base font-semibold theme-text-primary leading-tight"><%= ride.title || 'Onbekende persoon' %></h4>

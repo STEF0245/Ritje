@@ -623,12 +623,16 @@ const buildRidePayload = async (req, day, hour) => {
 		baseRoute
 	})
 
+	const currentRide = await getRidesForUser(req.user?.uid, day, hour)
+	const displayRoute = currentRide?.route || baseRoute
+
 	return {
 		mapMarkers: currentUserMarker ? [currentUserMarker] : [],
 		rideSettings,
 		mapCenter,
-		route: baseRoute,
-		suggestionMarkers
+		route: displayRoute,
+		suggestionMarkers,
+		currentRide
 	}
 }
 
@@ -708,7 +712,12 @@ export const getRideSuggestions = async (req, res) => {
 			baseRoute
 		})
 
-		return res.json(suggestionMarkers)
+		const currentRide = await getRidesForUser(req.user?.uid, day, hour)
+
+		return res.json({
+			suggestions: suggestionMarkers,
+			currentRide
+		})
 	} catch (error) {
 		console.error('Error fetching ride suggestions:', error)
 		return res.status(500).json({
@@ -820,6 +829,20 @@ export const calculateRouteWithSuggestions = async (req, res) => {
 	}
 }
 
+const getRidesForUser = async (userUid, day, hour) => {
+	const snapshot = await db
+		.ref(getRideRecordKey(userUid, day, hour))
+		.once('value')
+	const ride = snapshot.val()
+	if (!ride) return null
+
+	return ride
+}
+
+const getRideRecordKey = (userUid, day, hour) => {
+	return `rides/${userUid}/${day}_${hour}`
+}
+
 export const saveRideRoute = async (req, res) => {
 	try {
 		const userUid = String(req.user?.uid || '')
@@ -851,7 +874,6 @@ export const saveRideRoute = async (req, res) => {
 
 		const markers = Array.isArray(req.body?.markers) ? req.body.markers : []
 		const suggestionIds = normalizeSuggestionIds(req.body?.suggestionIds)
-		const slotKey = `${day}_${hour}`
 		const nowIso = new Date().toISOString()
 		const routeMetrics = getRouteMetrics(route)
 
@@ -859,7 +881,6 @@ export const saveRideRoute = async (req, res) => {
 			uid: userUid,
 			day,
 			hour,
-			slotKey,
 			suggestionIds,
 			route,
 			markers,
@@ -868,11 +889,10 @@ export const saveRideRoute = async (req, res) => {
 			updatedAt: nowIso
 		}
 
-		await db.ref(`rides/${userUid}/${slotKey}`).set(record)
+		await db.ref(getRideRecordKey(userUid, day, hour)).set(record)
 
 		return res.json({
 			saved: true,
-			slotKey,
 			savedAt: nowIso
 		})
 	} catch (error) {
