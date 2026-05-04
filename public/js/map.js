@@ -507,7 +507,6 @@ class AppMap {
 				),
 			icon: 'fa-school'
 		}
-		console.log('School marker data:', data)
 		return data
 	}
 
