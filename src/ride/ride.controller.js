@@ -668,3 +668,43 @@ export const getRideSuggestions = async (req, res) => {
 		})
 	}
 }
+
+export const recalculateRouteWithSuggestions = async (req, res) => {
+	try {
+		const originCoords = resolveSuggestionOrigin(req)
+		if (!originCoords) {
+			return res.status(400).json({
+				error: 'Ongeldige parameters: "lat" en "lon" moeten geldige coördinaten bevatten.'
+			})
+		}
+		const baseRoute = await getBaseRoute(originCoords)
+		if (!baseRoute) {
+			return res.status(500).json({
+				error: 'Er is een fout opgetreden bij het berekenen van de route. Probeer het later opnieuw.'
+			})
+		}
+
+		const users = await getAllUsers()
+		const mapMarkers = buildRideMarkers(users, req.user?.uid)
+		const rideSettings = getRideSettings(req.user?.metadata)
+		const suggestionMarkers = await buildRideSuggestions({
+			markers: mapMarkers,
+			currentUser: req.user,
+			originCoords,
+			rideSettings,
+			baseRoute
+		})
+		const routeWithSuggestions = await calculateRoute(
+			originCoords,
+			SCHOOL_DESTINATION,
+			suggestionMarkers
+		)
+
+		return res.json(routeWithSuggestions)
+	} catch (error) {
+		console.error('Error recalculating ride route:', error)
+		return res.status(500).json({
+			error: 'Er is een fout opgetreden bij het herberekenen van de route. Probeer het later opnieuw.'
+		})
+	}
+}

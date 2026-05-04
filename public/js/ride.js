@@ -6,6 +6,7 @@
 const radioGroup = document.querySelector('[input-radio-group]')
 const suggestionsContainer = document.querySelector('[data-ride-suggestions]')
 const recalculateButton = document.getElementById('routeRecalculate')
+const mapContainer = document.querySelector('[data-map]')
 let activeSuggestionRequest = null
 
 if (radioGroup) {
@@ -65,10 +66,17 @@ async function recalculateRouteWithSuggestions(suggestionIds) {
 			throw new Error(`HTTP ${response.status}`)
 		}
 		const result = await response.json()
+		displayRouteOnMap(result.route, result.markers)
 		console.log('Route recalculation result:', result)
 	} catch (error) {
 		console.error('Error recalculating route:', error)
 	}
+}
+
+function displayRouteOnMap(route, markers) {
+	if (!mapContainer) return
+	mapContainer.dataset.markers = JSON.stringify(markers)
+	mapContainer.dataset.route = JSON.stringify(route)
 }
 
 async function updateSuggestions(day, hour) {

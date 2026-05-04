@@ -8,13 +8,13 @@ import express from 'express'
 import {
 	getRidePage,
 	getRideSuggestions,
-	recalculateRoute
+	recalculateRouteWithSuggestions
 } from './ride.controller.js'
 
 const router = express.Router()
 
 router.get('/', getRidePage)
 router.get('/suggestions', getRideSuggestions)
-router.post('/recalculate', recalculateRoute)
+router.post('/recalculate', recalculateRouteWithSuggestions)
 
 export default router
