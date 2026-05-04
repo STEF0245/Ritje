@@ -769,7 +769,8 @@ export const recalculateRouteWithSuggestions = async (req, res) => {
 				route: cached.value,
 				markers: currentUserMarker
 					? [currentUserMarker, ...selectedSuggestionMarkers]
-					: selectedSuggestionMarkers
+					: selectedSuggestionMarkers,
+				cached: true
 			})
 		}
 
@@ -802,7 +803,8 @@ export const recalculateRouteWithSuggestions = async (req, res) => {
 			route: routeWithSuggestions,
 			markers: currentUserMarker
 				? [currentUserMarker, ...selectedSuggestionMarkers]
-				: selectedSuggestionMarkers
+				: selectedSuggestionMarkers,
+			cached: false
 		})
 	} catch (error) {
 		console.error('Error recalculating ride route:', error)

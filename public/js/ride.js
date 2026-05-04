@@ -57,8 +57,36 @@ async function toggleRecalculateButton() {
 	}
 }
 
+let recalcInFlight = false
+
+function ensureRouteStatusElement() {
+	let el = document.getElementById('routeStatus')
+	if (!el && recalculateButton && recalculateButton.parentNode) {
+		el = document.createElement('span')
+		el.id = 'routeStatus'
+		el.className = 'text-sm theme-text-muted ml-3'
+		recalculateButton.parentNode.insertBefore(
+			el,
+			recalculateButton.nextSibling
+		)
+	}
+	return el
+}
+
 async function recalculateRouteWithSuggestions(suggestionIds) {
+	if (recalcInFlight) return
+	const statusEl = ensureRouteStatusElement()
 	try {
+		recalcInFlight = true
+		if (recalculateButton) {
+			recalculateButton.disabled = true
+			recalculateButton.classList.add('opacity-60')
+		}
+		if (statusEl) statusEl.textContent = 'Herberekenen…'
+		setTimeout(() => {
+			if (statusEl) statusEl.textContent = ''
+		}, 2500)
+
 		const response = await fetch('/ride/recalculate', {
 			method: 'POST',
 			headers: {
@@ -66,18 +94,40 @@ async function recalculateRouteWithSuggestions(suggestionIds) {
 			},
 			body: JSON.stringify({ suggestionIds })
 		})
+
 		if (!response.ok) {
+			if (response.status === 429) {
+				if (statusEl)
+					statusEl.textContent =
+						'Te veel verzoeken. Probeer het later.'
+				return
+			}
 			throw new Error(`HTTP ${response.status}`)
 		}
+
 		const result = await response.json()
-		displayRouteOnMap(result.route, result.markers)
+		displayRouteOnMap(result.route, result.markers, result.cached)
+		if (statusEl)
+			statusEl.textContent = result.cached
+				? 'Opgehaald uit cache'
+				: 'Route geüpdatet'
 		console.log('Route recalculation result:', result)
 	} catch (error) {
 		console.error('Error recalculating route:', error)
+		const statusEl2 = ensureRouteStatusElement()
+		if (statusEl2) statusEl2.textContent = 'Fout bij herberekenen'
+	} finally {
+		setTimeout(() => {
+			recalcInFlight = false
+			if (recalculateButton) {
+				recalculateButton.disabled = false
+				recalculateButton.classList.remove('opacity-60')
+			}
+		}, 800)
 	}
 }
 
-function displayRouteOnMap(route, markers) {
+function displayRouteOnMap(route, markers, cached = false) {
 	if (!mapContainer) return
 
 	const normalizedMarkers = Array.isArray(markers) ? markers : []
@@ -89,6 +139,13 @@ function displayRouteOnMap(route, markers) {
 
 	mapInstance.setMarkers(normalizedMarkers, { center: true })
 	mapInstance.setRoute(route, { center: true })
+
+	// update a small status indicator if present
+	const statusEl = document.getElementById('routeStatus')
+	if (statusEl)
+		statusEl.textContent = cached
+			? 'Opgehaald uit cache'
+			: 'Route geüpdatet'
 }
 
 async function updateSuggestions(day, hour) {
