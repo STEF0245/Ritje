@@ -67,10 +67,7 @@ class AppMap {
 
 		const hasDatasetMarkers = this.parseDatasetMarkers().length > 0
 		const hasSchoolMarker = this.element.dataset.schoolMarker === 'true'
-		if (
-			!hasDatasetMarkers &&
-			this.shouldShowEmptyMessage()
-		) {
+		if (!hasDatasetMarkers && this.shouldShowEmptyMessage()) {
 			this.showNoCoordinatesMessage()
 			return this
 		}
@@ -598,13 +595,13 @@ class AppMap {
 
 		attribution.addTo(this.instance)
 		attribution.addAttribution(
-			'&copy; <a href="https://www.stadiamaps.com/" target="_blank" rel="noopener">Stadia Maps</a>'
+			'&copy; <a href="https://leafletjs.com/" target="_blank" rel="noopener">Leaflet</a>'
 		)
 		attribution.addAttribution(
-			'&copy; <a href="https://openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a>'
+			'&copy; <a href="https://www.geoapify.com/" target="_blank" rel="noopener">Geoapify</a>'
 		)
 		attribution.addAttribution(
-			'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
+			'&copy; <a href="https://openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
 		)
 	}
 
