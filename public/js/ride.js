@@ -18,6 +18,7 @@ if (radioGroup) {
 			const id = e.target.id
 			const [day, hour] = id.split('_')
 			updateSuggestions(day, hour)
+			toggleRecalculateButton()
 		}
 	})
 }
