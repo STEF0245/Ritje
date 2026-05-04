@@ -754,6 +754,12 @@ export const recalculateRouteWithSuggestions = async (req, res) => {
 						selectedSuggestionIds.has(String(marker?.uid))
 					)
 				: suggestionMarkers
+		const seatLimit = rideSettings?.seats?.total || 1
+		if (selectedSuggestionMarkers.length > seatLimit) {
+			return res.status(400).json({
+				error: `Je kunt maximaal ${seatLimit} personen selecteren.`
+			})
+		}
 		// Build a cache key for this origin + selection to avoid repeated routing calls
 		const originKey = `${originCoords.latitude.toFixed(5)},${originCoords.longitude.toFixed(5)}`
 		const idsKey = selectedSuggestionMarkers
