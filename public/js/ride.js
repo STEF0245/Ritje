@@ -7,6 +7,7 @@ const radioGroup = document.querySelector('[input-radio-group]')
 const suggestionsContainer = document.querySelector('[data-ride-suggestions]')
 const recalculateButton = document.getElementById('routeRecalculate')
 const mapContainer = document.querySelector('[data-map]')
+const map = mapContainer ? mapContainer._appMapInstance : null
 let activeSuggestionRequest = null
 
 if (radioGroup) {
@@ -75,8 +76,16 @@ async function recalculateRouteWithSuggestions(suggestionIds) {
 
 function displayRouteOnMap(route, markers) {
 	if (!mapContainer) return
-	mapContainer.dataset.markers = JSON.stringify(markers)
+
+	const normalizedMarkers = Array.isArray(markers) ? markers : []
+	mapContainer.dataset.markers = JSON.stringify(normalizedMarkers)
 	mapContainer.dataset.route = JSON.stringify(route)
+
+	const mapInstance = mapContainer._appMapInstance || window.appMaps?.[0]
+	if (!mapInstance) return
+
+	mapInstance.setMarkers(normalizedMarkers, { center: true })
+	mapInstance.setRoute(route, { center: true })
 }
 
 async function updateSuggestions(day, hour) {

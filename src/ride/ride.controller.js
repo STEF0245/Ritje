@@ -19,6 +19,12 @@ const toNonNegativeInteger = (value) => {
 	return parsed
 }
 
+const normalizeSuggestionIds = (value) => {
+	if (!Array.isArray(value)) return []
+
+	return value.map((id) => String(id)).filter(Boolean)
+}
+
 const getNestedValue = (source, path = []) => {
 	return path.reduce((current, key) => current?.[key], source)
 }
@@ -686,6 +692,9 @@ export const recalculateRouteWithSuggestions = async (req, res) => {
 
 		const users = await getAllUsers()
 		const mapMarkers = buildRideMarkers(users, req.user?.uid)
+		const currentUserMarker = mapMarkers.find(
+			(marker) => marker.uid === req.user?.uid
+		)
 		const rideSettings = getRideSettings(req.user?.metadata)
 		const suggestionMarkers = await buildRideSuggestions({
 			markers: mapMarkers,
@@ -694,13 +703,30 @@ export const recalculateRouteWithSuggestions = async (req, res) => {
 			rideSettings,
 			baseRoute
 		})
-		const routeWithSuggestions = await calculateRoute(
-			originCoords,
-			SCHOOL_DESTINATION,
-			suggestionMarkers
+		const selectedSuggestionIds = new Set(
+			normalizeSuggestionIds(req.body?.suggestionIds)
 		)
+		const selectedSuggestionMarkers =
+			selectedSuggestionIds.size > 0
+				? suggestionMarkers.filter((marker) =>
+					selectedSuggestionIds.has(String(marker?.uid))
+				)
+				: suggestionMarkers
+		const routeWithSuggestions =
+			selectedSuggestionMarkers.length > 0
+				? await calculateRoute(
+					originCoords,
+					SCHOOL_DESTINATION,
+					selectedSuggestionMarkers
+				)
+				: baseRoute
 
-		return res.json(routeWithSuggestions)
+		return res.json({
+			route: routeWithSuggestions,
+			markers: currentUserMarker
+				? [currentUserMarker, ...selectedSuggestionMarkers]
+				: selectedSuggestionMarkers
+		})
 	} catch (error) {
 		console.error('Error recalculating ride route:', error)
 		return res.status(500).json({
