@@ -607,7 +607,7 @@ const buildRidePayload = async (req, day, hour) => {
 	const filteredUsers = filterUsersByDayAndHour(users, req.user, day, hour)
 	const mapMarkers = buildRideMarkers(filteredUsers, req.user?.uid)
 	const mapCenter = getRideMapCenter(mapMarkers)
-	const rideSettings = getRideSettings(req.user?.metadata)
+	const rideSettings = getRideSettings(req.user?.metadata?.preferences)
 	const currentUserUid = req.user?.uid
 	const currentUserMarker = mapMarkers.find(
 		(marker) => marker.uid === currentUserUid
@@ -697,7 +697,7 @@ export const getRideSuggestions = async (req, res) => {
 			hour
 		)
 		const mapMarkers = buildRideMarkers(filteredUsers, req.user?.uid)
-		const rideSettings = getRideSettings(req.user?.metadata)
+		const rideSettings = getRideSettings(req.user?.metadata?.preferences)
 		const originCoords = resolveSuggestionOrigin(req)
 		const baseRoute = originCoords ? await getBaseRoute(originCoords) : null
 		const suggestionMarkers = await buildRideSuggestions({
@@ -737,7 +737,7 @@ export const recalculateRouteWithSuggestions = async (req, res) => {
 		const currentUserMarker = mapMarkers.find(
 			(marker) => marker.uid === req.user?.uid
 		)
-		const rideSettings = getRideSettings(req.user?.metadata)
+		const rideSettings = getRideSettings(req.user?.metadata?.preferences)
 		const suggestionMarkers = await buildRideSuggestions({
 			markers: mapMarkers,
 			currentUser: req.user,
