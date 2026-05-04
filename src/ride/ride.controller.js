@@ -12,6 +12,8 @@ import {
 	findMarkersOnRoute
 } from '../location/location.service.js'
 
+import { getDistanceFromLatLonInKm } from '../location/location.service.js'
+
 const toNonNegativeInteger = (value) => {
 	const parsed = Number(value)
 	if (!Number.isFinite(parsed)) return null
@@ -23,6 +25,44 @@ const normalizeSuggestionIds = (value) => {
 	if (!Array.isArray(value)) return []
 
 	return value.map((id) => String(id)).filter(Boolean)
+}
+
+/**
+ * @brief Order waypoints with a simple greedy nearest-neighbor heuristic.
+ * @param {{latitude:number,longitude:number}} origin
+ * @param {Array<{latitude:number,longitude:number}>} waypoints
+ * @returns {Array<object>} ordered waypoints
+ */
+const optimizeWaypointOrder = (origin, waypoints = []) => {
+	if (!origin || !Array.isArray(waypoints) || waypoints.length <= 1)
+		return waypoints
+
+	const remaining = waypoints.slice()
+	const ordered = []
+	let current = { latitude: origin.latitude, longitude: origin.longitude }
+
+	while (remaining.length > 0) {
+		let bestIndex = 0
+		let bestDist = Number.POSITIVE_INFINITY
+		for (let i = 0; i < remaining.length; i++) {
+			const w = remaining[i]
+			const d = getDistanceFromLatLonInKm(
+				current.latitude,
+				current.longitude,
+				w.latitude,
+				w.longitude
+			)
+			if (d < bestDist) {
+				bestDist = d
+				bestIndex = i
+			}
+		}
+		const next = remaining.splice(bestIndex, 1)[0]
+		ordered.push(next)
+		current = { latitude: next.latitude, longitude: next.longitude }
+	}
+
+	return ordered
 }
 
 const getNestedValue = (source, path = []) => {
@@ -709,17 +749,21 @@ export const recalculateRouteWithSuggestions = async (req, res) => {
 		const selectedSuggestionMarkers =
 			selectedSuggestionIds.size > 0
 				? suggestionMarkers.filter((marker) =>
-					selectedSuggestionIds.has(String(marker?.uid))
-				)
+						selectedSuggestionIds.has(String(marker?.uid))
+					)
 				: suggestionMarkers
-		const routeWithSuggestions =
-			selectedSuggestionMarkers.length > 0
-				? await calculateRoute(
-					originCoords,
-					SCHOOL_DESTINATION,
-					selectedSuggestionMarkers
-				)
-				: baseRoute
+		let routeWithSuggestions = baseRoute
+		if (selectedSuggestionMarkers.length > 0) {
+			const optimizedWaypoints = optimizeWaypointOrder(
+				originCoords,
+				selectedSuggestionMarkers
+			)
+			routeWithSuggestions = await calculateRoute(
+				originCoords,
+				SCHOOL_DESTINATION,
+				optimizedWaypoints
+			)
+		}
 
 		return res.json({
 			route: routeWithSuggestions,
