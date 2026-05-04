@@ -21,7 +21,13 @@ const recalcLimiter = (() => {
 	const MAX = Number(process.env.RECALC_RATE_LIMIT_MAX || 5)
 
 	return (req, res, next) => {
-		const key = req.user?.uid || req.ip || 'anonymous'
+		const key = req.user?.uid || req.ip
+		if (!key) {
+			res.status(400).json({
+				error: 'Unable to identify user or IP for rate limiting.'
+			})
+			return
+		}
 		const now = Date.now()
 		const entry = hits.get(key) || { count: 0, windowStart: now }
 
