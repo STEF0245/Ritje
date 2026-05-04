@@ -591,6 +591,7 @@
 	padding: 0.275rem 0.4rem !important;
 	font-size: 0.6rem !important;
 	transition: opacity 0.3s ease !important;
+	user-select: none !important;
 }
 
 .leaflet-control-attribution a {
