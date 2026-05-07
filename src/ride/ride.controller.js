@@ -648,11 +648,10 @@ export const buildRidePayload = async (req, day, hour) => {
 export const getRidePage = async (req, res) => {
 	try {
 		const now = new Date()
-		const payload = await buildRidePayload(
-			req,
-			now.getDay(),
-			now.getHours()
-		)
+		const day = toNonNegativeInteger(req.params?.day) || now.getDay()
+		const hour = toNonNegativeInteger(req.params?.hour) || now.getHours()
+
+		const payload = await buildRidePayload(req, day, hour)
 
 		return res.render('ride', {
 			title: 'Ritten',

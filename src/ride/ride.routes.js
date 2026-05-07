@@ -54,6 +54,7 @@ const calculateLimiter = (() => {
 })()
 
 router.get('/', getRidePage)
+router.get('/:day/:hour', getRidePage)
 router.get('/suggestions', getRideSuggestions)
 router.post('/calculate', calculateLimiter, calculateRouteWithSuggestions)
 router.post('/save', saveRideRoute)
