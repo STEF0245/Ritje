@@ -23,6 +23,7 @@ import profileRoutes from './profile/profile.routes.js'
 import adminRoutes from './admin/admin.routes.js'
 import locationRoutes from './location/location.routes.js'
 import rideRoutes from './ride/ride.routes.js'
+import dashboardRoutes from './dashboard/dashboard.routes.js'
 
 const app = express()
 
@@ -165,6 +166,7 @@ app.use(checkMaintenanceMode)
 // =====================
 app.use('/', authRoutes)
 app.use('/', profileRoutes)
+app.use('/dashboard', dashboardRoutes)
 app.use('/ride', rideRoutes)
 app.use('/admin', requireAdmin, adminRoutes)
 app.use('/api/location', locationRoutes)
