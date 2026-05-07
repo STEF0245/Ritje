@@ -1,0 +1,229 @@
+<% 
+	const metadata = user?.metadata || {}
+	const firstName = metadata?.name?.first || ''
+	const lastName = metadata?.name?.last || ''
+	const fullName = `${metadata?.name?.full || ''}`.trim() || 'Ritje Gebruiker'
+	const initials = `${firstName.charAt(0)}${lastName.charAt(0)}` || 'RG'
+	const photoURL = user?.photoURL || null
+	const phoneNumber = user?.phoneNumber || ''
+	const joinedDate = user?.createdAt ? new Date(user.createdAt).toLocaleString('nl-BE', { 
+		year: 'numeric', month: '2-digit', day: '2-digit'
+	}) : 'Onbekend';
+	const lastSignInDate = user?.lastSignInTime ? new Date(user.lastSignInTime).toLocaleString('nl-BE', { 
+		year: 'numeric', month: '2-digit', day: '2-digit' 
+	}) : 'Onbekend';
+    const address = metadata?.address || {}
+
+    const mapMarkers = locals.markers || []
+    const mapMarkersJson = JSON.stringify(mapMarkers) || '[]';
+
+    const schoolConfig = locals.schoolMarkerData || {}
+	const schoolData = {
+		latitude: schoolConfig?.coords?.lat,
+		longitude: schoolConfig?.coords?.lon,
+		title: schoolConfig?.title,
+		lines: [
+			`${schoolConfig?.address?.street || ''} ${schoolConfig?.address?.houseNumber || ''}`.trim(),
+			`${schoolConfig?.address?.postalCode || ''} ${schoolConfig?.address?.city || ''}`.trim()
+		],
+		mapsUrl: schoolConfig?.mapsUrl,
+		icon: 'fa-school'
+	}
+
+    mapMarkers.push(schoolData)
+    const routeJson = JSON.stringify(locals.route) || 'null';
+    const selectedKey = locals.currentRide?.day || locals.day || null;
+    const selectedValue = locals.currentRide?.hour || locals.hour || null;
+    const schedule = locals.user?.metadata?.schedule || {};
+
+    const weekdays = [
+		{ key: '1', label: 'Maandag' },
+		{ key: '2', label: 'Dinsdag' },
+		{ key: '3', label: 'Woensdag' },
+		{ key: '4', label: 'Donderdag' },
+		{ key: '5', label: 'Vrijdag' }
+	]
+
+	const hourMap = {
+		'1': ['8:25', '9:15'],
+		'2': ['9:15', '10:20'],
+		'3': ['10:20', '11:10'],
+		'4': ['11:10', '12:00'],
+		'5': ['13:00', '13:50'],
+		'6': ['13:50', '14:40'],
+		'7': ['14:55', '15:45'],
+		'8': ['15:45', '16:35']
+	}
+
+	const resolveHourLabel = (hour, isStart) => {
+		if (!hour) return null
+		const key = String(hour)
+		const [start, end] = hourMap[key] || []
+		return isStart ? start : end
+	}
+    const getNextOccurrenceFor = (dayKey, hourIndex, isStart) => {
+        if (!dayKey || !hourIndex) return null
+        const timeStr = resolveHourLabel(hourIndex, isStart)
+        if (!timeStr) return null
+        const [hh, mm] = timeStr.split(':').map((v) => parseInt(v, 10))
+        const now = new Date()
+        const today = now.getDay() // 0 (Sun) .. 6 (Sat)
+        const targetDay = Number(dayKey) // our day keys use 1..5 for Mon..Fri
+        let daysAhead = (targetDay - today + 7) % 7
+        const candidate = new Date(now)
+        candidate.setDate(now.getDate() + daysAhead)
+        candidate.setHours(hh || 0, mm || 0, 0, 0)
+        if (candidate <= now) {
+            candidate.setDate(candidate.getDate() + 7)
+        }
+        return candidate
+    }
+
+
+    const daySchedules = weekdays.map(({ key, label }) => {
+        const daySchedule = schedule[key] || null
+        const startLabel = resolveHourLabel(daySchedule?.start, true)
+        const endLabel = resolveHourLabel(daySchedule?.end, false)
+        const startNextDate = daySchedule?.start ? getNextOccurrenceFor(key, daySchedule.start, true) : null
+        const endNextDate = daySchedule?.end ? getNextOccurrenceFor(key, daySchedule.end, false) : null
+
+        return {
+            key,
+            label,
+            start: {
+                label: startLabel,
+                value: daySchedule?.start || null,
+                nextDate: startNextDate,
+                nextUp: false
+            },
+            end: {
+                label: endLabel,
+                value: daySchedule?.end || null,
+                nextDate: endNextDate,
+                nextUp: false
+            },
+            isAvailable: Boolean(startLabel && endLabel),
+        }
+    })
+
+    {
+        const now = new Date()
+        let earliest = null
+        daySchedules.forEach((ds) => {
+            if (ds.start.nextDate && ds.start.nextDate >= now) {
+                if (!earliest || ds.start.nextDate < earliest) earliest = ds.start.nextDate
+            }
+            if (ds.end.nextDate && ds.end.nextDate >= now) {
+                if (!earliest || ds.end.nextDate < earliest) earliest = ds.end.nextDate
+            }
+        })
+        if (earliest) {
+            daySchedules.forEach((ds) => {
+                ds.start.nextUp = ds.start.nextDate && ds.start.nextDate.getTime() === earliest.getTime()
+                ds.end.nextUp = ds.end.nextDate && ds.end.nextDate.getTime() === earliest.getTime()
+            })
+        }
+    }
+
+	const hasAnySchedule = daySchedules.some(({ isAvailable }) => isAvailable)
+%>
+
+<!DOCTYPE html>
+<html lang="nl" class="text-slate-200">
+	<%- include('partials/head', { title }) %>
+
+	<body class="theme-body min-h-screen flex flex-col">
+		<%- include('partials/header', { user }) %>
+
+		<main class="theme-main flex-1">
+			<section class="max-w-6xl mx-auto">
+                <article class="theme-panel p-6 mb-6 ride-hero-panel">
+                    <div class="flex flex-col gap-4">
+                        <div>
+                            <h1 class="text-2xl font-extrabold theme-text-primary">Uw rit plannen</h1>
+                            <p class="theme-text-muted text-sm mt-1">Bekijk uw route, ontvang suggesties en bevestig uw rit.</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <% if (hasAnySchedule) { %>
+                                <div class="flex flex-row items-center gap-4 w-full" input-radio-group>
+                                    <% daySchedules.forEach(({ key, label, start, end, isAvailable }) => { %>
+                                        <div class="theme-surface theme-pill border theme-border p-4">
+                                            <h3 class="text-xs uppercase tracking-[0.12em] theme-text-muted"><%= label %></h3>
+                                            <% if (isAvailable) { %>
+                                                <div class="flex flex-row gap-2 mt-2">
+                                                    <a ride-label href="/dashboard/<%= key %>/<%= start.value %>" class="theme-pill border theme-border px-4 py-2 text-xs theme-text-muted cursor-pointer <% if (key == selectedKey && start.value === selectedValue) { %>checked<% } %>"><%= start.label %></a>
+                                                    <a ride-label href="/dashboard/<%= key %>/<%= end.value %>" class="theme-pill border theme-border px-4 py-2 text-xs theme-text-muted cursor-pointer <% if (key == selectedKey && end.value === selectedValue) { %>checked<% } %>"><%= end.label %></a>
+                                                </div>
+                                            <% } else { %>
+                                                <p class="theme-text-muted text-xs">Niet beschikbaar</p>
+                                            <% } %>
+                                        </div>
+                                    <% }) %>
+                                </div>
+                            <% } else { %>
+                                <p class="theme-text-muted">Je hebt nog geen uurrooster ingesteld.</p>
+                            <% } %>
+                        </div>
+                    </div>
+                </article>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+					<article class="theme-panel p-6 lg:col-span-2 ride-map-panel">
+                        <div class="flex items-start justify-between gap-3 flex-wrap">
+                            <div>
+                                <h2 class="text-xl font-extrabold theme-text-primary">Routeoverzicht</h2>
+                                <p class="theme-text-muted text-sm mt-1">Bekijk uw huidige route en ophalingen op de kaart.</p>
+                            </div>
+                        </div>
+                        <div
+                            data-map
+                            data-markers='<%= mapMarkersJson %>'
+                            data-route='<%= routeJson %>'
+                            data-school-marker="true"
+                            class="w-full h-125 mt-6 theme-pill border theme-border"
+                            data-empty-state-behavior="show-message"
+                            data-center="true"
+                        ></div>
+                    </article>
+
+                    <article class="theme-panel p-6 lg:col-span-1 h-full flex flex-col max-h-130">
+                        <h2 class="text-xl font-extrabold theme-text-primary">Ritdetails</h2>
+                            <p class="theme-text-muted text-sm mt-1">Bekijk de details van je huidige rit.</p>
+                        <div class="mt-4 flex-1 overflow-y-auto">
+                            <% if (mapMarkers.length > 0) { %>
+                                <ul class="space-y-3">
+                                    <% mapMarkers.forEach((ride, index) => { %>
+                                            <% const detourDistance = ride.detour?.distance ?? ride.detourDistanceKm; %>
+                                            <% const detourDuration = ride.detour?.duration ?? ride.detourDurationMinutes; %>
+                                        <div class="theme-pill p-4 border theme-border theme-surface ride-suggestion-item cursor-pointer block">
+                                            <span class="min-w-0 flex-1">
+                                                <h4 class="text-base font-semibold theme-text-primary leading-tight"><%= ride.title || 'Onbekende persoon' %></h4>
+                                                <p class="text-sm theme-text-muted"><%= ride.lines[1] || 'Onbekend adres' %></p>
+                                                    <% if (Number.isFinite(detourDistance) && Number.isFinite(detourDuration)) { %>
+                                                    <div class="mt-2 flex flex-wrap gap-2">
+                                                        <span class="theme-pill border theme-border px-2 py-1 text-xs theme-text-muted">
+                                                                +<%= Math.round(detourDistance * 10) / 10 %> km
+                                                        </span>
+                                                        <span class="theme-pill border theme-border px-2 py-1 text-xs theme-text-muted">
+                                                                +<%= Math.round(detourDuration) %> min
+                                                        </span>
+                                                    </div>
+                                                <% } %>
+                                            </span>
+                                        </div>
+                                    <% }) %>
+                                </ul>
+                            <% } else { %>
+                                <p class="text-sm theme-text-muted">Geen ritdetails beschikbaar.</p>
+                            <% } %>
+                        </div>
+                    </article>
+                </div>
+
+				</div>
+			</section>
+		</main>
+
+		<%- include('partials/footer') %>
+		<%- include('partials/map') %>
+	</body>
+</html>
