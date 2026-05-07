@@ -632,7 +632,9 @@ export const buildRidePayload = async (req, day, hour) => {
 		mapCenter,
 		route: displayRoute,
 		suggestionMarkers,
-		currentRide
+		currentRide,
+		day,
+		hour
 	}
 }
 
