@@ -679,7 +679,8 @@
 	border-top-color: inherit;
 }
 
-[ride-input]:checked + [ride-label] {
+[ride-input]:checked + [ride-label],
+[ride-label].checked {
 	background-color: #0f172abf;
 	border-color: var(--ride-accent);
 	color: var(--ride-text);
