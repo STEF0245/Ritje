@@ -602,7 +602,7 @@ const buildRideSuggestions = async ({
  * @returns {Promise<object>} Render payload with map markers, route data, and suggestions.
  * @details The payload is shared by the page render and the suggestions endpoint so both stay in sync.
  */
-const buildRidePayload = async (req, day, hour) => {
+export const buildRidePayload = async (req, day, hour) => {
 	const users = await getAllUsers()
 	const filteredUsers = filterUsersByDayAndHour(users, req.user, day, hour)
 	const mapMarkers = buildRideMarkers(filteredUsers, req.user?.uid)
@@ -829,7 +829,7 @@ export const calculateRouteWithSuggestions = async (req, res) => {
 	}
 }
 
-const getRidesForUser = async (userUid, day, hour) => {
+export const getRidesForUser = async (userUid, day, hour) => {
 	const snapshot = await db
 		.ref(getRideRecordKey(userUid, day, hour))
 		.once('value')
