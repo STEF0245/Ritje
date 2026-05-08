@@ -39,6 +39,9 @@ app.use(express.json({ limit: '10mb', type: ['application/json'] }))
 app.use(express.urlencoded({ extended: true, limit: '10mb' }))
 app.use(cookieParser())
 
+// Trust proxy for correct client IP and protocol handling behind reverse proxies (e.g., when deployed on platforms like Heroku or behind Nginx).
+app.enable('trust proxy')
+
 // Dynamic CSP middleware to support both localhost and IP access
 app.use((req, res, next) => {
 	const host = req.get('host')
@@ -80,14 +83,10 @@ app.use((req, res, next) => {
 // CSRF mitigation: reject cross-origin state-changing browser requests.
 app.use((req, res, next) => {
 	const method = req.method.toUpperCase()
-	if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
-		return next()
-	}
-
 	const origin = req.get('origin')
-	if (!origin || origin === 'null') {
-		return next()
-	}
+	if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) return next()
+	if (!origin || origin === 'null') return next()
+	if (!config.isProduction) return next()
 
 	const expectedOrigin = `${req.protocol}://${req.get('host')}`
 	if (origin !== expectedOrigin) {
