@@ -11,8 +11,8 @@ import {
 	calculateRoute,
 	findMarkersOnRoute
 } from '../location/location.service.js'
-
 import { getDistanceFromLatLonInKm } from '../location/location.service.js'
+import { sendEmailToUids } from '../utils/email.util.js'
 
 const toNonNegativeInteger = (value) => {
 	const parsed = Number(value)
@@ -891,6 +891,15 @@ export const saveRideRoute = async (req, res) => {
 		}
 
 		await db.ref(getRideRecordKey(userUid, day, hour)).set(record)
+		await sendEmailToUids(suggestionIds, {
+			subject: 'Je bent toegevoegd aan een rit!',
+			html: `
+				<p>Hallo,</p>
+				<p>Je bent toegevoegd aan een rit naar school op dag ${day} tijdens uur ${hour}.</p>
+				<p>Bekijk de ritdetails en route op de ritpagina.</p>
+				<p>Groeten,<br/>Ritje.</p>
+			`
+		})
 
 		return res.json({
 			saved: true,
