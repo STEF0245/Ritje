@@ -29,9 +29,9 @@ const requiredEnvVars = [
 	'FIREBASE_ADMIN_CLIENT_X509_CERT_URL',
 	'FIREBASE_ADMIN_UNIVERSE_DOMAIN',
 
-	'EMAIL_API_KEY',
-	'EMAIL_EMAIL',
-	'EMAIL_NAME'
+	'RESEND_API_KEY',
+	'RESEND_ADDRESS',
+	'RESEND_NAME'
 ]
 
 const optionalEnvVars = [
@@ -139,9 +139,9 @@ const config = {
 	},
 
 	email: {
-		apiKey: process.env.EMAIL_API_KEY,
-		email: process.env.EMAIL_EMAIL,
-		name: process.env.EMAIL_NAME
+		apiKey: process.env.RESEND_API_KEY,
+		address: process.env.RESEND_ADDRESS,
+		name: process.env.RESEND_NAME
 	},
 
 	authFreeEndpoints: ['/login', '/api/firebase-config']
