@@ -27,7 +27,11 @@ const requiredEnvVars = [
 	'FIREBASE_ADMIN_TOKEN_URI',
 	'FIREBASE_ADMIN_AUTH_PROVIDER_X509_CERT_URL',
 	'FIREBASE_ADMIN_CLIENT_X509_CERT_URL',
-	'FIREBASE_ADMIN_UNIVERSE_DOMAIN'
+	'FIREBASE_ADMIN_UNIVERSE_DOMAIN',
+
+	'EMAIL_API_KEY',
+	'EMAIL_EMAIL',
+	'EMAIL_NAME'
 ]
 
 const optionalEnvVars = [
@@ -132,6 +136,12 @@ const config = {
 			postalCode: '2260',
 			city: 'Westerlo'
 		}
+	},
+
+	email: {
+		apiKey: process.env.EMAIL_API_KEY,
+		email: process.env.EMAIL_EMAIL,
+		name: process.env.EMAIL_NAME
 	},
 
 	authFreeEndpoints: ['/login', '/api/firebase-config']
