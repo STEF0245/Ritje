@@ -14,7 +14,7 @@ export const sendEmail = async ({ to, subject, html }) => {
 
 	if (error) {
 		console.error('Error sending email:', error)
-		return { success: false, error }
+		return { success: false, data: error }
 	}
 
 	return { success: true, data }
@@ -32,14 +32,13 @@ const getEmailForUid = async (uid) => {
 
 export const sendEmailToUids = async (uids, { subject, html }) => {
 	const emailPromises = uids.map((uid) => getEmailForUid(uid))
-	const emails = await Promise.all(emailPromises)
+	const to = await Promise.all(emailPromises)
 
-	const to = emails.join(', ')
 	const { success, data } = await sendEmail({ to, subject, html })
 
 	if (!success) {
-		console.error('Failed to send email to UIDs:', uids, 'Error:', data)
-		return { success: false, error: data }
+		console.error('Failed to send email to emails:', to, 'Error:', data)
+		return { success: false, data: data }
 	}
 
 	return { success: true, data: data }
