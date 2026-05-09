@@ -12,7 +12,7 @@ import {
 	findMarkersOnRoute
 } from '../location/location.service.js'
 import { getDistanceFromLatLonInKm } from '../location/location.service.js'
-import { sendEmailToUids } from '../utils/email.util.js'
+import { sendEmail } from '../utils/email.util.js'
 
 const toNonNegativeInteger = (value) => {
 	const parsed = Number(value)
@@ -846,7 +846,8 @@ const getRideRecordKey = (userUid, day, hour) => {
 
 export const saveRideRoute = async (req, res) => {
 	try {
-		const userUid = String(req.user?.uid || '')
+		const user = req.user
+		const userUid = String(user?.uid || '')
 		if (!userUid) {
 			return res.status(401).json({
 				error: 'Je moet aangemeld zijn om een rit op te slaan.'
@@ -891,15 +892,8 @@ export const saveRideRoute = async (req, res) => {
 		}
 
 		await db.ref(getRideRecordKey(userUid, day, hour)).set(record)
-		await sendEmailToUids(suggestionIds, {
-			subject: 'Je bent toegevoegd aan een rit!',
-			html: `
-				<p>Hallo,</p>
-				<p>Je bent toegevoegd aan een rit naar school op dag ${day} tijdens uur ${hour}.</p>
-				<p>Bekijk de ritdetails en route op de ritpagina.</p>
-				<p>Groeten,<br/>Ritje.</p>
-			`
-		})
+		const isStart = user?.metadata?.schedule?.[day]?.start == hour
+		await sendEmailToAllUsers(suggestionIds, userUid, day, hour, isStart)
 
 		return res.json({
 			saved: true,
@@ -911,4 +905,134 @@ export const saveRideRoute = async (req, res) => {
 			error: 'Er is een fout opgetreden bij het opslaan van de rit. Probeer het later opnieuw.'
 		})
 	}
+}
+
+const sendEmailToAllUsers = async (
+	suggestionIds,
+	driverUid,
+	day,
+	hour,
+	isStart
+) => {
+	const users = await getAllUsers()
+	const recipientUsers = users.filter(
+		(user) =>
+			user?.uid &&
+			suggestionIds.includes(user.uid) &&
+			user.uid !== driverUid
+	)
+
+	const dayNames = [
+		'Zondag',
+		'Maandag',
+		'Dinsdag',
+		'Woensdag',
+		'Donderdag',
+		'Vrijdag',
+		'Zaterdag'
+	]
+	const dayName = dayNames[day] || `Dag ${day}`
+	const hourLabel = getHourLabel(hour, isStart)
+	const driver = users.find((u) => u.uid === driverUid)
+
+	for (const recipient of recipientUsers) {
+		console.log(
+			`Sending email to ${recipient.email} about ride suggestion for ${dayName} ${hourLabel}`
+		)
+
+		await sendEmail({
+			to: recipient.email,
+			subject: `Ritvoorstel: ${dayName} ${hourLabel}`,
+			html: generateEmailContent(
+				recipient,
+				driver,
+				dayName,
+				hourLabel,
+				day,
+				hour
+			)
+		})
+	}
+}
+
+const getHourLabel = (hour, isStart) => {
+	const hourMap = {
+		1: ['8:25', '9:15'],
+		2: ['9:15', '10:20'],
+		3: ['10:20', '11:10'],
+		4: ['11:10', '12:00'],
+		5: ['13:00', '13:50'],
+		6: ['13:50', '14:40'],
+		7: ['14:55', '15:45'],
+		8: ['15:45', '16:35']
+	}
+
+	if (!hour) return null
+	const key = String(hour)
+	const [start, end] = hourMap[key] || []
+	return isStart ? start : end
+}
+
+const generateEmailContent = (
+	recipient,
+	driver,
+	dayName,
+	hourLabel,
+	day,
+	hour
+) => {
+	const driverName = driver?.name?.full || 'Een collega'
+	const rideUrl = `https://ritje.tech/ride/${day}/${hour}` // TODO: Use dynamic base URL if available
+
+	// Theme colors from style.css
+	const bg900 = '#0b0f14'
+	const bg800 = '#1c2430'
+	const border = '#3a4658'
+	const text = '#e6edf7'
+	const muted = '#9ca3af' // Approximately color-mix(in srgb, var(--ride-c4) 62%, var(--ride-c3))
+	const accent = '#3b82f6'
+
+	return `
+		<div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; background-color: ${bg900}; border: 1px solid ${border}; border-radius: 12px; color: ${text};">
+			<div style="text-align: center; margin-bottom: 30px;">
+				<div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.2em; font-weight: 700; color: ${muted}; margin-bottom: 8px;">RITJE</div>
+				<h2 style="font-size: 2rem; margin: 0; font-weight: 900; letter-spacing: -0.02em; color: ${text};">Nieuw Ritvoorstel</h2>
+			</div>
+			
+			<p style="font-size: 1.1rem;">Beste <strong>${recipient.name?.first || 'deelnemer'}</strong>,</p>
+			
+			<p style="color: ${muted}; line-height: 1.6;">Er is goed nieuws! <strong>${driverName}</strong> heeft een nieuw ritvoorstel gemaakt waarbij jouw locatie is opgenomen als mogelijke opstapplaats.</p>
+			
+			<div style="background-color: ${bg800}; border: 1px solid ${border}; padding: 20px; border-radius: 10px; margin: 25px 0; box-shadow: 0 10px 24px rgba(0,0,0,0.3);">
+				<p style="margin: 0 0 15px 0; font-weight: 700; color: ${text}; border-bottom: 1px solid ${border}; padding-bottom: 10px;">Details van de rit</p>
+				<table style="width: 100%; border-collapse: collapse;">
+					<tr>
+						<td style="padding: 6px 0; color: ${muted}; width: 100px;">Dag:</td>
+						<td style="padding: 6px 0; color: ${text}; font-weight: 600;">${dayName}</td>
+					</tr>
+					<tr>
+						<td style="padding: 6px 0; color: ${muted};">Tijdstip:</td>
+						<td style="padding: 6px 0; color: ${text}; font-weight: 600;">${hourLabel}</td>
+					</tr>
+					<tr>
+						<td style="padding: 6px 0; color: ${muted};">Bestuurder:</td>
+						<td style="padding: 6px 0; color: ${text}; font-weight: 600;">${driverName}</td>
+					</tr>
+				</table>
+			</div>
+			
+			<p style="color: ${muted}; line-height: 1.6;">Je kunt de volledige details van de route en het voorstel bekijken op de ritpagina. Daar kun je het voorstel ook accepteren of weigeren.</p>
+			
+			<div style="text-align: center; margin: 35px 0;">
+				<a href="${rideUrl}" style="background-color: ${accent}; color: white; padding: 14px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);">Bekijk Ritvoorstel</a>
+			</div>
+			
+			<div style="border-top: 1px solid ${border}; padding-top: 25px; margin-top: 35px;">
+				<p style="font-size: 0.9rem; color: ${muted}; margin: 0; line-height: 1.5;">
+					Met vriendelijke groet,<br/>
+					<strong style="color: ${text};">Team Ritje</strong>
+				</p>
+			</div>
+		</div>
+	`
 }
