@@ -11,7 +11,8 @@ import {
 	getLoginPage,
 	loginController,
 	logoutController,
-	resendVerificationEmailController
+	resendVerificationEmailController,
+	refreshTokenController
 } from './auth.controller.js'
 import { respondWithNotification } from '../utils/notification.util.js'
 
@@ -66,6 +67,7 @@ router.post(
 	resendVerificationRateLimit,
 	resendVerificationEmailController
 )
+router.post('/api/auth/refresh-token', refreshTokenController)
 router.get('/api/firebase-config', (req, res) => {
 	res.json(config.firebase.web)
 })

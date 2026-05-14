@@ -157,3 +157,46 @@ export const resendVerificationEmailController = async (req, res) => {
 		})
 	}
 }
+
+/**
+ * @brief  Refresh the Firebase ID token in the session cookie.
+ * @details  Accepts a fresh Firebase ID token from the client and updates the session cookie.
+ *           This prevents token expiration errors during active sessions.
+ * @param {object} req - Express request object.
+ * @param {object} res - Express response object.
+ * @returns {Promise<object>} JSON response with status.
+ */
+export const refreshTokenController = async (req, res) => {
+	try {
+		const { idToken } = req.body
+
+		if (!idToken) {
+			return res.status(400).json({
+				success: false,
+				message: 'ID token is required'
+			})
+		}
+
+		// Verify the new token to ensure it's valid
+		await verifyIdToken(idToken, true)
+
+		// Update the session cookie with the new token
+		res.cookie('token', idToken, {
+			httpOnly: true,
+			secure: config.isProduction,
+			sameSite: 'strict',
+			maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+		})
+
+		res.json({
+			success: true,
+			message: 'Token refreshed successfully'
+		})
+	} catch (error) {
+		console.error('Token refresh error:', error.message)
+		res.status(401).json({
+			success: false,
+			message: 'Token refresh failed'
+		})
+	}
+}

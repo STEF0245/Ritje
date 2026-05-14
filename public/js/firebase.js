@@ -5,6 +5,7 @@ import {
 	setPersistence,
 	browserLocalPersistence
 } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js'
+import { initTokenRefresh } from './token-refresh.js'
 
 const requiredConfigKeys = ['apiKey', 'authDomain', 'projectId', 'appId']
 // Fetch config from server instead of window
@@ -34,6 +35,11 @@ export const authReady = new Promise((resolve) => {
 		unsubscribe()
 		resolve(user)
 	})
+})
+
+// Initialize automatic token refresh once auth is ready
+initTokenRefresh().catch((err) => {
+	console.error('Failed to initialize token refresh:', err.message)
 })
 
 export { app, auth }

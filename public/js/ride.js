@@ -133,12 +133,11 @@ function updateSaveButtonState() {
 }
 
 function getSelectedScheduleSlot() {
-	const selected = radioGroup?.querySelector('[ride-input]:checked')
-	if (!selected?.id) return null
+	const match = window.location.pathname.match(/^\/ride\/(\d+)\/(\d+)\/?$/)
+	if (!match) return null
 
-	const [dayRaw, hourRaw] = selected.id.split('_')
-	const day = Number(dayRaw)
-	const hour = Number(hourRaw)
+	const day = Number(match[1])
+	const hour = Number(match[2])
 
 	if (!Number.isInteger(day) || !Number.isInteger(hour)) {
 		return null

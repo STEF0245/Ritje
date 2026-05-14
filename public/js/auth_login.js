@@ -5,7 +5,7 @@
  */
 
 import { auth } from './firebase.js'
-import { signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js'
+import { signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js'
 
 const form = document.getElementById('login-form')
 const statusNode = document.getElementById('login-status')
@@ -52,8 +52,10 @@ form.addEventListener('submit', async (event) => {
 
 		idTokenInput.value = idToken
 
-		// Clear the in-memory Firebase session; server session cookie becomes source of truth.
-		await signOut(auth)
+		// Keep the Firebase session active so that client-side token refresh can work.
+		// The server session cookie becomes the primary auth method for server-side requests,
+		// but the Firebase session allows the client to refresh tokens proactively.
+		// Do NOT sign out here: await signOut(auth)
 
 		form.submit()
 	} catch (error) {
