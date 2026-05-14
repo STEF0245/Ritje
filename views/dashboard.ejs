@@ -32,8 +32,8 @@
 
     mapMarkers.push(schoolData)
     const routeJson = JSON.stringify(locals.route) || 'null';
-    const selectedKey = locals.currentRide?.day || locals.day || null;
-    const selectedValue = locals.currentRide?.hour || locals.hour || null;
+    const selectedKey = String(locals.currentRide?.day || locals.day || '');
+    const selectedValue = String(locals.currentRide?.hour || locals.hour || '');
     const schedule = locals.user?.metadata?.schedule || {};
 
     const weekdays = [
@@ -151,8 +151,8 @@
                                             <h3 class="text-xs uppercase tracking-[0.12em] theme-text-muted"><%= label %></h3>
                                             <% if (isAvailable) { %>
                                                 <div class="flex flex-row gap-2 mt-2">
-                                                    <a ride-label href="/dashboard/<%= key %>/<%= start.value %>" class="theme-pill border theme-border px-4 py-2 text-xs theme-text-muted cursor-pointer <% if (key == selectedKey && start.value === selectedValue) { %>checked<% } %>"><%= start.label %></a>
-                                                    <a ride-label href="/dashboard/<%= key %>/<%= end.value %>" class="theme-pill border theme-border px-4 py-2 text-xs theme-text-muted cursor-pointer <% if (key == selectedKey && end.value === selectedValue) { %>checked<% } %>"><%= end.label %></a>
+                                                    <a ride-label href="/dashboard/<%= key %>/<%= start.value %>" class="theme-pill border theme-border px-4 py-2 text-xs theme-text-muted cursor-pointer <% if (String(key) === selectedKey && String(start.value) === selectedValue) { %>checked<% } %>"><%= start.label %></a>
+                                                    <a ride-label href="/dashboard/<%= key %>/<%= end.value %>" class="theme-pill border theme-border px-4 py-2 text-xs theme-text-muted cursor-pointer <% if (String(key) === selectedKey && String(end.value) === selectedValue) { %>checked<% } %>"><%= end.label %></a>
                                                 </div>
                                             <% } else { %>
                                                 <p class="theme-text-muted text-xs">Niet beschikbaar</p>
