@@ -665,7 +665,8 @@ export const getRidePage = async (req, res) => {
 
 		// If no day/hour provided, find the next one and redirect
 		if (
-			(day === null || hour === null) ||
+			day === null ||
+			hour === null ||
 			!isValidOccurrence(req.user?.metadata?.schedule, day, hour)
 		) {
 			const nextOccurrence = getNextOccurrence(
@@ -965,51 +966,95 @@ const generateEmailContent = (
 	const bg900 = '#0b0f14'
 	const bg800 = '#1c2430'
 	const border = '#3a4658'
+	const borderLight = '#4a5668'
 	const text = '#e6edf7'
-	const muted = '#9ca3af' // Approximately color-mix(in srgb, var(--ride-c4) 62%, var(--ride-c3))
+	const muted = '#9ca3af'
 	const accent = '#3b82f6'
 
 	return `
-		<div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; background-color: ${bg900}; border: 1px solid ${border}; border-radius: 12px; color: ${text};">
-			<div style="text-align: center; margin-bottom: 30px;">
-				<div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.2em; font-weight: 700; color: ${muted}; margin-bottom: 8px;">RITJE</div>
-				<h2 style="font-size: 2rem; margin: 0; font-weight: 900; letter-spacing: -0.02em; color: ${text};">Nieuw Ritvoorstel</h2>
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; background-color: #f5f5f5;">
+	<div style="max-width: 600px; margin: 20px auto; padding: 0 15px;">
+		<div style="background-color: ${bg900}; border: 1px solid ${border}; border-radius: 10px; overflow: hidden;">
+			
+			<!-- Header -->
+			<div style="background-color: ${bg800}; padding: 30px; border-bottom: 1px solid ${border};">
+				<div style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.2em; font-weight: 700; color: ${muted}; margin-bottom: 10px;">Ritje</div>
+				<h1 style="font-size: 28px; font-weight: 900; margin: 0 0 8px 0; letter-spacing: -0.02em; color: ${text};">Nieuw Ritvoorstel</h1>
+				<p style="font-size: 14px; color: ${muted}; margin: 0; line-height: 1.5;">Een nieuw ritvoorstel voor jou</p>
 			</div>
-			
-			<p style="font-size: 1.1rem;">Beste <strong>${recipient.name?.first || 'deelnemer'}</strong>,</p>
-			
-			<p style="color: ${muted}; line-height: 1.6;">Er is goed nieuws! <strong>${driverName}</strong> heeft een nieuw ritvoorstel gemaakt waarbij jouw locatie is opgenomen als mogelijke opstapplaats.</p>
-			
-			<div style="background-color: ${bg800}; border: 1px solid ${border}; padding: 20px; border-radius: 10px; margin: 25px 0; box-shadow: 0 10px 24px rgba(0,0,0,0.3);">
-				<p style="margin: 0 0 15px 0; font-weight: 700; color: ${text}; border-bottom: 1px solid ${border}; padding-bottom: 10px;">Details van de rit</p>
+
+			<!-- Content -->
+			<div style="padding: 30px;">
+				
+				<!-- Greeting -->
+				<p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.6; color: ${text};">
+					Hallo <strong>${recipient.name?.first || 'deelnemer'}</strong>,
+				</p>
+
+				<!-- Message -->
+				<p style="margin: 0 0 24px 0; font-size: 15px; line-height: 1.6; color: ${text};">
+					Goed nieuws! <strong>${driverName}</strong> heeft een nieuw ritvoorstel gemaakt waarbij jouw locatie is opgenomen als mogelijke opstapplaats.
+				</p>
+
+				<!-- Details -->
+				<div style="background-color: ${bg800}; border: 1px solid ${border}; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+					<div style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.2em; font-weight: 700; color: ${accent}; margin-bottom: 16px;">Ritdetails</div>
+					
+					<table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+						<tr>
+							<td style="padding: 8px 0 12px 0; color: ${muted}; font-weight: 600; width: 100px;">Dag:</td>
+							<td style="padding: 8px 0 12px 0; color: ${text}; font-weight: 600;">${dayName}</td>
+						</tr>
+						<tr>
+							<td style="padding: 8px 0 12px 0; color: ${muted}; font-weight: 600;">Tijdstip:</td>
+							<td style="padding: 8px 0 12px 0; color: ${text}; font-weight: 600;">${hourLabel}</td>
+						</tr>
+						<tr>
+							<td style="padding: 8px 0; color: ${muted}; font-weight: 600;">Bestuurder:</td>
+							<td style="padding: 8px 0; color: ${text}; font-weight: 600;">${driverName}</td>
+						</tr>
+					</table>
+				</div>
+
+				<!-- Action Info -->
+				<p style="margin: 0 0 24px 0; font-size: 15px; line-height: 1.6; color: ${muted};">
+					Je kunt het volledige ritvoorstel op de ritpagina bekijken. Daar kun je het voorstel accepteren of weigeren.
+				</p>
+
+				<!-- Buttons -->
 				<table style="width: 100%; border-collapse: collapse;">
 					<tr>
-						<td style="padding: 6px 0; color: ${muted}; width: 100px;">Dag:</td>
-						<td style="padding: 6px 0; color: ${text}; font-weight: 600;">${dayName}</td>
+						<td style="padding: 8px 0;">
+							<a href="${rideUrl}" style="display: block; background-color: ${accent}; color: white; padding: 14px 24px; text-decoration: none; border-radius: 8px; font-weight: 700; text-align: center; font-size: 15px; border: 1px solid ${accent};">
+								Bekijk Ritvoorstel
+							</a>
+						</td>
 					</tr>
 					<tr>
-						<td style="padding: 6px 0; color: ${muted};">Tijdstip:</td>
-						<td style="padding: 6px 0; color: ${text}; font-weight: 600;">${hourLabel}</td>
-					</tr>
-					<tr>
-						<td style="padding: 6px 0; color: ${muted};">Bestuurder:</td>
-						<td style="padding: 6px 0; color: ${text}; font-weight: 600;">${driverName}</td>
+						<td style="padding: 8px 0;">
+							<a href="${rideUrl}/reject" style="display: block; background-color: transparent; color: ${text}; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; text-align: center; font-size: 14px; border: 1px solid ${border};">
+								Weiger
+							</a>
+						</td>
 					</tr>
 				</table>
 			</div>
-			
-			<p style="color: ${muted}; line-height: 1.6;">Je kunt de volledige details van de route en het voorstel bekijken op de ritpagina. Daar kun je het voorstel ook accepteren of weigeren.</p>
-			
-			<div style="text-align: center; margin: 35px 0;">
-				<a href="${rideUrl}" style="background-color: ${accent}; color: white; padding: 14px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);">Bekijk Ritvoorstel</a>
-			</div>
-			
-			<div style="border-top: 1px solid ${border}; padding-top: 25px; margin-top: 35px;">
-				<p style="font-size: 0.9rem; color: ${muted}; margin: 0; line-height: 1.5;">
-					Met vriendelijke groet,<br/>
-					<strong style="color: ${text};">Team Ritje</strong>
+
+			<!-- Footer -->
+			<div style="background-color: ${bg800}; border-top: 1px solid ${border}; padding: 20px 30px; text-align: center;">
+				<p style="margin: 0; font-size: 12px; color: ${muted}; line-height: 1.5;">
+					© ${new Date().getFullYear()} Ritje • Slim samen reizen naar school
 				</p>
 			</div>
 		</div>
+	</div>
+</body>
+</html>
 	`
 }
