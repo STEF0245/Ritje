@@ -32,6 +32,24 @@ const normalizeSuggestionIds = (value) => {
 	return value.map((id) => String(id)).filter(Boolean)
 }
 
+const getRideStatus = (ride) => {
+	return String(ride?.status || 'active').toLowerCase()
+}
+
+const isRideCanceled = (ride) => {
+	return getRideStatus(ride) === 'canceled'
+}
+
+const buildRidePassengerResponses = (suggestionIds = []) => {
+	return suggestionIds.reduce((responses, uid) => {
+		responses[uid] = {
+			status: 'pending',
+			respondedAt: null
+		}
+		return responses
+	}, {})
+}
+
 /**
  * @brief Order waypoints with a simple greedy nearest-neighbor heuristic.
  * @param {{latitude:number,longitude:number}} origin
@@ -628,7 +646,17 @@ export const buildRidePayload = async (req, day, hour) => {
 		baseRoute
 	})
 
-	const currentRide = await getRidesForUser(req.user?.uid, day, hour)
+	const currentRideRecord = await getRidesForUser(req.user?.uid, day, hour)
+	const currentRide =
+		currentRideRecord && !isRideCanceled(currentRideRecord)
+			? currentRideRecord
+			: null
+	const invitationRides = await getInvitationRidesForUser(
+		req.user?.uid,
+		day,
+		hour,
+		users
+	)
 	const displayRoute = currentRide?.route || baseRoute
 	const schedule = req.user?.metadata?.schedule || {}
 	const { daySchedules, hasAnySchedule } = buildDaySchedules(schedule)
@@ -642,6 +670,7 @@ export const buildRidePayload = async (req, day, hour) => {
 		route: displayRoute,
 		suggestionMarkers,
 		currentRide,
+		invitationRides,
 		day,
 		hour,
 		daySchedules,
@@ -818,6 +847,128 @@ export const getRidesForUser = async (userUid, day, hour) => {
 	return ride
 }
 
+const getActiveRideForUser = async (userUid) => {
+	const snapshot = await db.ref(`rides/${userUid}`).once('value')
+	const rides = snapshot.val() || {}
+
+	for (const [rideKey, ride] of Object.entries(rides)) {
+		if (ride && !isRideCanceled(ride)) {
+			return {
+				ride,
+				rideKey
+			}
+		}
+	}
+
+	return null
+}
+
+/**
+ *
+ * @brief Checks if the user has another active ride besides the current one.
+ * @param {string} userUid - The user's unique identifier.
+ * @param {string} currentRideKey - The key of the current ride to exclude from the check.
+ * @returns {Promise<boolean>} True if another active ride exists, false otherwise.
+ * @details This is used to prevent users from creating multiple overlapping rides, which could cause confusion and scheduling conflicts.
+ */
+const hasAnotherActiveRideForUser = async (userUid, currentRideKey) => {
+	const snapshot = await db
+		.ref(`rides/${userUid}/${currentRideKey}`)
+		.once('value')
+	const ride = snapshot.val() || {}
+
+	if (ride && !isRideCanceled(ride)) {
+		return true
+	}
+
+	const activeRide = await getActiveRideForUser(userUid)
+	return activeRide && activeRide.rideKey !== currentRideKey
+}
+
+export const getInvitationRidesForUser = async (
+	userUid,
+	day,
+	hour,
+	users = []
+) => {
+	const snapshot = await db.ref('rides').once('value')
+	const ridesByDriver = snapshot.val() || {}
+	const invitationRides = []
+	const userLookup = new Map(users.map((user) => [user?.uid, user]))
+
+	for (const [driverUid, driverRides] of Object.entries(ridesByDriver)) {
+		if (!driverRides || driverUid === userUid) continue
+
+		for (const [rideKey, ride] of Object.entries(driverRides)) {
+			if (!ride) continue
+			if (
+				Number(ride.day) !== Number(day) ||
+				Number(ride.hour) !== Number(hour)
+			) {
+				continue
+			}
+			if (!Array.isArray(ride.suggestionIds)) continue
+			if (!ride.suggestionIds.includes(userUid)) continue
+			if (isRideCanceled(ride)) continue
+
+			invitationRides.push({
+				...ride,
+				driverUid,
+				driverName:
+					userLookup.get(driverUid)?.metadata?.name?.full ||
+					userLookup.get(driverUid)?.displayName ||
+					userLookup.get(driverUid)?.email ||
+					driverUid,
+				rideKey,
+				passengerResponse: ride?.passengerResponses?.[userUid] || null,
+				status: ride.status || 'active'
+			})
+		}
+	}
+
+	return invitationRides
+}
+
+const updatePassengerResponse = async ({
+	driverUid,
+	day,
+	hour,
+	passengerUid,
+	status
+}) => {
+	const rideKey = getRideRecordKey(driverUid, day, hour)
+	const rideSnapshot = await db.ref(rideKey).once('value')
+	const ride = rideSnapshot.val()
+
+	if (!ride || isRideCanceled(ride)) {
+		return null
+	}
+
+	if (
+		!Array.isArray(ride.suggestionIds) ||
+		!ride.suggestionIds.includes(passengerUid)
+	) {
+		return null
+	}
+
+	const nowIso = new Date().toISOString()
+	await db.ref(`${rideKey}/passengerResponses/${passengerUid}`).set({
+		status,
+		respondedAt: nowIso
+	})
+
+	return {
+		...ride,
+		passengerResponses: {
+			...(ride.passengerResponses || {}),
+			[passengerUid]: {
+				status,
+				respondedAt: nowIso
+			}
+		}
+	}
+}
+
 const getRideRecordKey = (userUid, day, hour) => {
 	return `rides/${userUid}/${day}_${hour}`
 }
@@ -852,6 +1003,13 @@ export const saveRideRoute = async (req, res) => {
 			return res.json({ saved: false, ignored: true })
 		}
 
+		const currentRideKey = getRideRecordKey(userUid, day, hour)
+		if (await hasAnotherActiveRideForUser(userUid, `${day}/${hour}`)) {
+			return res.status(409).json({
+				error: 'Je hebt al een actieve rit. Annuleer die eerst voordat je een nieuwe rit opslaat.'
+			})
+		}
+
 		const markers = Array.isArray(req.body?.markers) ? req.body.markers : []
 		const suggestionIds = normalizeSuggestionIds(req.body?.suggestionIds)
 		const nowIso = new Date().toISOString()
@@ -861,7 +1019,9 @@ export const saveRideRoute = async (req, res) => {
 			uid: userUid,
 			day,
 			hour,
+			status: 'active',
 			suggestionIds,
+			passengerResponses: buildRidePassengerResponses(suggestionIds),
 			route,
 			markers,
 			routeMetrics,
@@ -869,7 +1029,7 @@ export const saveRideRoute = async (req, res) => {
 			updatedAt: nowIso
 		}
 
-		await db.ref(getRideRecordKey(userUid, day, hour)).set(record)
+		await db.ref(currentRideKey).set(record)
 		const isStart = user?.metadata?.schedule?.[day]?.start == hour
 		await sendEmailToAllUsers(suggestionIds, userUid, day, hour, isStart)
 
@@ -883,6 +1043,44 @@ export const saveRideRoute = async (req, res) => {
 			error: 'Er is een fout opgetreden bij het opslaan van de rit. Probeer het later opnieuw.'
 		})
 	}
+}
+
+export const cancelRideForUser = async ({ userUid, day, hour }) => {
+	const rideKey = getRideRecordKey(userUid, day, hour)
+	const snapshot = await db.ref(rideKey).once('value')
+	const ride = snapshot.val()
+	if (!ride) return null
+
+	const nowIso = new Date().toISOString()
+	const updatedRide = {
+		...ride,
+		status: 'canceled',
+		canceledAt: nowIso,
+		updatedAt: nowIso
+	}
+
+	await db.ref(rideKey).set(updatedRide)
+	return updatedRide
+}
+
+export const respondToInvitationRide = async ({
+	driverUid,
+	day,
+	hour,
+	passengerUid,
+	response
+}) => {
+	if (!['accepted', 'rejected'].includes(response)) {
+		return null
+	}
+
+	return updatePassengerResponse({
+		driverUid,
+		day,
+		hour,
+		passengerUid,
+		status: response
+	})
 }
 
 const sendEmailToAllUsers = async (

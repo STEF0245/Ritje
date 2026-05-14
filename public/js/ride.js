@@ -223,12 +223,14 @@ async function saveCurrentRideRoute() {
 			})
 		})
 
+		const result = await response.json().catch(() => null)
 		if (!response.ok) {
-			throw new Error(`HTTP ${response.status}`)
+			throw new Error(result?.error || `HTTP ${response.status}`)
 		}
-
-		const result = await response.json()
 		if (!result?.saved) {
+			if (result?.error) {
+				throw new Error(result.error)
+			}
 			return
 		}
 
@@ -236,7 +238,9 @@ async function saveCurrentRideRoute() {
 		updateSaveButtonState()
 	} catch (error) {
 		console.error('Error saving ride route:', error)
-		showRideStatus('Rit opslaan is mislukt.', 'error')
+		showRideStatus(error?.message || 'Rit opslaan is mislukt.', 'error', {
+			autoHideMs: 6500
+		})
 	} finally {
 		saveInFlight = false
 		updateSaveButtonState()

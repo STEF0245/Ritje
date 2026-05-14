@@ -50,7 +50,7 @@ export const loginController = async (req, res) => {
 			sameSite: 'strict',
 			maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
 		})
-		res.redirect('/profile')
+		res.redirect('/dashboard')
 	} catch (err) {
 		console.error('Login error:', err.message)
 		return respondWithNotification(res, {

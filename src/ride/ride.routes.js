@@ -52,7 +52,7 @@ const calculateLimiter = (() => {
 	}
 })()
 
-router.get('/', getRidePage)
+router.get('/', (req, res) => res.redirect('/dashboard'))
 router.get('/:day/:hour', getRidePage)
 router.post('/calculate', calculateLimiter, calculateRouteWithSuggestions)
 router.post('/save', saveRideRoute)

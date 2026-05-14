@@ -60,6 +60,7 @@ const resendVerificationRateLimit = rateLimit({
 })
 
 router.get('/login', getLoginPage)
+router.get('/', (req, res) => res.redirect('/dashboard'))
 router.post('/login', loginRateLimit, loginController)
 router.post('/logout', logoutRateLimit, logoutController)
 router.post(

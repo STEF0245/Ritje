@@ -1,9 +1,10 @@
-import { buildRidePayload } from '../ride/ride.controller.js'
-import { respondWithNotification } from '../utils/notification.util.js'
 import {
-	getNextOccurrence,
-	isValidOccurrence
-} from '../utils/schedule.util.js'
+	buildRidePayload,
+	cancelRideForUser,
+	respondToInvitationRide
+} from '../ride/ride.controller.js'
+import { respondWithNotification } from '../utils/notification.util.js'
+import { getNextOccurrence, isValidOccurrence } from '../utils/schedule.util.js'
 
 export const getDashboardPage = async (req, res) => {
 	try {
@@ -17,7 +18,9 @@ export const getDashboardPage = async (req, res) => {
 			((day === null || isNaN(day)) && (hour === null || isNaN(hour))) ||
 			!isValidOccurrence(req.user?.metadata?.schedule, day, hour)
 		) {
-			const nextOccurrence = getNextOccurrence(req.user?.metadata?.schedule || {})
+			const nextOccurrence = getNextOccurrence(
+				req.user?.metadata?.schedule || {}
+			)
 			if (nextOccurrence) {
 				return res.redirect(
 					`/dashboard/${nextOccurrence.day}/${nextOccurrence.hour}`
@@ -66,12 +69,115 @@ export const getDashboardPage = async (req, res) => {
 	}
 }
 
+export const cancelDashboardRide = async (req, res) => {
+	try {
+		const day = Number(req.params.day)
+		const hour = Number(req.params.hour)
+		const ride = await cancelRideForUser({
+			userUid: req.user?.uid,
+			day,
+			hour
+		})
+
+		if (!ride) {
+			return respondWithNotification(res, {
+				type: 'info',
+				label: 'Rit niet gevonden',
+				message: 'Er was geen actieve rit om te annuleren.',
+				redirectTo: `/dashboard/${day}/${hour}`
+			})
+		}
+
+		return respondWithNotification(res, {
+			type: 'success',
+			label: 'Rit geannuleerd',
+			message: 'De rit is geannuleerd en kan opnieuw worden aangemaakt.',
+			redirectTo: `/dashboard/${day}/${hour}`
+		})
+	} catch (error) {
+		console.error('Error canceling dashboard ride:', error)
+		return respondWithNotification(res, {
+			type: 'error',
+			label: 'Annuleren mislukt',
+			message:
+				'De rit kon niet worden geannuleerd. Probeer het later opnieuw.',
+			redirectTo: '/dashboard'
+		})
+	}
+}
+
+export const respondToDashboardRide = async (req, res) => {
+	try {
+		const day = Number(req.params.day)
+		const hour = Number(req.params.hour)
+		const driverUid = String(req.body?.driverUid || '')
+		const response = String(req.body?.response || '')
+
+		if (!driverUid) {
+			return respondWithNotification(res, {
+				type: 'error',
+				label: 'Ongeldige rit',
+				message: 'Er ontbreekt een rit om op te reageren.',
+				redirectTo: `/dashboard/${day}/${hour}`
+			})
+		}
+
+		const ride = await respondToInvitationRide({
+			driverUid,
+			day,
+			hour,
+			passengerUid: req.user?.uid,
+			response
+		})
+
+		if (!ride) {
+			return respondWithNotification(res, {
+				type: 'info',
+				label: 'Geen uitnodiging',
+				message:
+					'Deze rit is niet meer beschikbaar of je bent geen genodigde.',
+				redirectTo: `/dashboard/${day}/${hour}`
+			})
+		}
+
+		return respondWithNotification(res, {
+			type: response === 'accepted' ? 'success' : 'info',
+			label:
+				response === 'accepted' ? 'Rit geaccepteerd' : 'Rit geweigerd',
+			message:
+				response === 'accepted'
+					? 'Je deelname aan de rit is bevestigd.'
+					: 'Je hebt de rituitnodiging geweigerd.',
+			redirectTo: `/dashboard/${day}/${hour}`
+		})
+	} catch (error) {
+		console.error('Error responding to dashboard ride:', error)
+		return respondWithNotification(res, {
+			type: 'error',
+			label: 'Reactie mislukt',
+			message:
+				'Je reactie kon niet worden opgeslagen. Probeer het later opnieuw.',
+			redirectTo: '/dashboard'
+		})
+	}
+}
+
 const mapRidePayloadToDashboard = (payload) => {
-	const { currentRide, route, mapMarkers, day, hour } = payload || {}
+	const {
+		currentRide,
+		route,
+		mapMarkers,
+		day,
+		hour,
+		invitationRides = []
+	} = payload || {}
+	const activeRide = currentRide || null
+	const primaryRide = activeRide || invitationRides[0] || null
 	return {
-		route: currentRide?.route || route || null,
-		markers: currentRide?.markers || mapMarkers || [],
-		currentRide: currentRide,
+		route: primaryRide?.route || route || null,
+		markers: primaryRide?.markers || mapMarkers || [],
+		currentRide: activeRide,
+		invitationRides,
 		day: day,
 		hour: hour,
 		daySchedules: payload?.daySchedules || [],
