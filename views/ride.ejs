@@ -5,6 +5,8 @@
     const schedule = locals.user?.metadata?.schedule || {};
     const rideSettings = locals.rideSettings || {};
     const seatLimit = Number(rideSettings?.seats?.total || 1);
+    const selectedKey = String(locals.day || '');
+    const selectedValue = String(locals.hour || '');
 
     const weekdays = [
 		{ key: '1', label: 'Maandag' },
@@ -121,10 +123,8 @@
                                             <h3 class="text-xs uppercase tracking-[0.12em] theme-text-muted"><%= label %></h3>
                                             <% if (isAvailable) { %>
                                                 <div class="flex flex-row gap-2 mt-2">
-													<input ride-input type="radio" name="day_time" id="<%= key %>_<%= start.value %>" class="hidden" <%= start.nextUp ? 'checked' : '' %> />
-                                                    <label ride-label for="<%= key %>_<%= start.value %>" class="theme-pill border theme-border px-4 py-2 text-xs theme-text-muted cursor-pointer"><%= start.label %></label>
-													<input ride-input type="radio" name="day_time" id="<%= key %>_<%= end.value %>" class="hidden" <%= end.nextUp ? 'checked' : '' %> />
-                                                    <label ride-label for="<%= key %>_<%= end.value %>" class="theme-pill border theme-border px-4 py-2 text-xs theme-text-muted cursor-pointer"><%= end.label %></label>
+                                                    <a ride-label href="/ride/<%= key %>/<%= start.value %>" class="theme-pill border theme-border px-4 py-2 text-xs theme-text-muted cursor-pointer <% if (key == selectedKey && start.value == selectedValue) { %>checked<% } %>"><%= start.label %></a>
+                                                    <a ride-label href="/ride/<%= key %>/<%= end.value %>" class="theme-pill border theme-border px-4 py-2 text-xs theme-text-muted cursor-pointer <% if (key == selectedKey && end.value == selectedValue) { %>checked<% } %>"><%= end.label %></a>
                                                 </div>
                                             <% } else { %>
                                                 <p class="theme-text-muted text-xs">Niet beschikbaar</p>

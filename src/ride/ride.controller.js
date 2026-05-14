@@ -647,9 +647,28 @@ export const buildRidePayload = async (req, day, hour) => {
  */
 export const getRidePage = async (req, res) => {
 	try {
-		const now = new Date()
-		const day = toNonNegativeInteger(req.params?.day) || now.getDay()
-		const hour = toNonNegativeInteger(req.params?.hour) || now.getHours()
+		const day = toNonNegativeInteger(req.params?.day)
+		const hour = toNonNegativeInteger(req.params?.hour)
+
+		// If no day/hour provided, find the next one and redirect
+		if (
+			(day === null || hour === null) ||
+			!isValidOccurrence(req.user?.metadata?.schedule, day, hour)
+		) {
+			const nextOccurrence = getNextOccurrence(req)
+			if (nextOccurrence) {
+				return res.redirect(
+					`/ride/${nextOccurrence.day}/${nextOccurrence.hour}`
+				)
+			}
+			return respondWithNotification(res, {
+				type: 'info',
+				message: 'Je hebt geen rooster ingesteld.',
+				status: 200,
+				view: 'ride',
+				title: 'Ritten'
+			})
+		}
 
 		const payload = await buildRidePayload(req, day, hour)
 
@@ -670,61 +689,62 @@ export const getRidePage = async (req, res) => {
 	}
 }
 
-/**
- * @brief Returns the suggestion list for the selected weekday and time slot.
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
- * @returns {Promise<object>} JSON response containing ride suggestions.
- * @details This endpoint is called by the ride page when the user changes the selected schedule slot.
- */
-export const getRideSuggestions = async (req, res) => {
-	try {
-		const day = toNonNegativeInteger(req.query.day)
-		const hour = toNonNegativeInteger(req.query.hour)
-		if (day === null || hour === null)
-			return res.status(400).json({
-				error: 'Ongeldige parameters: "day" en "hour" moeten niet-negatieve gehele getallen zijn.'
-			})
-		if (hour < 1 || hour > 8)
-			return res.status(400).json({
-				error: 'Ongeldige parameter: "hour" moet een waarde tussen 1 en 8 hebben.'
-			})
-		if (day < 1 || day > 5)
-			return res.status(400).json({
-				error: 'Ongeldige parameter: "day" moet een waarde tussen 1 en 5 hebben.'
-			})
+// Helper function to calculate next occurrence
+const getNextOccurrence = (req) => {
+	const schedule = req.user?.metadata?.schedule || {}
+	const now = new Date()
+	const today = now.getDay()
 
-		const users = await getAllUsers()
-		const filteredUsers = filterUsersByDayAndHour(
-			users,
-			req.user,
-			day,
-			hour
-		)
-		const mapMarkers = buildRideMarkers(filteredUsers, req.user?.uid)
-		const rideSettings = getRideSettings(req.user?.metadata?.preferences)
-		const originCoords = resolveSuggestionOrigin(req)
-		const baseRoute = originCoords ? await getBaseRoute(originCoords) : null
-		const suggestionMarkers = await buildRideSuggestions({
-			markers: mapMarkers,
-			currentUser: req.user,
-			originCoords,
-			rideSettings,
-			baseRoute
-		})
-
-		const currentRide = await getRidesForUser(req.user?.uid, day, hour)
-
-		return res.json({
-			suggestions: suggestionMarkers,
-			currentRide
-		})
-	} catch (error) {
-		console.error('Error fetching ride suggestions:', error)
-		return res.status(500).json({
-			error: 'Er is een fout opgetreden bij het ophalen van rit suggesties. Probeer het later opnieuw.'
-		})
+	const hourMap = {
+		1: ['08:25', '09:15'],
+		2: ['09:15', '10:20'],
+		3: ['10:20', '11:10'],
+		4: ['11:10', '12:00'],
+		5: ['13:00', '13:50'],
+		6: ['13:50', '14:40'],
+		7: ['14:55', '15:45'],
+		8: ['15:45', '16:35']
 	}
+
+	let nextEvent = null
+	let minDiff = Infinity
+
+	Object.keys(schedule).forEach((dayKey) => {
+		const day = Number(dayKey)
+		const daySchedule = schedule[dayKey]
+
+		const slots = [
+			{ hour: daySchedule.start, timeIdx: 0 },
+			{ hour: daySchedule.end, timeIdx: 1 }
+		]
+
+		slots.forEach(({ hour, timeIdx }) => {
+			if (!hour || !hourMap[hour]) return
+
+			const [hh, mm] = hourMap[hour][timeIdx].split(':').map(Number)
+			const candidate = new Date(now)
+
+			let daysAhead = (day - today + 7) % 7
+			candidate.setDate(now.getDate() + daysAhead)
+			candidate.setHours(hh, mm, 0, 0)
+
+			if (candidate <= now) candidate.setDate(candidate.getDate() + 7)
+
+			const diff = candidate.getTime() - now.getTime()
+			if (diff < minDiff) {
+				minDiff = diff
+				nextEvent = { day, hour }
+			}
+		})
+	})
+
+	return nextEvent
+}
+
+const isValidOccurrence = (schedule, day, hour) => {
+	if (!schedule || !schedule[day]) return false
+	const daySchedule = schedule[day]
+	return hour === daySchedule.start || hour === daySchedule.end
 }
 
 export const calculateRouteWithSuggestions = async (req, res) => {
