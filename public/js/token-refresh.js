@@ -7,8 +7,8 @@
 
 import { auth, authReady } from './firebase.js'
 
-// Token refresh interval: 50 minutes (Firebase tokens expire after 1 hour)
-const REFRESH_INTERVAL_MS = 50 * 60 * 1000
+// Token refresh interval: 5 minutes (Firebase tokens expire after 1 hour)
+const REFRESH_INTERVAL_MS = 5 * 60 * 1000
 
 let refreshTimeout = null
 
