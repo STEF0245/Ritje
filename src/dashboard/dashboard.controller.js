@@ -1,5 +1,9 @@
 import { buildRidePayload } from '../ride/ride.controller.js'
 import { respondWithNotification } from '../utils/notification.util.js'
+import {
+	getNextOccurrence,
+	isValidOccurrence
+} from '../utils/schedule.util.js'
 
 export const getDashboardPage = async (req, res) => {
 	try {
@@ -13,7 +17,7 @@ export const getDashboardPage = async (req, res) => {
 			((day === null || isNaN(day)) && (hour === null || isNaN(hour))) ||
 			!isValidOccurrence(req.user?.metadata?.schedule, day, hour)
 		) {
-			const nextOccurrence = getNextOccurrence(req)
+			const nextOccurrence = getNextOccurrence(req.user?.metadata?.schedule || {})
 			if (nextOccurrence) {
 				return res.redirect(
 					`/dashboard/${nextOccurrence.day}/${nextOccurrence.hour}`
@@ -69,65 +73,10 @@ const mapRidePayloadToDashboard = (payload) => {
 		markers: currentRide?.markers || mapMarkers || [],
 		currentRide: currentRide,
 		day: day,
-		hour: hour
+		hour: hour,
+		daySchedules: payload?.daySchedules || [],
+		hasAnySchedule: payload?.hasAnySchedule || false,
+		selectedKey: payload?.selectedKey || '',
+		selectedValue: payload?.selectedValue || ''
 	}
-}
-
-const getNextOccurrence = (req) => {
-	const schedule = req.user?.metadata?.schedule || {}
-	const now = new Date()
-	const today = now.getDay()
-
-	const hourMap = {
-		1: ['08:25', '09:15'],
-		2: ['09:15', '10:20'],
-		3: ['10:20', '11:10'],
-		4: ['11:10', '12:00'],
-		5: ['13:00', '13:50'],
-		6: ['13:50', '14:40'],
-		7: ['14:55', '15:45'],
-		8: ['15:45', '16:35']
-	}
-
-	let nextEvent = null
-	let minDiff = Infinity
-
-	Object.keys(schedule).forEach((dayKey) => {
-		const day = Number(dayKey)
-		const daySchedule = schedule[dayKey]
-
-		// Check both start and end slots
-		// Using index 0 for 'start' time and index 1 for 'end' time
-		const slots = [
-			{ hour: daySchedule.start, timeIdx: 0 },
-			{ hour: daySchedule.end, timeIdx: 1 }
-		]
-
-		slots.forEach(({ hour, timeIdx }) => {
-			if (!hour || !hourMap[hour]) return
-
-			const [hh, mm] = hourMap[hour][timeIdx].split(':').map(Number)
-			const candidate = new Date(now)
-
-			let daysAhead = (day - today + 7) % 7
-			candidate.setDate(now.getDate() + daysAhead)
-			candidate.setHours(hh, mm, 0, 0)
-
-			if (candidate <= now) candidate.setDate(candidate.getDate() + 7)
-
-			const diff = candidate.getTime() - now.getTime()
-			if (diff < minDiff) {
-				minDiff = diff
-				nextEvent = { day, hour }
-			}
-		})
-	})
-
-	return nextEvent
-}
-
-const isValidOccurrence = (schedule, day, hour) => {
-	if (!schedule || !schedule[day]) return false
-	const daySchedule = schedule[day]
-	return hour === daySchedule.start || hour === daySchedule.end
 }

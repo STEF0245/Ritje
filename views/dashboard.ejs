@@ -32,100 +32,6 @@
 
     mapMarkers.push(schoolData)
     const routeJson = JSON.stringify(locals.route) || 'null';
-    const selectedKey = String(locals.currentRide?.day || locals.day || '');
-    const selectedValue = String(locals.currentRide?.hour || locals.hour || '');
-    const schedule = locals.user?.metadata?.schedule || {};
-
-    const weekdays = [
-		{ key: '1', label: 'Maandag' },
-		{ key: '2', label: 'Dinsdag' },
-		{ key: '3', label: 'Woensdag' },
-		{ key: '4', label: 'Donderdag' },
-		{ key: '5', label: 'Vrijdag' }
-	]
-
-	const hourMap = {
-		'1': ['8:25', '9:15'],
-		'2': ['9:15', '10:20'],
-		'3': ['10:20', '11:10'],
-		'4': ['11:10', '12:00'],
-		'5': ['13:00', '13:50'],
-		'6': ['13:50', '14:40'],
-		'7': ['14:55', '15:45'],
-		'8': ['15:45', '16:35']
-	}
-
-	const resolveHourLabel = (hour, isStart) => {
-		if (!hour) return null
-		const key = String(hour)
-		const [start, end] = hourMap[key] || []
-		return isStart ? start : end
-	}
-    const getNextOccurrenceFor = (dayKey, hourIndex, isStart) => {
-        if (!dayKey || !hourIndex) return null
-        const timeStr = resolveHourLabel(hourIndex, isStart)
-        if (!timeStr) return null
-        const [hh, mm] = timeStr.split(':').map((v) => parseInt(v, 10))
-        const now = new Date()
-        const today = now.getDay() // 0 (Sun) .. 6 (Sat)
-        const targetDay = Number(dayKey) // our day keys use 1..5 for Mon..Fri
-        let daysAhead = (targetDay - today + 7) % 7
-        const candidate = new Date(now)
-        candidate.setDate(now.getDate() + daysAhead)
-        candidate.setHours(hh || 0, mm || 0, 0, 0)
-        if (candidate <= now) {
-            candidate.setDate(candidate.getDate() + 7)
-        }
-        return candidate
-    }
-
-
-    const daySchedules = weekdays.map(({ key, label }) => {
-        const daySchedule = schedule[key] || null
-        const startLabel = resolveHourLabel(daySchedule?.start, true)
-        const endLabel = resolveHourLabel(daySchedule?.end, false)
-        const startNextDate = daySchedule?.start ? getNextOccurrenceFor(key, daySchedule.start, true) : null
-        const endNextDate = daySchedule?.end ? getNextOccurrenceFor(key, daySchedule.end, false) : null
-
-        return {
-            key,
-            label,
-            start: {
-                label: startLabel,
-                value: daySchedule?.start || null,
-                nextDate: startNextDate,
-                nextUp: false
-            },
-            end: {
-                label: endLabel,
-                value: daySchedule?.end || null,
-                nextDate: endNextDate,
-                nextUp: false
-            },
-            isAvailable: Boolean(startLabel && endLabel),
-        }
-    })
-
-    {
-        const now = new Date()
-        let earliest = null
-        daySchedules.forEach((ds) => {
-            if (ds.start.nextDate && ds.start.nextDate >= now) {
-                if (!earliest || ds.start.nextDate < earliest) earliest = ds.start.nextDate
-            }
-            if (ds.end.nextDate && ds.end.nextDate >= now) {
-                if (!earliest || ds.end.nextDate < earliest) earliest = ds.end.nextDate
-            }
-        })
-        if (earliest) {
-            daySchedules.forEach((ds) => {
-                ds.start.nextUp = ds.start.nextDate && ds.start.nextDate.getTime() === earliest.getTime()
-                ds.end.nextUp = ds.end.nextDate && ds.end.nextDate.getTime() === earliest.getTime()
-            })
-        }
-    }
-
-	const hasAnySchedule = daySchedules.some(({ isAvailable }) => isAvailable)
 %>
 
 <!DOCTYPE html>
@@ -144,25 +50,14 @@
                             <p class="theme-text-muted text-sm mt-1">Bekijk uw route, ontvang suggesties en bevestig uw rit.</p>
                         </div>
                         <div class="flex items-center gap-3">
-                            <% if (hasAnySchedule) { %>
-                                <div class="flex flex-row items-center gap-4 w-full" input-radio-group>
-                                    <% daySchedules.forEach(({ key, label, start, end, isAvailable }) => { %>
-                                        <div class="theme-surface theme-pill border theme-border p-4">
-                                            <h3 class="text-xs uppercase tracking-[0.12em] theme-text-muted"><%= label %></h3>
-                                            <% if (isAvailable) { %>
-                                                <div class="flex flex-row gap-2 mt-2">
-                                                    <a ride-label href="/dashboard/<%= key %>/<%= start.value %>" class="theme-pill border theme-border px-4 py-2 text-xs theme-text-muted cursor-pointer <% if (String(key) === selectedKey && String(start.value) === selectedValue) { %>checked<% } %>"><%= start.label %></a>
-                                                    <a ride-label href="/dashboard/<%= key %>/<%= end.value %>" class="theme-pill border theme-border px-4 py-2 text-xs theme-text-muted cursor-pointer <% if (String(key) === selectedKey && String(end.value) === selectedValue) { %>checked<% } %>"><%= end.label %></a>
-                                                </div>
-                                            <% } else { %>
-                                                <p class="theme-text-muted text-xs">Niet beschikbaar</p>
-                                            <% } %>
-                                        </div>
-                                    <% }) %>
-                                </div>
-                            <% } else { %>
-                                <p class="theme-text-muted">Je hebt nog geen uurrooster ingesteld.</p>
-                            <% } %>
+                            <%- include('partials/day_schedule_selector', {
+                                daySchedules,
+                                hasAnySchedule,
+                                selectedKey,
+                                selectedValue,
+                                basePath: '/dashboard',
+                                emptyMessage: 'Je hebt nog geen uurrooster ingesteld.'
+                            }) %>
                         </div>
                     </div>
                 </article>
