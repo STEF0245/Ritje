@@ -9,7 +9,10 @@ export const getDashboardPage = async (req, res) => {
 			req.params.hour !== undefined ? parseInt(req.params.hour) : null
 
 		// If no day/hour provided, find the next one and redirect
-		if ((day === null || isNaN(day)) && (hour === null || isNaN(hour))) {
+		if (
+			((day === null || isNaN(day)) && (hour === null || isNaN(hour))) ||
+			!isValidOccurrence(req.user?.metadata?.schedule, day, hour)
+		) {
 			const nextOccurrence = getNextOccurrence(req)
 			if (nextOccurrence) {
 				return res.redirect(
@@ -18,8 +21,8 @@ export const getDashboardPage = async (req, res) => {
 			}
 			return respondWithNotification(res, {
 				type: 'info',
-				label: 'Geen ritten gepland',
-				message: 'Er zijn momenteel geen geplande ritten in je schema.',
+				label: 'Geen rooster gevonden',
+				message: 'Je hebt geen rooster ingesteld.',
 				view: 'dashboard',
 				title: 'Dashboard',
 				extra: {
@@ -121,4 +124,10 @@ const getNextOccurrence = (req) => {
 	})
 
 	return nextEvent
+}
+
+const isValidOccurrence = (schedule, day, hour) => {
+	if (!schedule || !schedule[day]) return false
+	const daySchedule = schedule[day]
+	return hour === daySchedule.start || hour === daySchedule.end
 }
