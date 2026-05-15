@@ -680,14 +680,18 @@ export const buildRidePayload = async (req, day, hour) => {
 	}
 }
 
-/**
- * @brief Renders the ride page with the current user's route and suggestions.
- * @param {object} req - Express request object.
- * @param {object} res - Express response object.
- * @returns {Promise<object>} Rendered ride page or error notification.
- * @details The handler prepares the initial payload and falls back to a user-facing notification if rendering fails.
- */
-export const getRidePage = async (req, res) => {
+const renderScheduledRidePage = async ({
+	req,
+	res,
+	view,
+	title,
+	redirectBasePath,
+	pageMode,
+	scheduleBasePath,
+	mapPayload = (payload) => payload,
+	noScheduleResponse,
+	errorResponse
+}) => {
 	try {
 		const day = toNonNegativeInteger(req.params?.day)
 		const hour = toNonNegativeInteger(req.params?.hour)
@@ -703,33 +707,180 @@ export const getRidePage = async (req, res) => {
 			)
 			if (nextOccurrence) {
 				return res.redirect(
-					`/ride/${nextOccurrence.day}/${nextOccurrence.hour}`
+					`${redirectBasePath}/${nextOccurrence.day}/${nextOccurrence.hour}`
 				)
 			}
-			return respondWithNotification(res, {
-				type: 'info',
-				message: 'Je hebt geen rooster ingesteld.',
-				status: 200,
-				view: 'ride',
-				title: 'Ritten'
-			})
+			return respondWithNotification(res, noScheduleResponse)
 		}
 
 		const payload = await buildRidePayload(req, day, hour)
+		const mapped = mapPayload({
+			...payload,
+			pageMode,
+			scheduleBasePath
+		})
 
-		return res.render('ride', {
-			title: 'Ritten',
-			...payload
+		return res.render(view, {
+			title,
+			...mapped
 		})
 	} catch (error) {
-		console.error('Error rendering ride page:', error)
-		return respondWithNotification(res, {
+		console.error(`Error rendering ${view} page:`, error)
+		return respondWithNotification(res, errorResponse)
+	}
+}
+
+/**
+ * @brief Renders the ride page with the current user's route and suggestions.
+ * @param {object} req - Express request object.
+ * @param {object} res - Express response object.
+ * @returns {Promise<object>} Rendered ride page or error notification.
+ * @details The handler prepares the initial payload and falls back to a user-facing notification if rendering fails.
+ */
+export const getRidePage = async (req, res) => {
+	return renderScheduledRidePage({
+		req,
+		res,
+		view: 'ride',
+		title: 'Ritten',
+		redirectBasePath: '/ride',
+		pageMode: 'ride',
+		scheduleBasePath: '/ride',
+		noScheduleResponse: {
+			type: 'info',
+			message: 'Je hebt geen rooster ingesteld.',
+			status: 200,
+			view: 'ride',
+			title: 'Ritten',
+			extra: {
+				pageMode: 'ride',
+				scheduleBasePath: '/ride',
+				mapMarkers: [],
+				route: null,
+				suggestionMarkers: [],
+				currentRide: null,
+				invitationRides: [],
+				rideSettings: {},
+				daySchedules: [],
+				hasAnySchedule: false,
+				selectedKey: '',
+				selectedValue: ''
+			}
+		},
+		errorResponse: {
 			type: 'error',
 			message:
 				'Er is een fout opgetreden bij het laden van de ritpagina. Probeer het later opnieuw.',
 			status: 500,
 			view: 'ride',
-			title: 'Ritten'
+			title: 'Ritten',
+			extra: {
+				pageMode: 'ride',
+				scheduleBasePath: '/ride',
+				mapMarkers: [],
+				route: null,
+				suggestionMarkers: [],
+				currentRide: null,
+				invitationRides: [],
+				rideSettings: {},
+				daySchedules: [],
+				hasAnySchedule: false,
+				selectedKey: '',
+				selectedValue: ''
+			}
+		}
+	})
+}
+
+export const cancelRideAction = async (req, res) => {
+	try {
+		const day = Number(req.params.day)
+		const hour = Number(req.params.hour)
+		const ride = await cancelRideForUser({
+			userUid: req.user?.uid,
+			day,
+			hour
+		})
+
+		if (!ride) {
+			return respondWithNotification(res, {
+				type: 'info',
+				label: 'Rit niet gevonden',
+				message: 'Er was geen actieve rit om te annuleren.',
+				redirectTo: `/ride/${day}/${hour}`
+			})
+		}
+
+		return respondWithNotification(res, {
+			type: 'success',
+			label: 'Rit geannuleerd',
+			message: 'De rit is geannuleerd en kan opnieuw worden aangemaakt.',
+			redirectTo: `/ride/${day}/${hour}`
+		})
+	} catch (error) {
+		console.error('Error canceling dashboard ride:', error)
+		return respondWithNotification(res, {
+			type: 'error',
+			label: 'Annuleren mislukt',
+			message:
+				'De rit kon niet worden geannuleerd. Probeer het later opnieuw.',
+			redirectTo: '/ride'
+		})
+	}
+}
+
+export const respondToRideAction = async (req, res) => {
+	try {
+		const day = Number(req.params.day)
+		const hour = Number(req.params.hour)
+		const driverUid = String(req.body?.driverUid || '')
+		const response = String(req.body?.response || '')
+
+		if (!driverUid) {
+			return respondWithNotification(res, {
+				type: 'error',
+				label: 'Ongeldige rit',
+				message: 'Er ontbreekt een rit om op te reageren.',
+				redirectTo: `/ride/${day}/${hour}`
+			})
+		}
+
+		const ride = await respondToInvitationRide({
+			driverUid,
+			day,
+			hour,
+			passengerUid: req.user?.uid,
+			response
+		})
+
+		if (!ride) {
+			return respondWithNotification(res, {
+				type: 'info',
+				label: 'Geen uitnodiging',
+				message:
+					'Deze rit is niet meer beschikbaar of je bent geen genodigde.',
+				redirectTo: `/ride/${day}/${hour}`
+			})
+		}
+
+		return respondWithNotification(res, {
+			type: response === 'accepted' ? 'success' : 'info',
+			label:
+				response === 'accepted' ? 'Rit geaccepteerd' : 'Rit geweigerd',
+			message:
+				response === 'accepted'
+					? 'Je deelname aan de rit is bevestigd.'
+					: 'Je hebt de rituitnodiging geweigerd.',
+			redirectTo: `/ride/${day}/${hour}`
+		})
+	} catch (error) {
+		console.error('Error responding to dashboard ride:', error)
+		return respondWithNotification(res, {
+			type: 'error',
+			label: 'Reactie mislukt',
+			message:
+				'Je reactie kon niet worden opgeslagen. Probeer het later opnieuw.',
+			redirectTo: '/ride'
 		})
 	}
 }
@@ -1065,7 +1216,7 @@ export const saveRideRoute = async (req, res) => {
 		await sendEmailToAllUsers(suggestionIds, userUid, day, hour, isStart)
 
 		// If the request was made via AJAX / expects JSON, return JSON. Otherwise redirect
-		// the browser to the dashboard for the saved day/hour.
+		// the browser to the ride page for the saved day/hour.
 		const wantsJson =
 			req.xhr ||
 			String(req.headers?.accept || '').includes('application/json') ||
@@ -1081,7 +1232,7 @@ export const saveRideRoute = async (req, res) => {
 			})
 		}
 
-		return res.redirect(303, `/dashboard/${day}/${hour}`)
+		return res.redirect(303, `/ride/${day}/${hour}`)
 	} catch (error) {
 		console.error('Error saving ride route:', error)
 		return res.status(500).json({
@@ -1203,7 +1354,7 @@ const generateEmailContent = (
 	hour
 ) => {
 	const driverName = driver?.name?.full || 'Een collega'
-	const rideUrl = `https://ritje.tech/dashboard/${day}/${hour}` // TODO: Use dynamic base URL if available
+	const rideUrl = `https://ritje.tech/ride/${day}/${hour}` // TODO: Use dynamic base URL if available
 
 	// Theme colors from style.css
 	const bg900 = '#0b0f14'

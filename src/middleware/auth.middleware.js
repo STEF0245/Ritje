@@ -96,7 +96,7 @@ export const requireAuth = async (req, res, next) => {
 			})
 		}
 
-		if (req.path === '/login') return res.redirect('/dashboard')
+		if (req.path === '/login') return res.redirect('/ride')
 		next()
 	} catch (err) {
 		console.error('Authentication error:', err.message)

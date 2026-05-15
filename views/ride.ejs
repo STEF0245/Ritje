@@ -1,9 +1,45 @@
 <%
-    const mapMarkersJson = JSON.stringify(locals.mapMarkers) || '[]';
-    const routeJson = JSON.stringify(locals.route) || 'null';
-    const suggestionMarkers = locals.suggestionMarkers || [];
-    const rideSettings = locals.rideSettings || {};
-    const seatLimit = Number(rideSettings?.seats?.total || 1);
+    const pageMode = locals.pageMode === 'dashboard' ? 'dashboard' : 'ride'
+    const scheduleBasePath =
+        typeof locals.scheduleBasePath === 'string'
+            ? locals.scheduleBasePath
+            : '/ride'
+    const mapMarkers = Array.isArray(locals.mapMarkers) ? [...locals.mapMarkers] : []
+    const routeJson = JSON.stringify(locals.route) || 'null'
+    const suggestionMarkers = locals.suggestionMarkers || []
+    const rideSettings = locals.rideSettings || {}
+    const seatLimit = Number(rideSettings?.seats?.total || 1)
+    const currentRide = locals.currentRide || null
+    const invitationRides = Array.isArray(locals.invitationRides)
+        ? locals.invitationRides
+        : []
+    const hasActiveRide = Boolean(currentRide)
+    const dayValue = Number(locals.day)
+    const hourValue = Number(locals.hour)
+    const hasDayHour = Number.isInteger(dayValue) && Number.isInteger(hourValue)
+    const addRideUrl = hasDayHour ? `/ride/${dayValue}/${hourValue}` : '/ride'
+
+    const schoolConfig = locals.schoolMarkerData || {}
+    const schoolLatitude = Number(
+        schoolConfig?.coords?.lat ?? schoolConfig?.coords?.latitude
+    )
+    const schoolLongitude = Number(
+        schoolConfig?.coords?.lon ?? schoolConfig?.coords?.longitude
+    )
+    if (Number.isFinite(schoolLatitude) && Number.isFinite(schoolLongitude)) {
+        mapMarkers.push({
+            latitude: schoolLatitude,
+            longitude: schoolLongitude,
+            title: schoolConfig?.title || 'School',
+            lines: [
+                `${schoolConfig?.address?.street || ''} ${schoolConfig?.address?.houseNumber || ''}`.trim(),
+                `${schoolConfig?.address?.postalCode || ''} ${schoolConfig?.address?.city || ''}`.trim()
+            ].filter(Boolean),
+            mapsUrl: schoolConfig?.mapsUrl,
+            icon: 'fa-school'
+        })
+    }
+    const mapMarkersJson = JSON.stringify(mapMarkers) || '[]'
 %>
 
 <!DOCTYPE html>
@@ -26,12 +62,98 @@
                                 hasAnySchedule,
                                 selectedKey,
                                 selectedValue,
-                                basePath: '/ride',
+                                basePath: scheduleBasePath,
                                 emptyMessage: 'Je hebt nog geen uurrooster ingesteld.'
                             }) %>
                         </div>
                     </div>
                 </article>
+
+                <article class="theme-panel p-6 mb-6">
+                        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                            <div class="max-w-2xl">
+                                <h2 class="text-xl font-extrabold theme-text-primary">
+                                    <% if (hasActiveRide) { %>
+                                        Uw actieve rit staat klaar
+                                    <% } else if (invitationRides.length > 0) { %>
+                                        Rituitnodigingen gevonden
+                                    <% } else { %>
+                                        Geen actieve rit
+                                    <% } %>
+                                </h2>
+                                <p class="theme-text-muted text-sm mt-1">
+                                    <% if (hasActiveRide) { %>
+                                        Als bestuurder kunt u deze rit annuleren of aanpassen via de ritpagina.
+                                    <% } else if (invitationRides.length > 0) { %>
+                                        U kunt een uitnodiging accepteren of weigeren voordat u zelf een nieuwe rit aanmaakt.
+                                    <% } else { %>
+                                        U hebt nog geen actieve rit. Voeg er een toe vanuit dit dashboard.
+                                    <% } %>
+                                </p>
+                            </div>
+
+                            <div class="flex flex-wrap gap-3">
+                                <% if (hasActiveRide && hasDayHour) { %>
+                                    <form method="POST" action="/ride/<%= dayValue %>/<%= hourValue %>/cancel">
+                                        <button type="submit" class="theme-btn-secondary px-5 py-3 rounded-xl font-bold inline-flex items-center gap-2">
+                                            <i class="fa-solid fa-ban"></i>
+                                            Rit annuleren
+                                        </button>
+                                    </form>
+                                    <a href="<%= addRideUrl %>" class="theme-btn-primary px-5 py-3 rounded-xl font-bold inline-flex items-center gap-2">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                        Rit aanpassen
+                                    </a>
+                                <% } else if (invitationRides.length > 0) { %>
+                                    <a href="<%= addRideUrl %>" class="theme-btn-primary px-5 py-3 rounded-xl font-bold inline-flex items-center gap-2">
+                                        <i class="fa-solid fa-plus"></i>
+                                        Eigen rit toevoegen
+                                    </a>
+                                <% } else { %>
+                                    <a href="<%= addRideUrl %>" class="theme-btn-primary px-5 py-3 rounded-xl font-bold inline-flex items-center gap-2">
+                                        <i class="fa-solid fa-plus"></i>
+                                        Rit toevoegen
+                                    </a>
+                                <% } %>
+                            </div>
+                        </div>
+
+                        <% if (invitationRides.length > 0 && hasDayHour) { %>
+                            <div class="mt-6 grid grid-cols-1 gap-4">
+                                <% invitationRides.forEach((ride) => { %>
+                                    <div class="theme-pill border theme-border theme-surface p-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                                        <div>
+                                            <h3 class="font-bold theme-text-primary">
+                                                <%= ride.driverName || 'Een bestuurder' %>
+                                            </h3>
+                                            <p class="text-sm theme-text-muted">
+                                                <%= ride.passengerResponse?.status === 'accepted' ? 'Geaccepteerd' : ride.passengerResponse?.status === 'rejected' ? 'Geweigerd' : 'In afwachting van uw antwoord' %>
+                                            </p>
+                                        </div>
+                                        <div class="flex flex-wrap gap-3">
+                                            <form method="POST" action="/ride/<%= dayValue %>/<%= hourValue %>/respond">
+                                                <input type="hidden" name="driverUid" value="<%= ride.driverUid %>">
+                                                <input type="hidden" name="response" value="accepted">
+                                                <button type="submit" class="theme-btn-primary px-4 py-2 rounded-xl font-bold inline-flex items-center gap-2">
+                                                    <i class="fa-solid fa-check"></i>
+                                                    Accepteren
+                                                </button>
+                                            </form>
+                                            <form method="POST" action="/ride/<%= dayValue %>/<%= hourValue %>/respond">
+                                                <input type="hidden" name="driverUid" value="<%= ride.driverUid %>">
+                                                <input type="hidden" name="response" value="rejected">
+                                                <button type="submit" class="theme-btn-secondary px-4 py-2 rounded-xl font-bold inline-flex items-center gap-2">
+                                                    <i class="fa-solid fa-xmark"></i>
+                                                    Weigeren
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                <% }) %>
+                            </div>
+                        <% } %>
+                </article>
+
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 					<article class="theme-panel p-6 lg:col-span-2 ride-map-panel">
                         <div class="flex items-start justify-between gap-3 flex-wrap">
@@ -51,48 +173,83 @@
                         ></div>
                     </article>
 
-                    <article class="theme-panel p-6 lg:col-span-1 h-full flex flex-col max-h-130 ride-suggestion-panel">
-                        <h2 class="text-xl font-extrabold theme-text-primary">Suggesties</h2>
-                            <p class="theme-text-muted text-sm mt-1">Selecteer een of meerdere personen en bereken de route om hun locatie op de kaart te tonen.</p>
-                        <div class="mt-4 flex-1 overflow-y-auto" data-ride-suggestions data-seat-limit="<%= seatLimit %>" data-current-ride='<%= JSON.stringify(locals.currentRide || null) %>'>
-                            <% if (suggestionMarkers.length > 0) { %>
-                                <ul class="space-y-3">
-                                    <% suggestionMarkers.forEach((ride, index) => { %>
+                    <% if (pageMode === 'dashboard') { %>
+                        <article class="theme-panel p-6 lg:col-span-1 h-full flex flex-col max-h-130">
+                            <h2 class="text-xl font-extrabold theme-text-primary">Ritdetails</h2>
+                            <p class="theme-text-muted text-sm mt-1">Bekijk de details van je huidige rit.</p>
+                            <div class="mt-4 flex-1 overflow-y-auto">
+                                <% if (mapMarkers.length > 0) { %>
+                                    <ul class="space-y-3">
+                                        <% mapMarkers.forEach((ride) => { %>
                                             <% const detourDistance = ride.detour?.distance ?? ride.detourDistanceKm; %>
                                             <% const detourDuration = ride.detour?.duration ?? ride.detourDurationMinutes; %>
-                                        <label class="theme-pill p-4 border theme-border theme-surface ride-suggestion-item cursor-pointer block">
-                                            <input
-                                                type="checkbox"
-                                                class="ride-suggestion-check hidden"
-                                                data-suggestion-checkbox
-                                                value="<%= ride.uid || '' %>"
-                                                aria-label="Selecteer <%= ride.title || `persoon ${index + 1}` %>"
-                                                <% if (locals.currentRide?.suggestionIds?.includes(ride.uid)) { %>checked<% } %>
-                                            />
-                                            <span class="min-w-0 flex-1">
-                                                <h4 class="text-base font-semibold theme-text-primary leading-tight"><%= ride.title || 'Onbekende persoon' %></h4>
-                                                <p class="text-sm theme-text-muted"><%= ride.lines[1] || 'Onbekend adres' %></p>
+                                            <div class="theme-pill p-4 border theme-border theme-surface ride-suggestion-item cursor-pointer block">
+                                                <span class="min-w-0 flex-1">
+                                                    <h4 class="text-base font-semibold theme-text-primary leading-tight"><%= ride.title || 'Onbekende persoon' %></h4>
+                                                    <p class="text-sm theme-text-muted"><%= ride.lines?.[1] || 'Onbekend adres' %></p>
                                                     <% if (Number.isFinite(detourDistance) && Number.isFinite(detourDuration)) { %>
-                                                    <div class="mt-2 flex flex-wrap gap-2">
-                                                        <span class="theme-pill border theme-border px-2 py-1 text-xs theme-text-muted">
+                                                        <div class="mt-2 flex flex-wrap gap-2">
+                                                            <span class="theme-pill border theme-border px-2 py-1 text-xs theme-text-muted">
                                                                 +<%= Math.round(detourDistance * 10) / 10 %> km
-                                                        </span>
-                                                        <span class="theme-pill border theme-border px-2 py-1 text-xs theme-text-muted">
+                                                            </span>
+                                                            <span class="theme-pill border theme-border px-2 py-1 text-xs theme-text-muted">
                                                                 +<%= Math.round(detourDuration) %> min
-                                                        </span>
-                                                    </div>
-                                                <% } %>
-                                            </span>
-                                        </label>
-                                    <% }) %>
-                                </ul>
-                            <% } else { %>
-                                <p class="text-sm theme-text-muted">Er zijn momenteel geen suggesties beschikbaar.</p>
-                            <% } %>
-                        </div>
-                        <button id="calculateRoute" class="theme-btn-primary px-4 py-2 mt-4 font-medium! hidden!">Route berekenen</button>
-                        <button id="saveRoute" class="theme-btn-primary px-4 py-2 mt-4 font-medium! hidden!">Route opslaan</button>
-                    </article>
+                                                            </span>
+                                                        </div>
+                                                    <% } %>
+                                                </span>
+                                            </div>
+                                        <% }) %>
+                                    </ul>
+                                <% } else { %>
+                                    <p class="text-sm theme-text-muted">Geen ritdetails beschikbaar.</p>
+                                <% } %>
+                            </div>
+                        </article>
+                    <% } else { %>
+                        <article class="theme-panel p-6 lg:col-span-1 h-full flex flex-col max-h-130 ride-suggestion-panel">
+                            <h2 class="text-xl font-extrabold theme-text-primary">Suggesties</h2>
+                                <p class="theme-text-muted text-sm mt-1">Selecteer een of meerdere personen en bereken de route om hun locatie op de kaart te tonen.</p>
+                            <div class="mt-4 flex-1 overflow-y-auto" data-ride-suggestions data-seat-limit="<%= seatLimit %>" data-current-ride='<%= JSON.stringify(currentRide || null) %>'>
+                                <% if (suggestionMarkers.length > 0) { %>
+                                    <ul class="space-y-3">
+                                        <% suggestionMarkers.forEach((ride, index) => { %>
+                                                <% const detourDistance = ride.detour?.distance ?? ride.detourDistanceKm; %>
+                                                <% const detourDuration = ride.detour?.duration ?? ride.detourDurationMinutes; %>
+                                            <label class="theme-pill p-4 border theme-border theme-surface ride-suggestion-item cursor-pointer block">
+                                                <input
+                                                    type="checkbox"
+                                                    class="ride-suggestion-check hidden"
+                                                    data-suggestion-checkbox
+                                                    value="<%= ride.uid || '' %>"
+                                                    aria-label="Selecteer <%= ride.title || `persoon ${index + 1}` %>"
+                                                    <% if (currentRide?.suggestionIds?.includes(ride.uid)) { %>checked<% } %>
+                                                />
+                                                <span class="min-w-0 flex-1">
+                                                    <h4 class="text-base font-semibold theme-text-primary leading-tight"><%= ride.title || 'Onbekende persoon' %></h4>
+                                                    <p class="text-sm theme-text-muted"><%= ride.lines?.[1] || 'Onbekend adres' %></p>
+                                                        <% if (Number.isFinite(detourDistance) && Number.isFinite(detourDuration)) { %>
+                                                        <div class="mt-2 flex flex-wrap gap-2">
+                                                            <span class="theme-pill border theme-border px-2 py-1 text-xs theme-text-muted">
+                                                                    +<%= Math.round(detourDistance * 10) / 10 %> km
+                                                            </span>
+                                                            <span class="theme-pill border theme-border px-2 py-1 text-xs theme-text-muted">
+                                                                    +<%= Math.round(detourDuration) %> min
+                                                            </span>
+                                                        </div>
+                                                    <% } %>
+                                                </span>
+                                            </label>
+                                        <% }) %>
+                                    </ul>
+                                <% } else { %>
+                                    <p class="text-sm theme-text-muted">Er zijn momenteel geen suggesties beschikbaar.</p>
+                                <% } %>
+                            </div>
+                            <button id="calculateRoute" class="theme-btn-primary px-4 py-2 mt-4 font-medium! hidden!">Route berekenen</button>
+                            <button id="saveRoute" class="theme-btn-primary px-4 py-2 mt-4 font-medium! hidden!">Route opslaan</button>
+                        </article>
+                    <% } %>
 
                 </div>
             </section>
@@ -100,6 +257,8 @@
 
         <%- include('partials/footer') %>
 		<%- include('partials/map') %>
-		<script src="/js/ride.js"></script>
+		<% if (pageMode === 'ride') { %>
+			<script src="/js/ride.js"></script>
+		<% } %>
     </body>
 </html>

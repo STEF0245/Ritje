@@ -7,6 +7,8 @@
 import express from 'express'
 import {
 	getRidePage,
+	cancelRideAction,
+	respondToRideAction,
 	calculateRouteWithSuggestions,
 	saveRideRoute
 } from './ride.controller.js'
@@ -52,8 +54,10 @@ const calculateLimiter = (() => {
 	}
 })()
 
-router.get('/', (req, res) => res.redirect('/dashboard'))
+router.get('/', getRidePage)
 router.get('/:day/:hour', getRidePage)
+router.post('/:day/:hour/cancel', cancelRideAction)
+router.post('/:day/:hour/respond', respondToRideAction)
 router.post('/calculate', calculateLimiter, calculateRouteWithSuggestions)
 router.post('/save', saveRideRoute)
 
