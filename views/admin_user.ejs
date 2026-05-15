@@ -285,6 +285,8 @@
 		</main>
 
 		<%- include('partials/footer') %>
-		<%- include('partials/map') %>
+		<%- include('partials/map', {
+            schoolConfig: locals.schoolMarkerData,
+        }) %>
 	</body>
 </html>

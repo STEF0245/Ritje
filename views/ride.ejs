@@ -256,9 +256,11 @@
         </main>
 
         <%- include('partials/footer') %>
-		<%- include('partials/map') %>
 		<% if (pageMode === 'ride') { %>
 			<script src="/js/ride.js"></script>
 		<% } %>
+		<%- include('partials/map', {
+            schoolConfig: locals.schoolMarkerData,
+        }) %>
     </body>
 </html>
