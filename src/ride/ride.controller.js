@@ -851,16 +851,32 @@ const getActiveRideForUser = async (userUid) => {
 	const snapshot = await db.ref(`rides/${userUid}`).once('value')
 	const rides = snapshot.val() || {}
 
+	const rideKeys = Object.keys(rides)
+	let latestActive = null
+	let latestKey = null
+	let latestTimestamp = 0
+
 	for (const [rideKey, ride] of Object.entries(rides)) {
-		if (ride && !isRideCanceled(ride)) {
-			return {
-				ride,
-				rideKey
-			}
+		if (!ride || isRideCanceled(ride)) continue
+
+		const updatedAt = Date.parse(ride.updatedAt || ride.savedAt || '')
+		const ts = Number.isFinite(updatedAt) ? updatedAt : 0
+
+		if (!latestActive || ts > latestTimestamp) {
+			latestActive = ride
+			latestKey = rideKey
+			latestTimestamp = ts
 		}
 	}
 
-	return null
+	if (!latestActive) {
+		return null
+	}
+
+	return {
+		ride: latestActive,
+		rideKey: latestKey
+	}
 }
 
 /**
@@ -871,16 +887,29 @@ const getActiveRideForUser = async (userUid) => {
  * @returns {Promise<boolean>} True if another active ride exists, false otherwise.
  * @details This is used to prevent users from creating multiple overlapping rides, which could cause confusion and scheduling conflicts.
  */
-const hasAnotherActiveRideForUser = async (userUid, currentRideKey) => {
-	const snapshot = await db
-		.ref(`rides/${userUid}/${currentRideKey}`)
-		.once('value')
-	const ride = snapshot.val() || null
+const hasAnotherActiveRideForUser = async (
+	userUid,
+	day,
+	hour,
+	excludeRideKey = null
+) => {
+	// Only consider active rides that match the given day and hour.
+	const snapshot = await db.ref(`rides/${userUid}`).once('value')
+	const rides = snapshot.val() || {}
 
-	if (!ride || !isRideCanceled(ride)) return false
+	for (const [rideKey, ride] of Object.entries(rides)) {
+		if (!ride || isRideCanceled(ride)) continue
+		if (excludeRideKey && String(rideKey) === String(excludeRideKey))
+			continue
 
-	const activeRide = await getActiveRideForUser(userUid)
-	return activeRide && activeRide.rideKey !== currentRideKey
+		if (
+			Number(ride.day) === Number(day) &&
+			Number(ride.hour) === Number(hour)
+		) {
+			return true
+		}
+	}
+	return false
 }
 
 export const getInvitationRidesForUser = async (
@@ -1002,7 +1031,11 @@ export const saveRideRoute = async (req, res) => {
 		}
 
 		const currentRideKey = getRideRecordKey(userUid, day, hour)
-		if (await hasAnotherActiveRideForUser(userUid, `${day}/${hour}`)) {
+		// Use the short ride key format (day_hour) when checking for other active rides
+		const shortRideKey = `${day}_${hour}`
+		if (
+			await hasAnotherActiveRideForUser(userUid, day, hour, shortRideKey)
+		) {
 			return res.status(409).json({
 				error: 'Je hebt al een actieve rit. Annuleer die eerst voordat je een nieuwe rit opslaat.'
 			})
@@ -1031,10 +1064,24 @@ export const saveRideRoute = async (req, res) => {
 		const isStart = user?.metadata?.schedule?.[day]?.start == hour
 		await sendEmailToAllUsers(suggestionIds, userUid, day, hour, isStart)
 
-		return res.json({
-			saved: true,
-			savedAt: nowIso
-		})
+		// If the request was made via AJAX / expects JSON, return JSON. Otherwise redirect
+		// the browser to the dashboard for the saved day/hour.
+		const wantsJson =
+			req.xhr ||
+			String(req.headers?.accept || '').includes('application/json') ||
+			(typeof req.get === 'function' &&
+				String(req.get('Content-Type') || '').includes(
+					'application/json'
+				))
+
+		if (wantsJson) {
+			return res.json({
+				saved: true,
+				savedAt: nowIso
+			})
+		}
+
+		return res.redirect(303, `/dashboard/${day}/${hour}`)
 	} catch (error) {
 		console.error('Error saving ride route:', error)
 		return res.status(500).json({
@@ -1156,7 +1203,7 @@ const generateEmailContent = (
 	hour
 ) => {
 	const driverName = driver?.name?.full || 'Een collega'
-	const rideUrl = `https://ritje.tech/ride/${day}/${hour}` // TODO: Use dynamic base URL if available
+	const rideUrl = `https://ritje.tech/dashboard/${day}/${hour}` // TODO: Use dynamic base URL if available
 
 	// Theme colors from style.css
 	const bg900 = '#0b0f14'
