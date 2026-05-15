@@ -6,6 +6,7 @@
 
 import express from 'express'
 import {
+	redirectToRidePage,
 	getRidePage,
 	cancelRideAction,
 	respondToRideAction,
@@ -54,7 +55,7 @@ const calculateLimiter = (() => {
 	}
 })()
 
-router.get('/', getRidePage)
+router.get('/', redirectToRidePage)
 router.get('/:day/:hour', getRidePage)
 router.post('/:day/:hour/cancel', cancelRideAction)
 router.post('/:day/:hour/respond', respondToRideAction)

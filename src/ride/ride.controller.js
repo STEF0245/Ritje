@@ -164,14 +164,6 @@ const renderRidePage = async ({
 			hour === null ||
 			!isValidOccurrence(req.user?.metadata?.schedule, day, hour)
 		) {
-			const nextOccurrence = getNextOccurrence(
-				req.user?.metadata?.schedule || {}
-			)
-			if (nextOccurrence) {
-				return res.redirect(
-					`/ride/${nextOccurrence.day}/${nextOccurrence.hour}`
-				)
-			}
 			return respondWithNotification(res, noScheduleResponse)
 		}
 
@@ -180,6 +172,60 @@ const renderRidePage = async ({
 	} catch (error) {
 		console.error(`Error rendering ${view} page:`, error)
 		return respondWithNotification(res, errorResponse)
+	}
+}
+
+export const redirectToRidePage = async (req, res) => {
+	try {
+		const nextOccurrence = getNextOccurrence(
+			req.user?.metadata?.schedule || {}
+		)
+		if (nextOccurrence) {
+			return res.redirect(
+				`/ride/${nextOccurrence.day}/${nextOccurrence.hour}`
+			)
+		}
+		return respondWithNotification(res, {
+			type: 'info',
+			message: 'Je hebt geen rooster ingesteld.',
+			status: 200,
+			view: 'ride',
+			title: 'Ritten',
+			extra: {
+				mapMarkers: [],
+				route: null,
+				suggestionMarkers: [],
+				activeRide: false,
+				invitationRides: [],
+				rideSettings: {},
+				daySchedules: [],
+				hasAnySchedule: false,
+				selectedKey: '',
+				selectedValue: ''
+			}
+		})
+	} catch (error) {
+		console.error('Error redirecting to ride page:', error)
+		return respondWithNotification(res, {
+			type: 'error',
+			message:
+				'Er is een fout opgetreden bij het laden van de ritpagina. Probeer het later opnieuw.',
+			status: 500,
+			view: 'ride',
+			title: 'Ritten',
+			extra: {
+				mapMarkers: [],
+				route: null,
+				suggestionMarkers: [],
+				activeRide: false,
+				invitationRides: [],
+				rideSettings: {},
+				daySchedules: [],
+				hasAnySchedule: false,
+				selectedKey: '',
+				selectedValue: ''
+			}
+		})
 	}
 }
 
