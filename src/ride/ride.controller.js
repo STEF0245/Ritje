@@ -875,11 +875,9 @@ const hasAnotherActiveRideForUser = async (userUid, currentRideKey) => {
 	const snapshot = await db
 		.ref(`rides/${userUid}/${currentRideKey}`)
 		.once('value')
-	const ride = snapshot.val() || {}
+	const ride = snapshot.val() || null
 
-	if (ride && !isRideCanceled(ride)) {
-		return true
-	}
+	if (!ride || !isRideCanceled(ride)) return false
 
 	const activeRide = await getActiveRideForUser(userUid)
 	return activeRide && activeRide.rideKey !== currentRideKey
