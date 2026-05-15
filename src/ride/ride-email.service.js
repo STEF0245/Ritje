@@ -149,14 +149,14 @@ export const generateEmailHtml = (
 
 /**
  * @brief Sends ride invitation emails to all suggested passengers.
- * @param {string[]} suggestionIds - UIDs of suggested passengers.
+ * @param {string[]} passengers - UIDs of suggested passengers.
  * @param {string} driverUid - Driver's UID.
  * @param {number} day - Weekday index.
  * @param {number} hour - Schedule slot.
  * @param {boolean} isStart - Whether this is a start time.
  */
 export const sendInvitationEmails = async (
-	suggestionIds,
+	passengers,
 	driverUid,
 	day,
 	hour,
@@ -165,9 +165,7 @@ export const sendInvitationEmails = async (
 	const users = await getAllUsers()
 	const recipientUsers = users.filter(
 		(user) =>
-			user?.uid &&
-			suggestionIds.includes(user.uid) &&
-			user.uid !== driverUid
+			user?.uid && passengers.includes(user.uid) && user.uid !== driverUid
 	)
 
 	const dayNames = [

@@ -1,9 +1,9 @@
 const WEEKDAYS = [
-	{ key: '1', label: 'Maandag' },
-	{ key: '2', label: 'Dinsdag' },
-	{ key: '3', label: 'Woensdag' },
-	{ key: '4', label: 'Donderdag' },
-	{ key: '5', label: 'Vrijdag' }
+	{ day: '1', label: 'Maandag' },
+	{ day: '2', label: 'Dinsdag' },
+	{ day: '3', label: 'Woensdag' },
+	{ day: '4', label: 'Donderdag' },
+	{ day: '5', label: 'Vrijdag' }
 ]
 
 const HOUR_MAP = {
@@ -43,19 +43,19 @@ export const getNextOccurrenceFor = (dayKey, hourIndex, isStart) => {
 }
 
 export const buildDaySchedules = (schedule = {}) => {
-	const daySchedules = WEEKDAYS.map(({ key, label }) => {
-		const daySchedule = schedule[key] || null
+	const daySchedules = WEEKDAYS.map(({ day, label }) => {
+		const daySchedule = schedule[day] || null
 		const startLabel = resolveHourLabel(daySchedule?.start, true)
 		const endLabel = resolveHourLabel(daySchedule?.end, false)
 		const startNextDate = daySchedule?.start
-			? getNextOccurrenceFor(key, daySchedule.start, true)
+			? getNextOccurrenceFor(day, daySchedule.start, true)
 			: null
 		const endNextDate = daySchedule?.end
-			? getNextOccurrenceFor(key, daySchedule.end, false)
+			? getNextOccurrenceFor(day, daySchedule.end, false)
 			: null
 
 		return {
-			key,
+			day,
 			label,
 			start: {
 				label: startLabel,

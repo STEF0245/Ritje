@@ -1,8 +1,3 @@
-/**
- * @file Ride page interactions for selecting suggestions and updating route previews.
- * @brief  Keeps the ride page map in sync with selected suggestion checkboxes.
- */
-
 // ========== DOM ELEMENTS ==========
 const suggestionsContainer = document.querySelector('[data-ride-suggestions]')
 const calculateButton = document.getElementById('calculateRoute')
@@ -10,8 +5,6 @@ const saveButton = document.getElementById('saveRoute')
 const mapContainer = document.querySelector('[data-map]')
 
 // ========== STATE ==========
-let initialRoute = null
-let initialMarkers = []
 let currentRide = null
 let currentRideRoute = null
 let currentRideMarkers = []
@@ -85,7 +78,6 @@ function updateCalculateButtonState() {
 		hasCalculatedRoute = false
 		hasSavedRoute = false
 		updateSaveButtonState()
-		displayRouteOnMap(initialRoute, initialMarkers)
 		displayedSuggestionSignature = ''
 		return
 	}
@@ -178,18 +170,6 @@ function getSelectedSuggestionSignature() {
 	return normalizeSuggestionSignature(getSelectedSuggestionIds())
 }
 
-function setCurrentRideState(ride = null) {
-	currentRide = ride || null
-	currentRideRoute = currentRide?.route || null
-	currentRideMarkers = Array.isArray(currentRide?.markers)
-		? currentRide.markers
-		: []
-	baselineSuggestionSignature = normalizeSuggestionSignature(
-		currentRide?.suggestionIds
-	)
-	displayedSuggestionSignature = baselineSuggestionSignature
-}
-
 async function saveCurrentRideRoute() {
 	if (!mapContainer) return
 
@@ -203,7 +183,7 @@ async function saveCurrentRideRoute() {
 	}
 
 	const markers = parseJsonDataset(mapContainer.dataset.markers || '[]', [])
-	const suggestionIds = getSelectedSuggestionIds()
+	const passengers = getSelectedSuggestionIds()
 
 	try {
 		saveInFlight = true
@@ -217,7 +197,7 @@ async function saveCurrentRideRoute() {
 			body: JSON.stringify({
 				day: slot.day,
 				hour: slot.hour,
-				suggestionIds,
+				passengers,
 				route,
 				markers
 			})
@@ -396,26 +376,6 @@ if (suggestionsContainer) {
 
 // ========== PAGE INITIALIZATION ==========
 window.addEventListener('DOMContentLoaded', () => {
-	if (mapContainer) {
-		try {
-			initialMarkers = JSON.parse(mapContainer.dataset.markers || '[]')
-		} catch {
-			initialMarkers = []
-		}
-		try {
-			initialRoute = JSON.parse(mapContainer.dataset.route || 'null')
-		} catch {
-			initialRoute = null
-		}
-	}
-
-	setCurrentRideState(
-		parseJsonDataset(
-			suggestionsContainer?.dataset.currentRide || 'null',
-			null
-		)
-	)
-
 	// Initialize UI state from server-rendered data
 	getSelectionState()
 	updateCalculateButtonState()

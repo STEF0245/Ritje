@@ -16,11 +16,11 @@ export const toNonNegativeInteger = (value) => {
 }
 
 /**
- * @brief Normalizes an array of suggestion IDs to strings.
+ * @brief Normalizes an array of passenger IDs to strings.
  * @param {*} value - The value to normalize.
  * @returns {string[]} - Array of string IDs, or empty array if invalid.
  */
-export const normalizeSuggestionIds = (value) => {
+export const normalizePassengers = (value) => {
 	if (!Array.isArray(value)) return []
 	return value.map((id) => String(id)).filter(Boolean)
 }

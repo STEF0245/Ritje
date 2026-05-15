@@ -6,25 +6,63 @@
 
 import config from '../config.js'
 import { respondWithNotification } from '../utils/notification.util.js'
-import { calculateRoute, findMarkersOnRoute } from '../location/location.service.js'
-import { buildDaySchedules, getNextOccurrence, isValidOccurrence } from '../utils/schedule.util.js'
+import {
+	calculateRoute,
+	findMarkersOnRoute
+} from '../location/location.service.js'
+import {
+	buildDaySchedules,
+	getNextOccurrence,
+	isValidOccurrence
+} from '../utils/schedule.util.js'
 
 // Validation & normalization
-import { toNonNegativeInteger, normalizeSuggestionIds, isValidDayAndHour } from './validation.util.js'
+import {
+	toNonNegativeInteger,
+	normalizePassengers,
+	isValidDayAndHour
+} from './validation.util.js'
 
 // Coordinate utilities
-import { normalizeCoordinates, hasValidCoordinates, optimizeWaypointOrder, computeMapCenter } from './coordinates.util.js'
+import {
+	normalizeCoordinates,
+	hasValidCoordinates,
+	optimizeWaypointOrder,
+	computeMapCenter
+} from './coordinates.util.js'
 
 // Route utilities
-import { getRouteMetrics, estimateDetourForMarker } from './route-metrics.util.js'
-import { getBaseRoute, calculateRouteWithWaypoints, buildRouteCacheKey } from './route-cache.service.js'
+import {
+	getRouteMetrics,
+	estimateDetourForMarker
+} from './route-metrics.util.js'
+import {
+	getBaseRoute,
+	calculateRouteWithWaypoints,
+	buildRouteCacheKey
+} from './route-cache.service.js'
 
 // Ride utilities
-import { getRideStatus, isRideCanceled, buildRideRecordKey } from './ride-status.util.js'
-import { getRideRecord, hasAnotherActiveRide, saveRide, cancelRide, updatePassengerResponse } from './ride-database.service.js'
+import {
+	getRideStatus,
+	isRideCanceled,
+	buildRideRecordKey
+} from './ride-status.util.js'
+import {
+	getRideRecord,
+	hasAnotherActiveRide,
+	saveRide,
+	cancelRide,
+	updatePassengerResponse
+} from './ride-database.service.js'
 
 // User & marker utilities
-import { getAllUsers, buildMarkers, filterUsersBySchedule, resolveOriginCoordinates } from './user-markers.service.js'
+import {
+	getAllUsers,
+	buildMarkers,
+	filterUsersBySchedule,
+	resolveOriginCoordinates
+} from './user-markers.service.js'
 
 // Suggestions
 import { buildSuggestions } from './suggestions.service.js'
@@ -51,13 +89,16 @@ export const buildRidePayload = async (req, day, hour) => {
 	const users = await getAllUsers()
 	const filteredUsers = filterUsersBySchedule(users, req.user, day, hour)
 	const mapMarkers = buildMarkers(filteredUsers, req.user?.uid)
+	console.log(`Built ${mapMarkers.length} map markers for ride payload.`)
 	const mapCenter = computeMapCenter(mapMarkers)
 	const rideSettings = buildRideSettings(req.user?.metadata?.preferences)
 	const currentUserUid = req.user?.uid
 	const currentUserMarker = mapMarkers.find((m) => m.uid === currentUserUid)
 	const originCoords = resolveOriginCoordinates(req)
 
-	const baseRoute = originCoords ? await getBaseRoute(originCoords, SCHOOL_DESTINATION) : null
+	const baseRoute = originCoords
+		? await getBaseRoute(originCoords, SCHOOL_DESTINATION)
+		: null
 	const suggestionMarkers = await buildSuggestions({
 		markers: mapMarkers,
 		currentUser: req.user,
@@ -68,8 +109,16 @@ export const buildRidePayload = async (req, day, hour) => {
 	})
 
 	const currentRideRecord = await getRideRecord(req.user?.uid, day, hour)
-	const currentRide = currentRideRecord && !isRideCanceled(currentRideRecord) ? currentRideRecord : null
-	const invitationRides = await getInvitationRides(req.user?.uid, day, hour, users)
+	const currentRide =
+		currentRideRecord && !isRideCanceled(currentRideRecord)
+			? currentRideRecord
+			: null
+	const invitationRides = await getInvitationRides(
+		req.user?.uid,
+		day,
+		hour,
+		users
+	)
 	const displayRoute = currentRide?.route || baseRoute
 	const schedule = req.user?.metadata?.schedule || {}
 	const { daySchedules, hasAnySchedule } = buildDaySchedules(schedule)
@@ -81,7 +130,6 @@ export const buildRidePayload = async (req, day, hour) => {
 		rideSettings,
 		mapCenter,
 		route: displayRoute,
-		suggestionMarkers,
 		activeRide: !!currentRide,
 		invitationRides,
 		day,
@@ -103,10 +151,6 @@ const renderRidePage = async ({
 	res,
 	view,
 	title,
-	redirectBasePath,
-	pageMode,
-	scheduleBasePath,
-	mapPayload = (payload) => payload,
 	noScheduleResponse,
 	errorResponse
 }) => {
@@ -120,16 +164,19 @@ const renderRidePage = async ({
 			hour === null ||
 			!isValidOccurrence(req.user?.metadata?.schedule, day, hour)
 		) {
-			const nextOccurrence = getNextOccurrence(req.user?.metadata?.schedule || {})
+			const nextOccurrence = getNextOccurrence(
+				req.user?.metadata?.schedule || {}
+			)
 			if (nextOccurrence) {
-				return res.redirect(`${redirectBasePath}/${nextOccurrence.day}/${nextOccurrence.hour}`)
+				return res.redirect(
+					`/ride/${nextOccurrence.day}/${nextOccurrence.hour}`
+				)
 			}
 			return respondWithNotification(res, noScheduleResponse)
 		}
 
 		const payload = await buildRidePayload(req, day, hour)
-		const mapped = mapPayload({ ...payload, pageMode, scheduleBasePath })
-		return res.render(view, { title, ...mapped })
+		return res.render(view, { title, ...payload })
 	} catch (error) {
 		console.error(`Error rendering ${view} page:`, error)
 		return respondWithNotification(res, errorResponse)
@@ -148,9 +195,6 @@ export const getRidePage = async (req, res) => {
 		res,
 		view: 'ride',
 		title: 'Ritten',
-		redirectBasePath: '/ride',
-		pageMode: 'ride',
-		scheduleBasePath: '/ride',
 		noScheduleResponse: {
 			type: 'info',
 			message: 'Je hebt geen rooster ingesteld.',
@@ -158,8 +202,6 @@ export const getRidePage = async (req, res) => {
 			view: 'ride',
 			title: 'Ritten',
 			extra: {
-				pageMode: 'ride',
-				scheduleBasePath: '/ride',
 				mapMarkers: [],
 				route: null,
 				suggestionMarkers: [],
@@ -174,13 +216,12 @@ export const getRidePage = async (req, res) => {
 		},
 		errorResponse: {
 			type: 'error',
-			message: 'Er is een fout opgetreden bij het laden van de ritpagina. Probeer het later opnieuw.',
+			message:
+				'Er is een fout opgetreden bij het laden van de ritpagina. Probeer het later opnieuw.',
 			status: 500,
 			view: 'ride',
 			title: 'Ritten',
 			extra: {
-				pageMode: 'ride',
-				scheduleBasePath: '/ride',
 				mapMarkers: [],
 				route: null,
 				suggestionMarkers: [],
@@ -228,7 +269,8 @@ export const cancelRideAction = async (req, res) => {
 		return respondWithNotification(res, {
 			type: 'error',
 			label: 'Annuleren mislukt',
-			message: 'De rit kon niet worden geannuleerd. Probeer het later opnieuw.',
+			message:
+				'De rit kon niet worden geannuleerd. Probeer het later opnieuw.',
 			redirectTo: '/ride'
 		})
 	}
@@ -256,21 +298,32 @@ export const respondToRideAction = async (req, res) => {
 			})
 		}
 
-		const ride = await updatePassengerResponse(driverUid, day, hour, req.user?.uid, response)
+		const ride = await updatePassengerResponse(
+			driverUid,
+			day,
+			hour,
+			req.user?.uid,
+			response
+		)
 
 		if (!ride) {
 			return respondWithNotification(res, {
 				type: 'info',
 				label: 'Geen uitnodiging',
-				message: 'Deze rit is niet meer beschikbaar of je bent geen genodigde.',
+				message:
+					'Deze rit is niet meer beschikbaar of je bent geen genodigde.',
 				redirectTo: `/ride/${day}/${hour}`
 			})
 		}
 
 		return respondWithNotification(res, {
 			type: response === 'accepted' ? 'success' : 'info',
-			label: response === 'accepted' ? 'Rit geaccepteerd' : 'Rit geweigerd',
-			message: response === 'accepted' ? 'Je deelname aan de rit is bevestigd.' : 'Je hebt de rituitnodiging geweigerd.',
+			label:
+				response === 'accepted' ? 'Rit geaccepteerd' : 'Rit geweigerd',
+			message:
+				response === 'accepted'
+					? 'Je deelname aan de rit is bevestigd.'
+					: 'Je hebt de rituitnodiging geweigerd.',
 			redirectTo: `/ride/${day}/${hour}`
 		})
 	} catch (error) {
@@ -278,7 +331,8 @@ export const respondToRideAction = async (req, res) => {
 		return respondWithNotification(res, {
 			type: 'error',
 			label: 'Reactie mislukt',
-			message: 'Je reactie kon niet worden opgeslagen. Probeer het later opnieuw.',
+			message:
+				'Je reactie kon niet worden opgeslagen. Probeer het later opnieuw.',
 			redirectTo: '/ride'
 		})
 	}
@@ -308,7 +362,9 @@ export const calculateRouteWithSuggestions = async (req, res) => {
 
 		const users = await getAllUsers()
 		const mapMarkers = buildMarkers(users, req.user?.uid)
-		const currentUserMarker = mapMarkers.find((m) => m.uid === req.user?.uid)
+		const currentUserMarker = mapMarkers.find(
+			(m) => m.uid === req.user?.uid
+		)
 		const rideSettings = buildRideSettings(req.user?.metadata?.preferences)
 		const suggestionMarkers = await buildSuggestions({
 			markers: mapMarkers,
@@ -319,10 +375,14 @@ export const calculateRouteWithSuggestions = async (req, res) => {
 			baseRoute
 		})
 
-		const selectedSuggestionIds = new Set(normalizeSuggestionIds(req.body?.suggestionIds))
+		const selectedPassengers = new Set(
+			normalizePassengers(req.body?.passengers)
+		)
 		const selectedSuggestionMarkers =
-			selectedSuggestionIds.size > 0
-				? suggestionMarkers.filter((m) => selectedSuggestionIds.has(String(m?.uid)))
+			selectedPassengers.size > 0
+				? suggestionMarkers.filter((m) =>
+						selectedPassengers.has(String(m?.uid))
+					)
 				: suggestionMarkers
 
 		const seatLimit = rideSettings?.seats?.total || 1
@@ -332,11 +392,17 @@ export const calculateRouteWithSuggestions = async (req, res) => {
 			})
 		}
 
-		const cacheKey = buildRouteCacheKey(originCoords, selectedSuggestionMarkers.map((m) => m.uid))
+		const cacheKey = buildRouteCacheKey(
+			originCoords,
+			selectedSuggestionMarkers.map((m) => m.uid)
+		)
 		let routeWithSuggestions = baseRoute
 
 		if (selectedSuggestionMarkers.length > 0) {
-			const optimizedWaypoints = optimizeWaypointOrder(originCoords, selectedSuggestionMarkers)
+			const optimizedWaypoints = optimizeWaypointOrder(
+				originCoords,
+				selectedSuggestionMarkers
+			)
 			routeWithSuggestions = await calculateRouteWithWaypoints(
 				originCoords,
 				SCHOOL_DESTINATION,
@@ -347,7 +413,9 @@ export const calculateRouteWithSuggestions = async (req, res) => {
 
 		return res.json({
 			route: routeWithSuggestions,
-			markers: currentUserMarker ? [currentUserMarker, ...selectedSuggestionMarkers] : selectedSuggestionMarkers,
+			markers: currentUserMarker
+				? [currentUserMarker, ...selectedSuggestionMarkers]
+				: selectedSuggestionMarkers,
 			cached: false
 		})
 	} catch (error) {
@@ -395,19 +463,22 @@ export const saveRideRoute = async (req, res) => {
 		}
 
 		const markers = Array.isArray(req.body?.markers) ? req.body.markers : []
-		const suggestionIds = normalizeSuggestionIds(req.body?.suggestionIds)
+		const passengers = normalizePassengers(req.body?.passengers)
 		const nowIso = new Date().toISOString()
 
-		await saveRide(userUid, day, hour, route, markers, suggestionIds)
+		await saveRide(userUid, day, hour, route, markers, passengers)
 
 		const isStart = user?.metadata?.schedule?.[day]?.start == hour
-		await sendInvitationEmails(suggestionIds, userUid, day, hour, isStart)
+		await sendInvitationEmails(passengers, userUid, day, hour, isStart)
 
 		// Return JSON if AJAX request, otherwise redirect
 		const wantsJson =
 			req.xhr ||
 			String(req.headers?.accept || '').includes('application/json') ||
-			(typeof req.get === 'function' && String(req.get('Content-Type') || '').includes('application/json'))
+			(typeof req.get === 'function' &&
+				String(req.get('Content-Type') || '').includes(
+					'application/json'
+				))
 
 		if (wantsJson) {
 			return res.json({ saved: true, savedAt: nowIso })

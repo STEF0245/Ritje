@@ -32,11 +32,11 @@ export const isRideActive = (ride) => {
 
 /**
  * @brief Builds initial passenger response map for suggestions.
- * @param {string[]} suggestionIds - UIDs of suggested passengers.
+ * @param {string[]} passengers - UIDs of suggested passengers.
  * @returns {object} - Map of UID to pending response object.
  */
-export const buildRidePassengerResponses = (suggestionIds = []) => {
-	return suggestionIds.reduce((responses, uid) => {
+export const buildRidePassengerResponses = (passengers = []) => {
+	return passengers.reduce((responses, uid) => {
 		responses[uid] = {
 			status: 'pending',
 			respondedAt: null

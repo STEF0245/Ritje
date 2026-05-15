@@ -90,7 +90,7 @@ export const hasAnotherActiveRide = async (
  * @param {number} hour - Schedule slot.
  * @param {object} route - Route object (GeoJSON or similar).
  * @param {Array<object>} markers - Ride markers.
- * @param {string[]} suggestionIds - Selected passenger UIDs.
+ * @param {string[]} passengers - Selected passenger UIDs.
  * @returns {Promise<object>} - Saved ride record.
  */
 export const saveRide = async (
@@ -99,7 +99,7 @@ export const saveRide = async (
 	hour,
 	route,
 	markers,
-	suggestionIds
+	passengers
 ) => {
 	const key = buildRideRecordKey(userUid, day, hour)
 	const nowIso = new Date().toISOString()
@@ -110,8 +110,7 @@ export const saveRide = async (
 		day,
 		hour,
 		status: 'active',
-		suggestionIds,
-		passengerResponses: buildRidePassengerResponses(suggestionIds),
+		passengers: buildRidePassengerResponses(passengers),
 		route,
 		markers,
 		routeMetrics,
@@ -173,22 +172,22 @@ export const updatePassengerResponse = async (
 	}
 
 	if (
-		!Array.isArray(ride.suggestionIds) ||
-		!ride.suggestionIds.includes(passengerUid)
+		!Array.isArray(ride.passengers) ||
+		!ride.passengers.includes(passengerUid)
 	) {
 		return null
 	}
 
 	const nowIso = new Date().toISOString()
-	await db.ref(`${key}/passengerResponses/${passengerUid}`).set({
+	await db.ref(`${key}/passengers/${passengerUid}`).set({
 		status: responseStatus,
 		respondedAt: nowIso
 	})
 
 	return {
 		...ride,
-		passengerResponses: {
-			...(ride.passengerResponses || {}),
+		passengers: {
+			...(ride.passengers || {}),
 			[passengerUid]: {
 				status: responseStatus,
 				respondedAt: nowIso

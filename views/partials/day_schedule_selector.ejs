@@ -1,16 +1,16 @@
-<% if (hasAnySchedule) { %>
+<% if (schedule && Array.isArray(schedule) && schedule.length > 0) { %>
 	<div class="flex flex-row items-center gap-4 w-full" input-radio-group>
-		<% daySchedules.forEach(({ key, label, start, end, isAvailable }) => { %>
+		<% schedule.forEach(({ day, label, start, end, isAvailable }) => { %>
+			<% 
+				const isSelectedStart = day == selectedDay && start.value == selectedHour
+				const isSelectedEnd = day == selectedDay && end.value == selectedHour
+			%>
 			<div class="theme-surface theme-pill border theme-border p-4">
 				<h3 class="text-xs uppercase tracking-[0.12em] theme-text-muted"><%= label %></h3>
-				<% if (isAvailable) { %>
-					<div class="flex flex-row gap-2 mt-2">
-						<a ride-label href="<%= basePath %>/<%= key %>/<%= start.value %>" class="theme-pill border theme-border px-4 py-2 text-xs theme-text-muted cursor-pointer <% if (String(key) === selectedKey && String(start.value) === selectedValue) { %>checked<% } %>"><%= start.label %></a>
-						<a ride-label href="<%= basePath %>/<%= key %>/<%= end.value %>" class="theme-pill border theme-border px-4 py-2 text-xs theme-text-muted cursor-pointer <% if (String(key) === selectedKey && String(end.value) === selectedValue) { %>checked<% } %>"><%= end.label %></a>
-					</div>
-				<% } else { %>
-					<p class="theme-text-muted text-xs">Niet beschikbaar</p>
-				<% } %>
+				<div class="flex flex-row gap-2 mt-2">
+					<a ride-label href="/ride/<%= day %>/<%= start.value %>" class="theme-pill border theme-border px-4 py-2 text-xs theme-text-muted cursor-pointer <% if (isSelectedStart && isAvailable) { %>checked<% } %>" <% if (!isAvailable) { %>disabled<% } %>><%= start.label %></a>
+					<a ride-label href="/ride/<%= day %>/<%= end.value %>" class="theme-pill border theme-border px-4 py-2 text-xs theme-text-muted cursor-pointer <% if (isSelectedEnd && isAvailable) { %>checked<% } %>" <% if (!isAvailable) { %>disabled<% } %>><%= end.label %></a>
+				</div>
 			</div>
 		<% }) %>
 	</div>

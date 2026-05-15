@@ -31,20 +31,20 @@ export const getInvitationRides = async (userUid, day, hour, users = []) => {
 			) {
 				continue
 			}
-			if (!Array.isArray(ride.suggestionIds)) continue
-			if (!ride.suggestionIds.includes(userUid)) continue
+			if (!Array.isArray(ride.passengers)) continue
+			if (!ride.passengers.includes(userUid)) continue
 			if (isRideCanceled(ride)) continue
 
 			invitationRides.push({
 				...ride,
 				driverUid,
 				driverName:
-					userLookup.get(driverUid)?.metadata?.name?.full ||
+					userLookup.get(driverUid)?.name?.full ||
 					userLookup.get(driverUid)?.displayName ||
 					userLookup.get(driverUid)?.email ||
 					driverUid,
 				rideKey,
-				passengerResponse: ride?.passengerResponses?.[userUid] || null,
+				passengerResponse: ride?.passengers?.[userUid] || null,
 				status: ride.status || 'active'
 			})
 		}
