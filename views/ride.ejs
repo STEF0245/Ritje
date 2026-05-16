@@ -2,12 +2,11 @@
     const mapMarkers = Array.isArray(locals.mapMarkers) ? [...locals.mapMarkers] : []
     const mapMarkersJson = JSON.stringify(mapMarkers) || '[]'
     const routeJson = JSON.stringify(locals.route) || 'null'
+
     const selectedDay = Number(locals.day)
     const selectedHour = Number(locals.hour)
     const hasDayHour = Number.isInteger(selectedDay) && Number.isInteger(selectedHour)
     const schedule = locals.daySchedules || []
-
-    const schoolConfig = locals.schoolMarkerData || {}
 
     const hasActiveRide = !!locals.activeRide
 %>
