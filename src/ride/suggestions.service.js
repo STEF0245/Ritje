@@ -26,11 +26,19 @@ export const checkMarkerFitsPreferences = (marker, preferences = {}) => {
 		return true
 	}
 
-	if (Number.isFinite(limitDistance) && detourDistance > limitDistance) {
+	if (
+		Number.isFinite(limitDistance) &&
+		detourDistance > limitDistance &&
+		limitDistance > 0
+	) {
 		return false
 	}
 
-	if (Number.isFinite(limitDuration) && detourDuration > limitDuration) {
+	if (
+		Number.isFinite(limitDuration) &&
+		detourDuration > limitDuration &&
+		limitDuration > 0
+	) {
 		return false
 	}
 
