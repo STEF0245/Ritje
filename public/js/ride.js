@@ -70,8 +70,6 @@ async function calculateRoute() {
 		})
 		const result = await response.json()
 
-		console.log(result)
-
 		if (response.ok) {
 			displayOnMap(result.route, result.suggestions)
 
