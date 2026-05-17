@@ -289,13 +289,13 @@ export const getRideEditPage = async (req, res) => {
 		req,
 		res,
 		view: 'ride_edit',
-		title: 'Rit bewerkenen',
+		title: 'Rit bewerken',
 		noScheduleResponse: {
 			type: 'info',
 			message: 'Je hebt geen rooster ingesteld.',
 			status: 200,
 			view: 'ride_edit',
-			title: 'Rit bewerkenen',
+			title: 'Rit bewerken',
 			extra: {
 				mapMarkers: [],
 				route: null,
@@ -315,7 +315,7 @@ export const getRideEditPage = async (req, res) => {
 				'Er is een fout opgetreden bij het laden van de ritpagina. Probeer het later opnieuw.',
 			status: 500,
 			view: 'ride_edit',
-			title: 'Rit bewerkenen',
+			title: 'Rit bewerken',
 			extra: {
 				mapMarkers: [],
 				route: null,
