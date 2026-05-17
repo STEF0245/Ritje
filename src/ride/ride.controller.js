@@ -99,7 +99,7 @@ export const buildRidePayload = async (req, day, hour) => {
 	const baseRoute = originCoords
 		? await getBaseRoute(originCoords, SCHOOL_DESTINATION)
 		: null
-	const suggestionMarkers = await buildSuggestions({
+	const suggestions = await buildSuggestions({
 		markers: mapMarkers,
 		currentUser: req.user,
 		originCoords,
@@ -132,6 +132,7 @@ export const buildRidePayload = async (req, day, hour) => {
 		route: displayRoute,
 		activeRide: !!currentRide,
 		invitationRides,
+		suggestions,
 		day,
 		hour,
 		daySchedules,
@@ -194,7 +195,7 @@ export const redirectToRidePage = async (req, res) => {
 			extra: {
 				mapMarkers: [],
 				route: null,
-				suggestionMarkers: [],
+				suggestions: [],
 				activeRide: false,
 				invitationRides: [],
 				rideSettings: {},
@@ -216,7 +217,7 @@ export const redirectToRidePage = async (req, res) => {
 			extra: {
 				mapMarkers: [],
 				route: null,
-				suggestionMarkers: [],
+				suggestions: [],
 				activeRide: false,
 				invitationRides: [],
 				rideSettings: {},
@@ -250,7 +251,7 @@ export const getRidePage = async (req, res) => {
 			extra: {
 				mapMarkers: [],
 				route: null,
-				suggestionMarkers: [],
+				suggestions: [],
 				activeRide: false,
 				invitationRides: [],
 				rideSettings: {},
@@ -270,7 +271,55 @@ export const getRidePage = async (req, res) => {
 			extra: {
 				mapMarkers: [],
 				route: null,
-				suggestionMarkers: [],
+				suggestions: [],
+				activeRide: false,
+				invitationRides: [],
+				rideSettings: {},
+				daySchedules: [],
+				hasAnySchedule: false,
+				selectedKey: '',
+				selectedValue: ''
+			}
+		}
+	})
+}
+
+export const getRideEditPage = async (req, res) => {
+	return renderRidePage({
+		req,
+		res,
+		view: 'ride_edit',
+		title: 'Rit bewerkenen',
+		noScheduleResponse: {
+			type: 'info',
+			message: 'Je hebt geen rooster ingesteld.',
+			status: 200,
+			view: 'ride_edit',
+			title: 'Rit bewerkenen',
+			extra: {
+				mapMarkers: [],
+				route: null,
+				suggestions: [],
+				activeRide: false,
+				invitationRides: [],
+				rideSettings: {},
+				daySchedules: [],
+				hasAnySchedule: false,
+				selectedKey: '',
+				selectedValue: ''
+			}
+		},
+		errorResponse: {
+			type: 'error',
+			message:
+				'Er is een fout opgetreden bij het laden van de ritpagina. Probeer het later opnieuw.',
+			status: 500,
+			view: 'ride_edit',
+			title: 'Rit bewerkenen',
+			extra: {
+				mapMarkers: [],
+				route: null,
+				suggestions: [],
 				activeRide: false,
 				invitationRides: [],
 				rideSettings: {},
@@ -412,7 +461,7 @@ export const calculateRouteWithSuggestions = async (req, res) => {
 			(m) => m.uid === req.user?.uid
 		)
 		const rideSettings = buildRideSettings(req.user?.metadata?.preferences)
-		const suggestionMarkers = await buildSuggestions({
+		const suggestions = await buildSuggestions({
 			markers: mapMarkers,
 			currentUser: req.user,
 			originCoords,
@@ -424,15 +473,15 @@ export const calculateRouteWithSuggestions = async (req, res) => {
 		const selectedPassengers = new Set(
 			normalizePassengers(req.body?.passengers)
 		)
-		const selectedSuggestionMarkers =
+		const selectedSuggestions =
 			selectedPassengers.size > 0
-				? suggestionMarkers.filter((m) =>
-						selectedPassengers.has(String(m?.uid))
+				? suggestions.filter((s) =>
+						selectedPassengers.has(String(s?.uid))
 					)
-				: suggestionMarkers
+				: suggestions
 
 		const seatLimit = rideSettings?.seats?.total || 1
-		if (selectedSuggestionMarkers.length > seatLimit) {
+		if (selectedSuggestions.length > seatLimit) {
 			return res.status(400).json({
 				error: `Je kunt maximaal ${seatLimit} personen selecteren.`
 			})
@@ -440,14 +489,14 @@ export const calculateRouteWithSuggestions = async (req, res) => {
 
 		const cacheKey = buildRouteCacheKey(
 			originCoords,
-			selectedSuggestionMarkers.map((m) => m.uid)
+			selectedSuggestions.map((s) => s.uid)
 		)
 		let routeWithSuggestions = baseRoute
 
-		if (selectedSuggestionMarkers.length > 0) {
+		if (selectedSuggestions.length > 0) {
 			const optimizedWaypoints = optimizeWaypointOrder(
 				originCoords,
-				selectedSuggestionMarkers
+				selectedSuggestions
 			)
 			routeWithSuggestions = await calculateRouteWithWaypoints(
 				originCoords,
@@ -459,9 +508,9 @@ export const calculateRouteWithSuggestions = async (req, res) => {
 
 		return res.json({
 			route: routeWithSuggestions,
-			markers: currentUserMarker
-				? [currentUserMarker, ...selectedSuggestionMarkers]
-				: selectedSuggestionMarkers,
+			suggestions: currentUserMarker
+				? [currentUserMarker, ...selectedSuggestions]
+				: selectedSuggestions,
 			cached: false
 		})
 	} catch (error) {
