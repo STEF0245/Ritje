@@ -60,7 +60,7 @@
                     <article class="theme-panel p-6 lg:col-span-1 h-full flex flex-col max-h-130">
                         <h2 class="text-xl font-extrabold theme-text-primary">Suggesties</h2>
                         <p class="theme-text-muted text-sm mt-1">Selecteer suggesties om uw rit aan te passen.</p>
-                        <div class="mt-4 flex-1 overflow-y-auto">
+                        <div class="mt-4 flex-1 overflow-y-auto" data-ride-suggestions data-seat-limit="<%= rideSettings?.seats?.total || 1 %>" data-initial-route="<%= routeJson %>" data-initial-markers='<%= mapMarkersJson %>'>
                             <% if (suggestions.length > 0) { %>
                                 <ul class="space-y-3">
                                     <% suggestions.forEach((suggestion) => { %>
@@ -95,6 +95,7 @@
                                 <p class="text-sm theme-text-muted">Geen suggesties beschikbaar.</p>
                             <% } %>
                         </div>
+                        <button class="theme-btn-primary px-4 py-2 mt-4 font-medium! hidden!" id="rideButton">Suggesties toepassen</button>
                     </article>
                 </div>
             </section>
