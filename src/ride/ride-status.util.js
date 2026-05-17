@@ -35,7 +35,7 @@ export const isRideActive = (ride) => {
  * @param {string[]} passengers - UIDs of suggested passengers.
  * @returns {object} - Map of UID to pending response object.
  */
-export const buildRidePassengerResponses = (passengers = []) => {
+export const buildRidePassengers = (passengers = []) => {
 	return passengers.reduce((responses, uid) => {
 		responses[uid] = {
 			status: 'pending',

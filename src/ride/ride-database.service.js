@@ -6,7 +6,7 @@
 import db from '../firebase/db.js'
 import { buildRideRecordKey, isRideCanceled } from './ride-status.util.js'
 import { getRouteMetrics } from './route-metrics.util.js'
-import { buildRidePassengerResponses } from './ride-status.util.js'
+import { buildRidePassengers } from './ride-status.util.js'
 
 /**
  * @brief Retrieves a specific ride record.
@@ -110,7 +110,7 @@ export const saveRide = async (
 		day,
 		hour,
 		status: 'active',
-		passengers: buildRidePassengerResponses(passengers),
+		passengers: buildRidePassengers(passengers),
 		route,
 		markers,
 		routeMetrics,
@@ -156,7 +156,7 @@ export const cancelRide = async (userUid, day, hour) => {
  * @param {string} responseStatus - Response status ('accepted' or 'rejected').
  * @returns {Promise<object|null>} - Updated ride record or null if ride not found.
  */
-export const updatePassengerResponse = async (
+export const updatePassenger = async (
 	driverUid,
 	day,
 	hour,
@@ -167,16 +167,9 @@ export const updatePassengerResponse = async (
 	const snapshot = await db.ref(key).once('value')
 	const ride = snapshot.val()
 
-	if (!ride || isRideCanceled(ride)) {
-		return null
-	}
+	if (!ride || isRideCanceled(ride)) return null
 
-	if (
-		!Array.isArray(ride.passengers) ||
-		!ride.passengers.includes(passengerUid)
-	) {
-		return null
-	}
+	if (!ride.passengers || !ride.passengers[passengerUid]) return null
 
 	const nowIso = new Date().toISOString()
 	await db.ref(`${key}/passengers/${passengerUid}`).set({

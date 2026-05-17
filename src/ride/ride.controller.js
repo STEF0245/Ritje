@@ -53,7 +53,7 @@ import {
 	hasAnotherActiveRide,
 	saveRide,
 	cancelRide,
-	updatePassengerResponse
+	updatePassenger
 } from './ride-database.service.js'
 
 // User & marker utilities
@@ -393,7 +393,7 @@ export const respondToRideAction = async (req, res) => {
 			})
 		}
 
-		const ride = await updatePassengerResponse(
+		const ride = await updatePassenger(
 			driverUid,
 			day,
 			hour,
