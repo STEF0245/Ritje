@@ -8,8 +8,8 @@
 			<div class="theme-surface theme-pill border theme-border p-4">
 				<h3 class="text-xs uppercase tracking-[0.12em] theme-text-muted"><%= label %></h3>
 				<div class="flex flex-row gap-2 mt-2">
-					<a ride-label href="/ride/<%= day %>/<%= start.value %>/<%= path %>" class="theme-pill border theme-border px-4 py-2 text-xs theme-text-muted cursor-pointer <% if (isSelectedStart && isAvailable) { %>checked<% } %>" <% if (!isAvailable) { %>disabled<% } %>><%= start.label %></a>
-					<a ride-label href="/ride/<%= day %>/<%= end.value %>/<%= path %>" class="theme-pill border theme-border px-4 py-2 text-xs theme-text-muted cursor-pointer <% if (isSelectedEnd && isAvailable) { %>checked<% } %>" <% if (!isAvailable) { %>disabled<% } %>><%= end.label %></a>
+					<a ride-label href="/ride/<%= day %>/<%= start.value %>/<%= locals.path %>" class="theme-pill border theme-border px-4 py-2 text-xs theme-text-muted cursor-pointer <% if (isSelectedStart && isAvailable) { %>checked<% } %>" <% if (!isAvailable) { %>disabled<% } %>><%= start.label %></a>
+					<a ride-label href="/ride/<%= day %>/<%= end.value %>/<%= locals.path %>" class="theme-pill border theme-border px-4 py-2 text-xs theme-text-muted cursor-pointer <% if (isSelectedEnd && isAvailable) { %>checked<% } %>" <% if (!isAvailable) { %>disabled<% } %>><%= end.label %></a>
 				</div>
 			</div>
 		<% }) %>
