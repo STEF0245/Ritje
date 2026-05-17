@@ -8,6 +8,7 @@ import express from 'express'
 import {
 	redirectToRidePage,
 	getRidePage,
+	getRideEditPage,
 	cancelRideAction,
 	respondToRideAction,
 	calculateRouteWithSuggestions,
@@ -57,6 +58,7 @@ const calculateLimiter = (() => {
 
 router.get('/', redirectToRidePage)
 router.get('/:day/:hour', getRidePage)
+router.get('/:day/:hour/edit', getRideEditPage)
 router.post('/:day/:hour/cancel', cancelRideAction)
 router.post('/:day/:hour/respond', respondToRideAction)
 router.post('/calculate', calculateLimiter, calculateRouteWithSuggestions)
