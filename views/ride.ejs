@@ -8,7 +8,8 @@
     const hasDayHour = Number.isInteger(selectedDay) && Number.isInteger(selectedHour)
     const schedule = locals.daySchedules || []
 
-    const hasActiveRide = !!locals.activeRide
+    const invitationRides = Array.isArray(locals.invitationRides) ? locals.invitationRides : []
+    const hasActiveRide = Boolean(locals.activeRide)
 %>
 
 <!DOCTYPE html>
@@ -91,15 +92,15 @@
                                 <div class="theme-pill border theme-border theme-surface p-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                                     <div>
                                         <h3 class="font-bold theme-text-primary">
-                                            <%= ride.driverName || 'Een bestuurder' %>
+                                            <%= ride.driver?.name || 'Een bestuurder' %>
                                         </h3>
                                         <p class="text-sm theme-text-muted">
-                                            <%= ride.passengerResponse?.status === 'accepted' ? 'Geaccepteerd' : ride.passengerResponse?.status === 'rejected' ? 'Geweigerd' : 'In afwachting van uw antwoord' %>
+                                            <%= ride.response?.status === 'accepted' ? 'Geaccepteerd' : ride.response?.status === 'rejected' ? 'Geweigerd' : 'In afwachting van uw antwoord' %>
                                         </p>
                                     </div>
-                                    <div class="flex flex-wrap gap-3">
+                                    <div class="flex flex-wrap gap-3 <%= ride.response?.status ? 'hidden' : '' %>">
                                         <form method="POST" action="/ride/<%= selectedDay %>/<%= selectedHour %>/respond">
-                                            <input type="hidden" name="driverUid" value="<%= ride.driverUid %>">
+                                            <input type="hidden" name="driverUid" value="<%= ride.driver?.uid %>">
                                             <input type="hidden" name="response" value="accepted">
                                             <button type="submit" class="theme-btn-primary px-4 py-2 rounded-xl font-bold inline-flex items-center gap-2">
                                                 <i class="fa-solid fa-check"></i>
@@ -107,7 +108,7 @@
                                             </button>
                                         </form>
                                         <form method="POST" action="/ride/<%= selectedDay %>/<%= selectedHour %>/respond">
-                                            <input type="hidden" name="driverUid" value="<%= ride.driverUid %>">
+                                            <input type="hidden" name="driverUid" value="<%= ride.driver?.uid %>">
                                             <input type="hidden" name="response" value="rejected">
                                             <button type="submit" class="theme-btn-secondary px-4 py-2 rounded-xl font-bold inline-flex items-center gap-2">
                                                 <i class="fa-solid fa-xmark"></i>
