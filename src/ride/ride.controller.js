@@ -124,8 +124,11 @@ export const buildRidePayload = async (req, day, hour) => {
 	const selectedKey = String(currentRide?.day || day || '')
 	const selectedValue = String(currentRide?.hour || hour || '')
 
+	const markers =
+		currentRide?.markers || (currentUserMarker ? [currentUserMarker] : [])
+
 	return {
-		mapMarkers: currentUserMarker ? [currentUserMarker] : [],
+		mapMarkers: markers,
 		rideSettings,
 		mapCenter,
 		route: displayRoute,

@@ -3,6 +3,8 @@
     const mapMarkersJson = JSON.stringify(mapMarkers) || '[]'
     const routeJson = JSON.stringify(locals.route) || 'null'
 
+    mapMarkers.push(...(locals.schoolMarkerData ? [locals.schoolMarkerData] : []))
+
     const selectedDay = Number(locals.day)
     const selectedHour = Number(locals.hour)
     const hasDayHour = Number.isInteger(selectedDay) && Number.isInteger(selectedHour)
@@ -176,6 +178,10 @@
                 </div>
             </section>
         </main>
+
+        <pre>
+            <%= JSON.stringify( locals, null, 2 ) %>
+        </pre>
 
         <%- include('partials/footer') %>
 		<%- include('partials/map', {
