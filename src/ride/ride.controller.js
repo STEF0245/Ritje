@@ -89,7 +89,6 @@ export const buildRidePayload = async (req, day, hour) => {
 	const users = await getAllUsers()
 	const filteredUsers = filterUsersBySchedule(users, req.user, day, hour)
 	const mapMarkers = buildMarkers(filteredUsers, req.user?.uid)
-	console.log(`Built ${mapMarkers.length} map markers for ride payload.`)
 	const mapCenter = computeMapCenter(mapMarkers)
 	const rideSettings = buildRideSettings(req.user?.metadata?.preferences)
 	const currentUserUid = req.user?.uid
