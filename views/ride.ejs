@@ -98,7 +98,7 @@
                                             <%= ride.response?.status === 'accepted' ? 'Geaccepteerd' : ride.response?.status === 'rejected' ? 'Geweigerd' : 'In afwachting van uw antwoord' %>
                                         </p>
                                     </div>
-                                    <div class="flex flex-wrap gap-3 <%= ride.response?.status ? 'hidden' : '' %>">
+                                    <div class="flex flex-wrap gap-3 <%= ride.response?.status !== 'pending' ? 'hidden' : '' %>">
                                         <form method="POST" action="/ride/<%= selectedDay %>/<%= selectedHour %>/respond">
                                             <input type="hidden" name="driverUid" value="<%= ride.driver?.uid %>">
                                             <input type="hidden" name="response" value="accepted">
