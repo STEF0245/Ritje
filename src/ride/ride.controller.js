@@ -27,6 +27,7 @@ import {
 import {
 	normalizeCoordinates,
 	hasValidCoordinates,
+	getDistanceInKm,
 	optimizeWaypointOrder,
 	computeMapCenter
 } from './coordinates.util.js'
@@ -78,6 +79,30 @@ import { getInvitationRides } from './invitation-rides.service.js'
 
 const SCHOOL_DESTINATION = normalizeCoordinates(config.school?.coords)
 
+const sortMarkersByHomeDistance = (markers = [], homeCoords = null) => {
+	if (!Array.isArray(markers) || markers.length === 0) {
+		return []
+	}
+
+	if (!hasValidCoordinates(homeCoords)) {
+		return [...markers]
+	}
+
+	return [...markers].sort((left, right) => {
+		const leftDistance = getDistanceInKm(homeCoords, left)
+		const rightDistance = getDistanceInKm(homeCoords, right)
+
+		if (leftDistance !== rightDistance) {
+			return leftDistance - rightDistance
+		}
+
+		return String(left?.title || '').localeCompare(
+			String(right?.title || ''),
+			'nl'
+		)
+	})
+}
+
 /**
  * @brief Assembles the full ride page payload for rendering and AJAX suggestions.
  * @param {object} req - Express request object.
@@ -89,17 +114,19 @@ export const buildRidePayload = async (req, day, hour) => {
 	const users = await getAllUsers()
 	const filteredUsers = filterUsersBySchedule(users, req.user, day, hour)
 	const mapMarkers = buildMarkers(filteredUsers, req.user?.uid)
-	const mapCenter = computeMapCenter(mapMarkers)
+	const homeCoords = req.user?.metadata?.coords || req.user?.coords || null
+	const orderedMarkers = sortMarkersByHomeDistance(mapMarkers, homeCoords)
+	const mapCenter = computeMapCenter(orderedMarkers)
 	const rideSettings = buildRideSettings(req.user?.metadata?.preferences)
 	const currentUserUid = req.user?.uid
-	const currentUserMarker = mapMarkers.find((m) => m.uid === currentUserUid)
+	const currentUserMarker = orderedMarkers.find((m) => m.uid === currentUserUid)
 	const originCoords = resolveOriginCoordinates(req)
 
 	const baseRoute = originCoords
 		? await getBaseRoute(originCoords, SCHOOL_DESTINATION)
 		: null
 	const suggestions = await buildSuggestions({
-		markers: mapMarkers,
+		markers: orderedMarkers,
 		currentUser: req.user,
 		originCoords,
 		destinationCoords: SCHOOL_DESTINATION,
@@ -125,7 +152,10 @@ export const buildRidePayload = async (req, day, hour) => {
 	const selectedValue = String(currentRide?.hour || hour || '')
 
 	const markers =
-		currentRide?.markers || (currentUserMarker ? [currentUserMarker] : [])
+		sortMarkersByHomeDistance(
+			currentRide?.markers || (currentUserMarker ? [currentUserMarker] : []),
+			homeCoords
+		)
 
 	return {
 		mapMarkers: markers,
