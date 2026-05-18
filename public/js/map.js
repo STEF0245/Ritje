@@ -332,7 +332,16 @@ class AppMap {
 			icon: marker.icon || null,
 			lines: Array.isArray(marker.lines)
 				? marker.lines
-				: [marker.addressLineOne || '', marker.addressLineTwo || ''],
+				: [
+						marker.addressLineOne ||
+							marker.address.street +
+								' ' +
+								marker.address.housenumber,
+						marker.addressLineTwo ||
+							marker.address.postalCode +
+								' ' +
+								marker.address.city
+					],
 			mapsUrl:
 				marker.mapsUrl ||
 				this.generateGoogleMapsLink(latitude, longitude),
