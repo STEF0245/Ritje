@@ -14,6 +14,12 @@
 	}
 
 	const userItems = Array.from(userList.querySelectorAll('[data-user-item]'))
+
+	/**
+	 * @brief  Normalize text for filtering user rows.
+	 * @param {unknown} value - Raw value to normalize.
+	 * @returns {string} Lowercased string.
+	 */
 	const normalize = (value) => String(value || '').toLowerCase()
 
 	/**
@@ -51,6 +57,12 @@
 		userList.replaceChildren(...users)
 	}
 
+	/**
+	 * @brief  Filter the visible user rows by search query.
+	 * @details  Matches against the rendered row text using a case-insensitive comparison.
+	 * @param {string} query - Search text entered by the user.
+	 * @returns {void}
+	 */
 	const applyFilter = (query) => {
 		const normalizedQuery = normalize(query).trim()
 

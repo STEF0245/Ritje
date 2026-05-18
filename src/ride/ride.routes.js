@@ -17,13 +17,16 @@ import {
 
 const router = express.Router()
 
-// Simple in-memory rate limiter for the calculate endpoint.
-// This prevents abusive bursts (e.g. 100 requests/sec) from a single user/IP.
+/**
+ * @brief  Create the in-memory rate limiter used by the route calculation endpoint.
+ * @details  Tracks requests per user or IP in a rolling time window so the calculate action cannot be spammed in bursts.
+ * @returns {Function} Express middleware that rate-limits calculate requests.
+ */
 const calculateLimiter = (() => {
 	const hits = new Map()
 	const WINDOW_MS = Number(
 		process.env.CALCULATE_RATE_LIMIT_WINDOW_MS || 10000
-	) // 10s
+	)
 	const MAX = Number(process.env.CALCULATE_RATE_LIMIT_MAX || 5)
 
 	return (req, res, next) => {

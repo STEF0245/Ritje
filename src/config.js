@@ -41,6 +41,13 @@ const optionalEnvVars = [
 	'GEOAPIFY_RATE_LIMIT_MAX'
 ]
 
+/**
+ * @brief  Parse a numeric environment value with a fallback.
+ * @details  Converts the raw value to a number and returns the fallback when the input is not finite.
+ * @param {unknown} value - Raw environment value.
+ * @param {number} fallback - Value to use when parsing fails.
+ * @returns {number} Parsed number or fallback.
+ */
 const parseNumberWithFallback = (value, fallback) => {
 	const parsed = Number(value)
 	return Number.isFinite(parsed) ? parsed : fallback

@@ -147,6 +147,17 @@ export const generateEmailHtml = (
 	`
 }
 
+/**
+ * @brief  Build the HTML body for ride cancellation emails.
+ * @details  Renders the cancellation template with recipient, driver, and schedule details.
+ * @param {object} recipient - Recipient user object.
+ * @param {object} driver - Driver user object.
+ * @param {string} dayName - Localized day name.
+ * @param {string} hourLabel - Human-readable hour label.
+ * @param {number} day - Weekday index.
+ * @param {number} hour - Schedule slot.
+ * @returns {string} Cancellation email HTML.
+ */
 export const generateCancellationEmailHtml = (
 	recipient,
 	driver,
@@ -246,9 +257,8 @@ export const generateCancellationEmailHtml = (
 </html>
 	`
 }
-
 /**
- * @brief Sends ride invitation emails to all suggested passengers.
+ * @brief  Send ride invitation emails to all suggested passengers.
  * @param {string[]} passengers - UIDs of suggested passengers.
  * @param {string} driverUid - Driver's UID.
  * @param {number} day - Weekday index.
@@ -301,6 +311,15 @@ export const sendInvitationEmails = async (
 	}
 }
 
+/**
+ * @brief  Send ride cancellation emails to affected passengers.
+ * @details  Resolves recipient users from the database and sends them the cancellation template for the specified ride.
+ * @param {object} passengers - Passenger map from the ride record.
+ * @param {string} driverUid - Driver's UID.
+ * @param {number} day - Weekday index.
+ * @param {number} hour - Schedule slot.
+ * @returns {Promise<void>} Resolves when all cancellation emails have been sent.
+ */
 export const sendCancellationEmails = async (
 	passengers,
 	driverUid,

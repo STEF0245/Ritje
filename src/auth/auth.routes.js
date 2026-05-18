@@ -18,6 +18,12 @@ import { respondWithNotification } from '../utils/notification.util.js'
 
 const router = express.Router()
 
+/**
+ * @brief  Build the rate-limit key for auth endpoints.
+ * @details  Prefers the authenticated user UID so logged-in users share their own bucket, and falls back to the client IP address for anonymous traffic.
+ * @param {object} req - Express request object.
+ * @returns {string} Stable rate-limit key.
+ */
 const keyGenerator = (req) => {
 	return req.user?.uid || ipKeyGenerator(req.ip)
 }

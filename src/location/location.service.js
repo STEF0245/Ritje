@@ -700,6 +700,15 @@ export const findMarkersOnRoute = (
 	})
 }
 
+/**
+ * @brief  Calculate the great-circle distance between two coordinates.
+ * @details  Uses the haversine formula and returns the distance in kilometers.
+ * @param {number} lat1 - Start latitude.
+ * @param {number} lon1 - Start longitude.
+ * @param {number} lat2 - End latitude.
+ * @param {number} lon2 - End longitude.
+ * @returns {number} Distance in kilometers.
+ */
 export const getDistanceFromLatLonInKm = (lat1, lon1, lat2, lon2) => {
 	const deg2rad = (deg) => {
 		return deg * (Math.PI / 180)

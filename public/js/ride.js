@@ -1,3 +1,9 @@
+/**
+ * @file Ride creation UI interactions and route calculation flow.
+ * @brief Manages passenger selection, route calculations, and ride persistence.
+ * @details Handles checkbox toggling to select/deselect passengers with seat limit enforcement. Provides "Calculate Route" and "Save Route" functionality that communicates with the backend via POST requests. Updates the map display based on calculated routes and selected passengers.
+ */
+
 const suggestionsContainer = document.querySelector('[data-ride-suggestions]')
 const rideButton = document.getElementById('rideButton')
 const mapContainer = document.querySelector('[data-map]')
@@ -51,6 +57,11 @@ rideButton.addEventListener('click', async () => {
 	}
 })
 
+/**
+ * @brief  Calculate a route for the currently selected passengers.
+ * @details  Sends the selected day, hour, and passenger list to the ride calculation endpoint and updates the map with the returned route and suggestions.
+ * @returns {Promise<void>} Resolves when the request has completed.
+ */
 async function calculateRoute() {
 	const passengers = getSelectedPassengers()
 
@@ -84,6 +95,11 @@ async function calculateRoute() {
 	}
 }
 
+/**
+ * @brief  Persist the currently calculated ride route.
+ * @details  Sends the selected schedule slot, route, markers, and passengers to the save endpoint and updates the button state based on the response.
+ * @returns {Promise<void>} Resolves when the save request has completed.
+ */
 async function saveRoute() {
 	const slot = getSelectedScheduleSlot()
 	if (!slot) return
@@ -122,6 +138,12 @@ async function saveRoute() {
 	}
 }
 
+/**
+ * @brief  Update the ride action button state.
+ * @param {boolean} disabled - Whether the button should be disabled.
+ * @param {string} text - Button label to display.
+ * @returns {void}
+ */
 function disableButton(disabled, text) {
 	rideButton.disabled = disabled
 	rideButton.textContent = text
@@ -129,6 +151,12 @@ function disableButton(disabled, text) {
 	rideButton.classList.toggle('cursor-not-allowed!', disabled)
 }
 
+/**
+ * @brief  Sync the rendered route and markers to the map widget.
+ * @param {object|null} route - Route payload to display.
+ * @param {Array<object>|null} markers - Marker collection to display.
+ * @returns {void}
+ */
 function displayOnMap(route, markers) {
 	if (route) {
 		mapContainer.dataset.route = JSON.stringify(route)
@@ -140,6 +168,11 @@ function displayOnMap(route, markers) {
 	}
 }
 
+/**
+ * @brief  Read the selected ride schedule slot from the current URL.
+ * @details  Extracts the day and hour from the ride edit URL pattern and returns null when the path does not match.
+ * @returns {{day: number, hour: number}|null} Selected slot or null.
+ */
 function getSelectedScheduleSlot() {
 	const match = window.location.pathname.match(
 		/^\/ride\/(\d+)\/(\d+)\/edit\/?$/
@@ -154,6 +187,13 @@ function getSelectedScheduleSlot() {
 	return { day, hour }
 }
 
+/**
+ * @brief  Parse a JSON value stored in a data attribute.
+ * @details  Falls back to the provided default value when parsing fails.
+ * @param {string} value - Raw JSON string.
+ * @param {unknown} defaultValue - Fallback value.
+ * @returns {unknown} Parsed data or the fallback.
+ */
 function parseJsonDataset(value, defaultValue) {
 	try {
 		return JSON.parse(value)
@@ -163,6 +203,10 @@ function parseJsonDataset(value, defaultValue) {
 	}
 }
 
+/**
+ * @brief  Collect the UIDs for the currently selected passengers.
+ * @returns {Array<string>} Selected passenger UIDs.
+ */
 function getSelectedPassengers() {
 	const selectedPassengers = suggestionsContainer.querySelectorAll(
 		'input[type="checkbox"]:checked'

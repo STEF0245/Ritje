@@ -1,3 +1,9 @@
+/**
+ * @file Repository documentation builder and renderer.
+ * @brief Scans project files, extracts JSDoc comments, and renders documentation HTML.
+ * @details Provides `buildRepositoryDocumentation()` to scan src, public/js, and public/css directories, extract JSDoc blocks, and generate a structured documentation object. Includes `renderDocumentationMarkdown()` to convert documentation text to HTML with proper formatting, links, code blocks, and lists. Also exports utilities for file scanning, HTML escaping, and documentation section extraction.
+ */
+
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
@@ -38,8 +44,18 @@ const IGNORED_DIRECTORIES = new Set([
 
 const IGNORED_FILES = new Set(['.DS_Store'])
 
+/**
+ * @brief  Convert a path to POSIX separators.
+ * @param {string} value - Input path.
+ * @returns {string} POSIX-style path.
+ */
 const toPosix = (value) => value.split(path.sep).join('/')
 
+/**
+ * @brief  Escape HTML special characters.
+ * @param {unknown} value - Raw text.
+ * @returns {string} Escaped HTML string.
+ */
 const escapeHtml = (value) => {
 	return String(value)
 		.replaceAll('&', '&amp;')
@@ -49,6 +65,11 @@ const escapeHtml = (value) => {
 		.replaceAll("'", '&#39;')
 }
 
+/**
+ * @brief  Decode the HTML entities used by this renderer.
+ * @param {unknown} value - Encoded text.
+ * @returns {string} Decoded string.
+ */
 const decodeHtmlEntities = (value) => {
 	return String(value)
 		.replaceAll('&lt;', '<')
@@ -58,31 +79,63 @@ const decodeHtmlEntities = (value) => {
 		.replaceAll('&amp;', '&')
 }
 
+/**
+ * @brief  Normalize a relative path for matching.
+ * @param {unknown} value - Raw relative path.
+ * @returns {string} Normalized lowercase path.
+ */
 const normalizeRelativePath = (value) =>
 	toPosix(String(value || '').replace(/^[/\\]+/, '')).toLowerCase()
 
+/**
+ * @brief  Convert text into a URL slug.
+ * @param {unknown} value - Raw text.
+ * @returns {string} Slug string.
+ */
 const slugify = (value) =>
 	String(value)
 		.toLowerCase()
 		.replace(/[^a-z0-9]+/g, '-')
 		.replace(/^-+|-+$/g, '')
 
+/**
+ * @brief  Count the lines in a block of text.
+ * @param {string} content - Text content.
+ * @returns {number} Line count.
+ */
 const countLines = (content) => {
 	if (!content) return 0
 	return content.split(/\r?\n/).length
 }
 
+/**
+ * @brief  Format a byte count for display.
+ * @param {number} size - Size in bytes.
+ * @returns {string} Human-readable size string.
+ */
 const formatBytes = (size) => {
 	if (size < 1024) return `${size} B`
 	if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`
 	return `${(size / (1024 * 1024)).toFixed(1)} MB`
 }
 
+/**
+ * @brief  Resolve the line number for a character index.
+ * @param {string} content - Source text.
+ * @param {number} index - Zero-based character index.
+ * @returns {number} One-based line number.
+ */
 const getLineNumberAtIndex = (content, index) => {
 	if (!content || index <= 0) return 1
 	return content.slice(0, index).split(/\r?\n/).length
 }
 
+/**
+ * @brief  Normalize a raw JSDoc block for rendering.
+ * @param {string} rawBlock - Raw comment block.
+ * @param {string} extension - Source file extension.
+ * @returns {string} Cleaned documentation text.
+ */
 const normalizeDocBlock = (rawBlock, extension) => {
 	if (!rawBlock) return ''
 
@@ -95,6 +148,13 @@ const normalizeDocBlock = (rawBlock, extension) => {
 		.trim()
 }
 
+/**
+ * @brief  Derive a display title for a documentation section.
+ * @param {string} content - Normalized documentation block.
+ * @param {number} sectionIndex - Section order.
+ * @param {number} lineNumber - Source line number.
+ * @returns {string} Section title.
+ */
 const deriveDocTitle = (content, sectionIndex, lineNumber) => {
 	if (!content) return `Documentatie ${sectionIndex}`
 
@@ -118,6 +178,11 @@ const deriveDocTitle = (content, sectionIndex, lineNumber) => {
 	return `Documentatie ${sectionIndex} (regel ${lineNumber})`
 }
 
+/**
+ * @brief  Remove tagged JSDoc lines from a block.
+ * @param {string} content - Normalized documentation text.
+ * @returns {string} Content without tagged lines.
+ */
 const stripTagLines = (content) => {
 	if (!content) return ''
 
@@ -133,6 +198,11 @@ const stripTagLines = (content) => {
 	return cleaned
 }
 
+/**
+ * @brief  Convert a JSDoc tag name to a readable label.
+ * @param {string} tag - Tag name.
+ * @returns {string} Human-readable label.
+ */
 const humanizeTag = (tag) => {
 	const normalized = String(tag || '').toLowerCase()
 	if (normalized === 'param') return 'Parameter'
@@ -149,6 +219,11 @@ const humanizeTag = (tag) => {
 	return normalized.charAt(0).toUpperCase() + normalized.slice(1)
 }
 
+/**
+ * @brief  Summarize JSDoc tag lines into markdown-friendly text.
+ * @param {string} content - Documentation text.
+ * @returns {string} Summarized content.
+ */
 const summarizeTagLines = (content) => {
 	if (!content) return ''
 
@@ -346,6 +421,12 @@ const summarizeTagLines = (content) => {
 	return output.join('\n\n').trim()
 }
 
+/**
+ * @brief  Extract documentation sections from a source file.
+ * @param {string} filePath - Source file path.
+ * @param {string} content - File content.
+ * @returns {Array<object>} Extracted documentation sections.
+ */
 const extractDocumentationSections = (filePath, content) => {
 	const extension = path.extname(filePath).toLowerCase()
 	const sections = []
@@ -377,12 +458,23 @@ const extractDocumentationSections = (filePath, content) => {
 	return sections
 }
 
+/**
+ * @brief  Extract and structure documentation for a source file.
+ * @param {string} filePath - Source file path.
+ * @param {string} content - File content.
+ * @returns {object} Structured documentation metadata.
+ */
 const extractDocumentation = (filePath, content) => {
 	const sections = extractDocumentationSections(filePath, content)
 	if (!sections.length) return ''
 	return sections.map((section) => section.content).join('\n\n-----\n\n')
 }
 
+/**
+ * @brief  Format inline markdown fragments.
+ * @param {string} input - Markdown text.
+ * @returns {string} Formatted HTML-safe fragment.
+ */
 const formatInlineMarkdown = (input) => {
 	let output = escapeHtml(input)
 
@@ -399,6 +491,11 @@ const formatInlineMarkdown = (input) => {
 	return output
 }
 
+/**
+ * @brief  Render documentation markdown as HTML.
+ * @param {string} input - Markdown input.
+ * @returns {string} Rendered HTML.
+ */
 export const renderDocumentationMarkdown = (input) => {
 	const raw = decodeHtmlEntities(String(input || ''))
 	const lines = raw.split(/\r?\n/)
@@ -498,6 +595,11 @@ export const renderDocumentationMarkdown = (input) => {
 	return htmlParts.join('\n')
 }
 
+/**
+ * @brief  Read and sort directory entries.
+ * @param {string} directoryPath - Directory path.
+ * @returns {Promise<import('node:fs/promises').Dirent[]>} Directory entries.
+ */
 const readDirectoryEntries = async (directoryPath) => {
 	const entries = await fs.readdir(directoryPath, { withFileTypes: true })
 	return entries
@@ -515,6 +617,13 @@ const readDirectoryEntries = async (directoryPath) => {
 		})
 }
 
+/**
+ * @brief  Recursively scan a directory tree.
+ * @param {string} directoryPath - Directory to scan.
+ * @param {object} group - Documentation group definition.
+ * @param {string} relativePath - Path relative to the group root.
+ * @returns {Promise<Array<object>>} Scanned tree nodes.
+ */
 const scanDirectory = async (
 	absoluteDirectoryPath,
 	groupRootPath,
@@ -586,6 +695,12 @@ const scanDirectory = async (
 	return nodes
 }
 
+/**
+ * @brief  Flatten directory nodes into a file list.
+ * @param {Array<object>} nodes - Tree nodes.
+ * @param {Array<object>} [collection=[]] - Accumulator.
+ * @returns {Array<object>} Flattened file list.
+ */
 const flattenFiles = (nodes, collection = []) => {
 	for (const node of nodes) {
 		if (node.type === 'file') {
@@ -599,6 +714,11 @@ const flattenFiles = (nodes, collection = []) => {
 	return collection
 }
 
+/**
+ * @brief  Count directory nodes in a tree.
+ * @param {Array<object>} nodes - Tree nodes.
+ * @returns {number} Directory count.
+ */
 const countDirectories = (nodes) => {
 	let count = 0
 	for (const node of nodes) {
@@ -609,6 +729,11 @@ const countDirectories = (nodes) => {
 	return count
 }
 
+/**
+ * @brief  Build the full repository documentation model.
+ * @details  Scans configured folders, extracts documentation blocks, and returns the data structure used by the admin docs pages.
+ * @returns {Promise<object>} Documentation model.
+ */
 export const buildRepositoryDocumentation = async () => {
 	const groups = []
 	const allFiles = []
@@ -688,6 +813,13 @@ export const buildRepositoryDocumentation = async () => {
 	}
 }
 
+/**
+ * @brief  Locate a documented file within the repository model.
+ * @param {object} documentation - Documentation model.
+ * @param {string} groupKey - Group identifier.
+ * @param {string} filePath - File path to resolve.
+ * @returns {{group: object|null, file: object|null}} Matching group and file.
+ */
 export const findDocumentationFile = (
 	documentation,
 	groupKey,
@@ -721,6 +853,11 @@ export const findDocumentationFile = (
 	}
 }
 
+/**
+ * @brief  Render source text with line anchors.
+ * @param {string} source - Source text.
+ * @returns {string} HTML with line anchors.
+ */
 export const renderSourceWithLineAnchors = (source) => {
 	const rawSource = String(source || '')
 	const lines = rawSource.split(/\r?\n/)

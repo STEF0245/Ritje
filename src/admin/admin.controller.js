@@ -85,6 +85,12 @@ const mapFormDataToNewUser = (formData = {}) => {
 	return mapped
 }
 
+/**
+ * @brief  Map incoming edit form data to the payload used by the edit view.
+ * @details  Reuses the shared user mapper and attaches the normalized schedule so the edit form can be re-rendered with the submitted values.
+ * @param {object} formData - Raw form body submitted by the client.
+ * @returns {{email: string, phoneNumber: string, photoURL: string, name: {first: string, last: string, full: string}, address: {city: string, street: string, houseNumber: string, postalCode: string}, schedule: object}} Normalized edit-user form data.
+ */
 const mapFormDataToEditUser = (formData = {}) => {
 	const mapped = mapFormDataToUser(formData, false)
 	mapped.schedule = parseScheduleFromForm(formData)

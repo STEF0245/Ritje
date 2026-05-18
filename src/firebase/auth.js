@@ -8,6 +8,10 @@ import { randomBytes } from 'node:crypto'
 import { getAuth } from 'firebase-admin/auth'
 import app from './app.js'
 
+/**
+ * @brief  Firebase Admin Auth instance for the application.
+ * @type {import('firebase-admin/auth').Auth}
+ */
 export const auth = getAuth(app)
 
 /**

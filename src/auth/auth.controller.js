@@ -80,6 +80,13 @@ export const logoutController = (req, res) => {
 	res.redirect('/login')
 }
 
+/**
+ * @brief  Request a Firebase email verification message for the active user.
+ * @details  Calls the Identity Toolkit verification endpoint with the current ID token and throws when the provider request fails.
+ * @param {string} idToken - Firebase ID token for the authenticated user.
+ * @returns {Promise<boolean>} Resolves true when the verification email request succeeds.
+ * @throws {Error} Throws when Firebase returns an error response.
+ */
 export const sendVerificationEmail = async (idToken) => {
 	try {
 		const response = await fetch(

@@ -26,6 +26,13 @@ const GEOCODE_ERROR_MESSAGE =
 
 const WEEKDAY_KEYS = ['1', '2', '3', '4', '5']
 
+/**
+ * @brief  Normalize a schedule hour input to an integer slot.
+ * @details  Accepts empty values as null and rejects values outside the 1-8 schedule range.
+ * @param {unknown} value - Raw hour input value.
+ * @returns {number|null} Normalized hour or null when not provided.
+ * @throws {Error} Throws when the value is outside the allowed schedule range.
+ */
 const normalizeHourInput = (value) => {
 	if (value === null || value === undefined) return null
 	const raw = String(value).trim()
@@ -37,6 +44,13 @@ const normalizeHourInput = (value) => {
 	return hour
 }
 
+/**
+ * @brief  Parse the weekly schedule payload from a profile form submission.
+ * @details  Converts paired start and end fields for weekdays 1-5 into a normalized schedule object or returns null when no schedule data is present.
+ * @param {object} body - Raw form body.
+ * @returns {object|null} Normalized schedule payload or null.
+ * @throws {Error} Throws when a day range is incomplete or invalid.
+ */
 const parseScheduleFromBody = (body = {}) => {
 	const hasSchedulePayload = WEEKDAY_KEYS.some(
 		(day) =>
@@ -72,6 +86,13 @@ const parseScheduleFromBody = (body = {}) => {
 	return schedule
 }
 
+/**
+ * @brief  Render a standardized profile-edit error response.
+ * @details  Wraps the shared notification helper so profile edit failures return the same view locals and status structure every time.
+ * @param {object} res - Express response object.
+ * @param {{status?: number, label?: string|null, message?: string|null, formData?: object}} options - Error response options.
+ * @returns {object} Express response.
+ */
 const renderProfileEditError = (res, options = {}) => {
 	const {
 		status = 400,
@@ -91,6 +112,12 @@ const renderProfileEditError = (res, options = {}) => {
 	})
 }
 
+/**
+ * @brief  Normalize an address for comparisons.
+ * @details  Lowercases and trims every address component so equality checks are resilient to formatting differences.
+ * @param {object} address - Address object to normalize.
+ * @returns {{street: string, houseNumber: string, postalCode: string, city: string}} Normalized address fields.
+ */
 const normalizeAddressForCompare = (address = {}) => {
 	const normalize = (value) =>
 		String(value || '')
@@ -104,6 +131,13 @@ const normalizeAddressForCompare = (address = {}) => {
 	}
 }
 
+/**
+ * @brief  Compare two normalized addresses for semantic equality.
+ * @details  Uses the normalized comparison helper so whitespace and case differences do not affect the result.
+ * @param {object} left - First address.
+ * @param {object} right - Second address.
+ * @returns {boolean} True when both addresses represent the same location.
+ */
 const areAddressesEquivalent = (left, right) => {
 	const a = normalizeAddressForCompare(left)
 	const b = normalizeAddressForCompare(right)
@@ -115,6 +149,13 @@ const areAddressesEquivalent = (left, right) => {
 	)
 }
 
+/**
+ * @brief  Parse a non-negative integer from form input.
+ * @details  Treats empty values as null and rejects negative or non-integer values.
+ * @param {unknown} value - Raw numeric input.
+ * @returns {number|null} Parsed integer or null.
+ * @throws {Error} Throws when the value is not a valid non-negative integer.
+ */
 const getPositiveInteger = (value) => {
 	if (value === null || value === undefined) return null
 	const raw = String(value).trim()

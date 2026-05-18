@@ -1,3 +1,9 @@
+/**
+ * @file School schedule management and time slot calculations.
+ * @brief Provides weekday/hour mapping and "next occurrence" date calculations.
+ * @details Manages the 8 hourly slots (1-8) for the school week (Mon-Fri). Calculates the next scheduled occurrence of a given slot, marks the earliest upcoming slot as "nextUp", and builds normalized schedule objects for template rendering.
+ */
+
 const WEEKDAYS = [
 	{ day: '1', label: 'Maandag' },
 	{ day: '2', label: 'Dinsdag' },
@@ -17,6 +23,12 @@ const HOUR_MAP = {
 	8: ['15:45', '16:35']
 }
 
+/**
+ * @brief Resolves a time label (start or end) for a schedule hour.
+ * @param {number} hour - Schedule slot (1-8).
+ * @param {boolean} isStart - True for start time, false for end time.
+ * @returns {string|null} - Time label like "8:25" or null if invalid hour.
+ */
 export const resolveHourLabel = (hour, isStart) => {
 	if (!hour) return null
 	const key = String(hour)
@@ -24,6 +36,13 @@ export const resolveHourLabel = (hour, isStart) => {
 	return isStart ? start : end
 }
 
+/**
+ * @brief Calculates the next occurrence of a specific day/hour/time combination.
+ * @param {string|number} dayKey - Weekday key (1-5).
+ * @param {number} hourIndex - Schedule slot (1-8).
+ * @param {boolean} isStart - True for start time, false for end time.
+ * @returns {Date|null} - Next Date when this slot occurs, or null if invalid.
+ */
 export const getNextOccurrenceFor = (dayKey, hourIndex, isStart) => {
 	if (!dayKey || !hourIndex) return null
 	const timeStr = resolveHourLabel(hourIndex, isStart)
@@ -42,6 +61,11 @@ export const getNextOccurrenceFor = (dayKey, hourIndex, isStart) => {
 	return candidate
 }
 
+/**
+ * @brief Builds normalized day schedule objects with start/end times and "nextUp" flags.
+ * @param {object} schedule - Schedule object with days mapped to {start, end} hour slots.
+ * @returns {{daySchedules: Array<object>, hasAnySchedule: boolean}} - Enriched schedules and presence flag.
+ */
 export const buildDaySchedules = (schedule = {}) => {
 	const daySchedules = WEEKDAYS.map(({ day, label }) => {
 		const daySchedule = schedule[day] || null
@@ -105,6 +129,11 @@ export const buildDaySchedules = (schedule = {}) => {
 	}
 }
 
+/**
+ * @brief Finds the very next scheduled event across all days/hours.
+ * @param {object} schedule - Schedule object with days mapped to {start, end} hour slots.
+ * @returns {{day: number, hour: number}|null} - Next event slot or null if no schedule.
+ */
 export const getNextOccurrence = (schedule = {}) => {
 	const now = new Date()
 	const today = now.getDay()
@@ -141,6 +170,13 @@ export const getNextOccurrence = (schedule = {}) => {
 	return nextEvent
 }
 
+/**
+ * @brief Validates that a day/hour slot is scheduled for the user.
+ * @param {object} schedule - Schedule object with days mapped to {start, end} hour slots.
+ * @param {number} day - Weekday to check.
+ * @param {number} hour - Hour slot to check.
+ * @returns {boolean} - True if the slot is in the user's schedule.
+ */
 export const isValidOccurrence = (schedule = {}, day, hour) => {
 	if (!schedule || !schedule[day]) return false
 	const daySchedule = schedule[day]

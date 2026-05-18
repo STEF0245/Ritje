@@ -1,3 +1,9 @@
+/**
+ * @file Firebase app initialization and authentication setup (client-side).
+ * @brief Configures Firebase Auth with local persistence and token refresh.
+ * @details Fetches Firebase web configuration from `/api/firebase-config`, initializes the Firebase app, enables browser local persistence for auth state, and initiates automatic token refresh. Exports `authReady` promise to ensure auth state is ready before use.
+ */
+
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js'
 import {
 	getAuth,

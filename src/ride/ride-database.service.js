@@ -8,9 +8,7 @@ import { buildRideRecordKey, isRideCanceled } from './ride-status.util.js'
 import { getRouteMetrics } from './route-metrics.util.js'
 import { buildRidePassengers } from './ride-status.util.js'
 import { sendEmail } from '../utils/email.util.js'
-import {
-	sendCancellationEmails
-} from './ride-email.service.js'
+import { sendCancellationEmails } from './ride-email.service.js'
 
 /**
  * @brief Retrieves a specific ride record.

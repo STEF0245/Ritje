@@ -1,8 +1,14 @@
 /**
  * @file Client-side email verification resend handler.
- * Requests the server to resend the verification email.
+ * @brief  Wires the profile email verification UI to the resend endpoint.
+ * @details  Makes the verification indicator clickable when the email is unverified and posts a resend request to the server.
  */
 
+/**
+ * @brief  Set up the email verification resend interaction.
+ * @details  Attaches a click handler to the verification indicator when it is interactive and submits the resend form on demand.
+ * @returns {Promise<void>} Resolves after the UI handler has been registered.
+ */
 const setupEmailVerificationResend = async () => {
 	const verifiedSpan = document.querySelector('#emailVerified')
 

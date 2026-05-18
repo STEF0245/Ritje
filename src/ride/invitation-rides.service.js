@@ -54,6 +54,13 @@ export const getInvitationRides = async (userUid, day, hour, users = []) => {
 	return invitationRides
 }
 
+/**
+ * @brief  Attach invitation status metadata to ride markers.
+ * @details  Copies marker objects and adds a user-facing invitation label when the current ride has a matching passenger response.
+ * @param {Array<object>} markers - Marker collection to enrich.
+ * @param {object|null} currentRide - Active ride record.
+ * @returns {Array<object>} Marker collection with invitation status metadata.
+ */
 export const addInvitationStatusToMarkers = (markers, currentRide) => {
 	const passengers = currentRide?.passengers || {}
 	const invitationRides = Object.entries(passengers).filter(

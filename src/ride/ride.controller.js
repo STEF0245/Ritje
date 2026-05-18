@@ -82,6 +82,13 @@ import {
 
 const SCHOOL_DESTINATION = normalizeCoordinates(config.school?.coords)
 
+/**
+ * @brief  Order markers by distance from the user's home coordinates.
+ * @details  Keeps invalid coordinate sets stable while sorting valid markers from nearest to farthest and using title order as a tie-breaker.
+ * @param {Array<object>} markers - Marker list to sort.
+ * @param {{latitude: number, longitude: number}|null} homeCoords - Current user's home coordinates.
+ * @returns {Array<object>} Sorted marker list.
+ */
 const sortMarkersByHomeDistance = (markers = [], homeCoords = null) => {
 	if (!Array.isArray(markers) || markers.length === 0) {
 		return []
@@ -216,7 +223,14 @@ const renderRidePage = async ({
 	}
 }
 
-export const redirectToRidePage = async (req, res) => {
+	/**
+	 * @brief  Redirect the user to the next scheduled ride occurrence.
+	 * @details  Finds the next valid schedule slot and redirects to the ride page for that day and hour, or shows a fallback notification when no schedule exists.
+	 * @param {object} req - Express request object.
+	 * @param {object} res - Express response object.
+	 * @returns {Promise<object>} Redirect response or fallback notification.
+	 */
+	export const redirectToRidePage = async (req, res) => {
 	try {
 		const nextOccurrence = getNextOccurrence(
 			req.user?.metadata?.schedule || {}
@@ -324,7 +338,14 @@ export const getRidePage = async (req, res) => {
 	})
 }
 
-export const getRideEditPage = async (req, res) => {
+	/**
+	 * @brief  Render the ride edit page for the current schedule slot.
+	 * @details  Uses the shared ride-page renderer so the edit view receives the same validation, fallback, and payload-building behavior as the main ride page.
+	 * @param {object} req - Express request object.
+	 * @param {object} res - Express response object.
+	 * @returns {Promise<object>} Rendered ride edit page or fallback notification.
+	 */
+	export const getRideEditPage = async (req, res) => {
 	return renderRidePage({
 		req,
 		res,
