@@ -75,7 +75,10 @@ import { sendInvitationEmails, getHourLabel } from './ride-email.service.js'
 import { buildRideSettings } from './ride-settings.util.js'
 
 // Invitations
-import { getInvitationRides } from './invitation-rides.service.js'
+import {
+	getInvitationRides,
+	addInvitationStatusToMarkers
+} from './invitation-rides.service.js'
 
 const SCHOOL_DESTINATION = normalizeCoordinates(config.school?.coords)
 
@@ -119,7 +122,9 @@ export const buildRidePayload = async (req, day, hour) => {
 	const mapCenter = computeMapCenter(orderedMarkers)
 	const rideSettings = buildRideSettings(req.user?.metadata?.preferences)
 	const currentUserUid = req.user?.uid
-	const currentUserMarker = orderedMarkers.find((m) => m.uid === currentUserUid)
+	const currentUserMarker = orderedMarkers.find(
+		(m) => m.uid === currentUserUid
+	)
 	const originCoords = resolveOriginCoordinates(req)
 
 	const baseRoute = originCoords
@@ -151,11 +156,14 @@ export const buildRidePayload = async (req, day, hour) => {
 	const selectedKey = String(currentRide?.day || day || '')
 	const selectedValue = String(currentRide?.hour || hour || '')
 
-	const markers =
+	const markers = addInvitationStatusToMarkers(
 		sortMarkersByHomeDistance(
-			currentRide?.markers || (currentUserMarker ? [currentUserMarker] : []),
+			currentRide?.markers ||
+				(currentUserMarker ? [currentUserMarker] : []),
 			homeCoords
-		)
+		),
+		currentRide
+	)
 
 	return {
 		mapMarkers: markers,

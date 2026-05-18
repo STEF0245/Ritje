@@ -150,12 +150,18 @@
                             <% if (mapMarkers.length > 2) { %>
                                 <ul class="space-y-3">
                                     <% mapMarkers.forEach((ride) => { %>
-                                        <% const detourDistance = ride.detour?.distance ?? ride.detourDistanceKm; %>
-                                        <% const detourDuration = ride.detour?.duration ?? ride.detourDurationMinutes; %>
                                         <div class="theme-pill p-4 border theme-border theme-surface ride-suggestion-item cursor-pointer block">
                                             <span class="min-w-0 flex-1">
+                                                <% const statusLabel = ride.invitation?.label %>
                                                 <h4 class="text-base font-semibold theme-text-primary leading-tight"><%= ride.title || 'Onbekende persoon' %></h4>
                                                 <p class="text-sm theme-text-muted"><%= ride.lines?.[1] || ride.address?.postalCode + ' ' + ride.address?.city || 'Onbekend adres' %></p>
+                                                <% if (statusLabel) { %>
+                                                    <div class="mt-2 flex flex-wrap gap-2">
+                                                        <span class="theme-pill border theme-border px-2 py-1 text-xs theme-text-muted">
+                                                            <%= statusLabel %>
+                                                        </span>
+                                                    </div>
+                                                <% } %>
                                             </span>
                                         </div>
                                     <% }) %>

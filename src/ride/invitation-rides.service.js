@@ -53,3 +53,33 @@ export const getInvitationRides = async (userUid, day, hour, users = []) => {
 
 	return invitationRides
 }
+
+export const addInvitationStatusToMarkers = (markers, currentRide) => {
+	const passengers = currentRide?.passengers || {}
+	const invitationRides = Object.entries(passengers).filter(
+		([_, status]) => status
+	)
+
+	const invitationMap = new Map(
+		invitationRides.map(([uid, status]) => [uid, status])
+	)
+
+	return markers.map((marker) => {
+		const invitation = invitationMap.get(marker.uid)
+		if (invitation) {
+			return {
+				...marker,
+				invitation: {
+					status: invitation.status,
+					label:
+						invitation.status === 'accepted'
+							? 'Geaccepteerd'
+							: invitation.status === 'declined'
+								? 'Afgewezen'
+								: 'Afwachtend'
+				}
+			}
+		}
+		return marker
+	})
+}
