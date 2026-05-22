@@ -39,7 +39,8 @@ const mapUserData = (firebaseUser, dbUser, admin, idToken) => {
 		phoneNumber: firebaseUser?.phoneNumber || dbUser?.phoneNumber || '',
 		displayName: firebaseUser?.displayName || dbUser?.name?.full || '',
 		photoURL: firebaseUser?.photoURL || dbUser?.photoURL || '',
-		emailVerified: firebaseUser?.emailVerified || false,
+		emailVerified:
+			dbUser?.emailVerified || firebaseUser?.emailVerified || false,
 		createdAt:
 			firebaseUser?.metadata?.creationTime || dbUser?.createdAt || '',
 		lastSignInTime: firebaseUser?.metadata?.lastSignInTime || '',
